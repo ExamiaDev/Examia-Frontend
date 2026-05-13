@@ -1,19 +1,14 @@
-/**
- * Custom TextField Component
- */
-
 import { TextField } from '@mui/material';
 
-const CustomTextField = (props) => {
+const CustomTextField = ({ size = 'small', ...props }) => {
   return (
     <TextField
       fullWidth
       variant="outlined"
-      margin="normal"
+      size={size}
       {...props}
     />
   );
 };
 
 export default CustomTextField;
-

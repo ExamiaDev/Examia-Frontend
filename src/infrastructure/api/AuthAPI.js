@@ -1,65 +1,56 @@
-/**
- * Auth API
- * API endpoints for authentication operations
- */
-
 import httpClient from '../http/httpClient';
 import { AuthenticationError, InvalidCredentialsError, UserAlreadyExistsError } from '../../domain/errors/AppErrors';
 
 export const AuthAPI = {
-  /**
-   * Login with username and password
-   * @param {string} username - User username
-   * @param {string} password - User password
-   * @returns {Promise<{token: string, user: Object}>}
-   */
-  login: async (username, password) => {
+  login: async (email, password) => {
     try {
-      const response = await httpClient.post('/auth/login', {
-        username,
-        password,
-      });
+      const response = await httpClient.post('/auth/login', { email, password });
       return response.data;
     } catch (error) {
       if (error.response?.status === 401) {
-        throw new InvalidCredentialsError('Invalid username or password');
+        throw new InvalidCredentialsError('Email o contraseña incorrectos');
       }
       if (error.response?.data?.message) {
         throw new AuthenticationError(error.response.data.message);
       }
-      throw new AuthenticationError('Login failed. Please try again.');
+      throw new AuthenticationError('Error al iniciar sesión. Intentá de nuevo.');
     }
   },
 
   /**
-   * Register a new user
-   * @param {string} username - User username
-   * @param {string} email - User email
-   * @param {string} password - User password
-   * @returns {Promise<{token: string, user: Object}>}
+   * @param {{ nombre: string, apellido: string, email: string, password: string, role: 'ALUMNO'|'PROFESOR' }} data
    */
-  register: async (username, email, password) => {
+  register: async ({ nombre, apellido, email, password, role }) => {
     try {
       const response = await httpClient.post('/auth/register', {
-        username,
+        nombre,
+        apellido,
         email,
         password,
+        role,
       });
       return response.data;
     } catch (error) {
       if (error.response?.status === 409) {
-        throw new UserAlreadyExistsError('User already exists with this username or email');
+        throw new UserAlreadyExistsError('Ya existe una cuenta con ese correo electrónico');
       }
       if (error.response?.data?.message) {
         throw new AuthenticationError(error.response.data.message);
       }
-      throw new AuthenticationError('Registration failed. Please try again.');
+      throw new AuthenticationError('Error al registrarse. Intentá de nuevo.');
     }
   },
 
-  /**
-   * Logout the current user
-   */
+  forgotPassword: async (email) => {
+    try {
+      const response = await httpClient.post('/auth/forgot-password', { email });
+      return response.data;
+    } catch {
+      // Endpoint pendiente de implementación en backend
+      // Se silencia el error intencionalmente — no revelar si el email existe
+    }
+  },
+
   logout: async () => {
     try {
       localStorage.removeItem('authToken');
@@ -71,4 +62,3 @@ export const AuthAPI = {
 };
 
 export default AuthAPI;
-

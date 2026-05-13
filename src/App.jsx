@@ -1,14 +1,11 @@
-/**
- * Main App Component
- */
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import LoginPage from './presentation/pages/auth/login/LoginPage';
+import RegisterPage from './presentation/pages/auth/register/RegisterPage';
+import ForgotPasswordPage from './presentation/pages/auth/forgot-password/ForgotPasswordPage';
 import Dashboard from './presentation/pages/Dashboard';
 
-// Custom theme
 const theme = createTheme({
   palette: {
     primary: {
@@ -25,15 +22,9 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 600,
-    },
-    h5: {
-      fontWeight: 600,
-    },
-    h6: {
-      fontWeight: 600,
-    },
+    h4: { fontWeight: 600 },
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 600 },
   },
 });
 
@@ -44,6 +35,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
