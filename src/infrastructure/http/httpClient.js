@@ -17,11 +17,11 @@ const httpClient = axios.create({
 // Request interceptor
 httpClient.interceptors.request.use(
   (config) => {
-    // Add authorization token if available
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('[HTTP]', config.method?.toUpperCase(), config.baseURL + config.url, token ? '(con token)' : '(sin token)');
     return config;
   },
   (error) => Promise.reject(error)
@@ -29,11 +29,17 @@ httpClient.interceptors.request.use(
 
 // Response interceptor
 httpClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('[HTTP]', response.config.method?.toUpperCase(), response.config.url, '→', response.status);
+    return response;
+  },
   (error) => {
-    // Handle specific error cases
-    if (error.response?.status === 401) {
-      // Unauthorized - clear token and handle logout
+    const url = error.config?.url ?? '';
+    const status = error.response?.status;
+    console.error('[HTTP] Error', error.config?.method?.toUpperCase(), url, '→', status, error.message);
+
+    // Solo redirigir a login si el 401 viene de un endpoint protegido (no de auth)
+    if (status === 401 && !url.includes('/auth/')) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       window.location.href = '/login';
