@@ -1,0 +1,69 @@
+name: Backport to Develop
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  backport:
+    runs-on: ubuntu-latest
+
+    # Solo ejecutar si el PR fue mergeado exitosamente
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create backport branch
+        run: |
+          git checkout develop
+          git pull origin develop
+          git merge origin/main --no-edit
+
+      - name: Push backport
+        run: |
+          git push origin develop
+        continue-on-error: true
+
+      - name: Create PR if merge conflicts
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: branches } = await github.rest.git.listMatchingRefs({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/backport-main-to-develop'
+            });
+
+            if (branches.length === 0) {
+              // Crear rama de backport si hay conflictos
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '⚠️ **Backport a develop necesita revisión manual**\n\nHay conflictos al integrar los cambios de main a develop. Por favor, crea un PR manual si es necesario.'
+              })
+            }
+
+      - name: Comment success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ **Backport completado**\n\nLos cambios de `main` han sido automáticamente integrados en `develop`'
+            })
+
