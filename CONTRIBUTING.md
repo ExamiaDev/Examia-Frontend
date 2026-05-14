@@ -24,6 +24,22 @@ Este proyecto sigue un modelo de **Git Flow** con tres ramas principales:
 
 ---
 
+### ⚠️ Reglas Estrictas de Rama
+
+**A `main` solo pueden apuntar:**
+- ✓ `develop` (releases normales)
+- ✓ `release/*` (nuevas versiones)
+- ✓ `hotfix/*` (parches urgentes)
+
+**A `develop` solo pueden apuntar:**
+- ✓ `feature/*` (nuevas funcionalidades)
+- ✓ `backport/*` (cambios desde main)
+- ✓ `hotfix/*` (parches urgentes)
+
+**Violaciones serán bloqueadas automáticamente** ❌
+
+---
+
 ## 🚀 Flujo de Trabajo
 
 ### 1️⃣ **Para Empezar una Feature**
@@ -194,4 +210,5 @@ Una vez aprobado:
 Si tienes dudas sobre el flujo, contacta al equipo o revisa los PRs anteriores como referencia.
 
 **¡Gracias por contribuir a Examia!** 🎓
+
 

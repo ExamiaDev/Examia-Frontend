@@ -3,14 +3,13 @@ name: Enforce PR Branch Rules
 on:
   pull_request:
     types: [opened, synchronize]
-    branches: [main]
 
 jobs:
-  check-branch:
+  validate-branch-target:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check PR source branch
+      - name: Validate PR target branches
         uses: actions/github-script@v7
         with:
           script: |
@@ -18,29 +17,89 @@ jobs:
             const headBranch = pr.head.ref;
             const baseBranch = pr.base.ref;
             
-            console.log(`PR desde: ${headBranch}`);
-            console.log(`PR hacia: ${baseBranch}`);
+            console.log(`📤 PR desde: ${headBranch}`);
+            console.log(`📥 PR hacia: ${baseBranch}`);
             
-            // Solo permitir PRs desde develop o release/* hacia main
-            const allowedBranches = ['develop'];
-            const allowedPatterns = ['release/'];
+            // Reglas de qué ramas pueden apuntar a dónde
+            const rules = {
+              main: {
+                allowed: ['develop'],
+                patterns: ['release/', 'hotfix/'],
+                message: `Los PRs a \`main\` SOLO pueden venir desde:\n- ✓ \`develop\` (releases normales)\n- ✓ \`release/*\` (versiones)\n- ✓ \`hotfix/*\` (parches urgentes)\n\n❌ Tu rama \`${headBranch}\` no está permitida`
+              },
+              develop: {
+                allowed: [],
+                patterns: ['feature/', 'backport/', 'hotfix/'],
+                message: `Los PRs a \`develop\` SOLO pueden venir desde:\n- ✓ \`feature/*\` (nuevas funcionalidades)\n- ✓ \`backport/*\` (backports de main)\n- ✓ \`hotfix/*\` (parches urgentes)\n\n❌ Tu rama \`${headBranch}\` no está permitida`
+              }
+            };
             
+            const rule = rules[baseBranch];
+            
+            if (!rule) {
+              console.log(`ℹ️ No hay restricciones para PRs a ${baseBranch}`);
+              return;
+            }
+            
+            // Verificar si la rama origen cumple con las reglas
             const isAllowed = 
-              allowedBranches.includes(headBranch) || 
-              allowedPatterns.some(pattern => headBranch.startsWith(pattern));
+              rule.allowed.includes(headBranch) || 
+              rule.patterns.some(pattern => headBranch.startsWith(pattern));
             
-            if (!isAllowed && baseBranch === 'main') {
+            if (!isAllowed) {
+              // Mensaje detallado
+              const fullMessage = `❌ **PR Bloqueado - Violación de Rama**
+
+⚠️ ${rule.message}
+
+📝 **Flujo Correcto:**
+${baseBranch === 'main' ? `
+1. ✅ Crea features desde \`develop\`: \`git checkout -b feature/nombre\`
+2. ✅ Haz PR a \`develop\`
+3. ✅ Una vez aprobado en develop, crear rama de release: \`git checkout -b release/vX.X.X\`
+4. ✅ Haz PR desde \`release/vX.X.X\` a \`main\`
+5. ✅ Merge automático a develop vía backport
+` : `
+1. ✅ Crea features desde \`develop\`: \`git checkout -b feature/nombre\`
+2. ✅ Haz PR de tu feature hacia \`develop\`
+3. ✅ Espera aprobación y merge
+`}
+
+🔒 Esta es una restricción de rama protegida. No se puede mergear.
+
+👉 **Qué hacer:**
+1. Cierra este PR
+2. Crea un nuevo PR con la rama correcta
+3. Si tienes dudas, revisa CONTRIBUTING.md
+`;
+              
               // Comentar en el PR
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `❌ **PR Rechazado**\n\n⚠️ Los PRs a \`main\` solo pueden venir desde:\n- ✓ \`develop\` (releases)\n- ✓ \`release/*\` (hotfixes)\n\n❌ Tu rama: \`${headBranch}\`\n\n📝 **Flujo correcto:**\n1. Crea feature desde \`develop\`: \`feature/nombre\`\n2. Haz PR a \`develop\`\n3. Una vez aprobado, crea rama de release\n4. Haz PR desde release a \`main\`\n\n👉 **Acciones:**\n- Cierra este PR\n- Crea un PR hacia \`develop\` en su lugar\n- O espera que otros cambios se merged a develop primero`
+                body: fullMessage
               });
               
-              // Rechazar el PR
-              core.setFailed(`El PR debe venir desde develop o release/*, no desde ${headBranch}`);
+              // Request changes automático (bloquea el merge)
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                event: 'REQUEST_CHANGES',
+                body: 'Branch enforcement: This PR violates branch protection rules. Please create a new PR from the correct branch.'
+              });
+              
+              // También fallar el workflow
+              core.setFailed(`❌ Branch validation failed: ${headBranch} → ${baseBranch} no es permitido`);
             } else {
-              console.log(`✅ PR permitido desde ${headBranch}`);
+              console.log(`✅ PR válido: ${headBranch} → ${baseBranch}`);
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `✅ **PR Válido**\n\nEsta rama cumple con las reglas de protección:\n- Origen: \`${headBranch}\` ✓\n- Destino: \`${baseBranch}\` ✓`
+              });
             }
+
 
