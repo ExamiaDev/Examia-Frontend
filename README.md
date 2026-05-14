@@ -560,3 +560,33 @@ Para preguntas o sugerencias:
 **¡Gracias por usar Examia! 🎓**
 
 **Evalúa. Entiende. Mejora.**
+
+---
+
+## Historial de Cambios
+
+### 13/05/2026 — Felipe Massun
+
+#### Nuevas pantallas de autenticación
+
+- **`RegisterPage.jsx`** (`/register`): pantalla de registro con campos nombre, apellido, mail institucional, contraseña y confirmar contraseña. Rol fijado como `ALUMNO`. Layout en grilla CSS de 2 columnas en desktop y 1 columna en mobile. Botón "Crear cuenta" centrado.
+- **`ForgotPasswordPage.jsx`** (`/forgot-password`): pantalla de recuperación de contraseña con campo de email, estado de éxito con ícono y mensaje, y link de retorno al login.
+- **`AuthPageWrapper.jsx`**: componente compartido de layout para todas las pantallas de autenticación (fondo azul, logo responsive, copyright).
+
+#### Cambios en componentes existentes
+
+- **`AuthForm.jsx`**: simplificado a solo login. Se eliminó el toggle login/registro. Campo `username` reemplazado por `email` para alinear con el backend. Se agregaron links a `/forgot-password` y `/register`.
+- **`CustomTextField.jsx`**: cambiado a `size="small"` por defecto. Eliminado `margin="normal"` para mayor control del espaciado. Corrección de `InputProps` → `slotProps.input` para compatibilidad con MUI v9 (fix del ícono de visibilidad de contraseña).
+- **`Dashboard.jsx`**: muestra `nombre` + `apellido` del backend en lugar de `username`. Chip de rol en la AppBar (visible en desktop). Layout y tipografía responsive.
+- **`App.jsx`**: agregadas rutas `/register` y `/forgot-password`.
+
+#### Alineación con el backend
+
+- **`AuthService.js`**: `login` corregido para usar `email` en lugar de `username`. `register` actualizado con la firma completa del backend `{ nombre, apellido, email, password, role }`. Corrección del almacenamiento en `localStorage` (el backend devuelve campos planos, no un objeto `user`).
+- **`AuthAPI.js`**: `login` corregido para enviar `{ email, password }`. `register` corregido para enviar `{ nombre, apellido, email, password, role }`. Agregado método `forgotPassword(email)`.
+
+#### Configuración de producción
+
+- **`.env.production`**: creado con `VITE_API_URL` apuntando al backend en Render (`https://examia-backend-1zwg.onrender.com/api`).
+- **`environment.js`**: agregados `console.log` para verificar la URL de API en runtime.
+- **`httpClient.js`**: corregido el interceptor de respuesta — el redirect a `/login` ante 401 ahora solo aplica a endpoints protegidos, no a `/auth/*`. Agregados logs de request/response para debugging.
