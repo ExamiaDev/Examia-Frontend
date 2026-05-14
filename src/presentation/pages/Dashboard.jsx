@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -19,7 +19,7 @@ const ROLE_LABELS = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user] = useState(() => AuthService.getCurrentUser());
+  const user = AuthService.getCurrentUser();
 
   useEffect(() => {
     if (!user) {

@@ -32,7 +32,6 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint --if-present
-        continue-on-error: true
 
       - name: Build project
         run: npm run build
