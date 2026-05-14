@@ -4,66 +4,98 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Número del PR original de main que se está backporteando (opcional, sólo informativo)"
+        required: false
+        default: "manual"
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   backport:
     runs-on: ubuntu-latest
 
-    # Solo ejecutar si el PR fue mergeado exitosamente
-    if: github.event.pull_request.merged == true
+    # Ejecutar si el PR fue mergeado exitosamente o si se dispara manualmente
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+      PR_TITLE: ${{ github.event.pull_request.title || format('manual dispatch by @{0}', github.actor) }}
+      BACKPORT_BRANCH: backport/main-to-develop-pr-${{ github.event.pull_request.number || format('{0}-{1}', inputs.pr_number, github.run_id) }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout develop
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: develop
 
       - name: Setup Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create backport branch
+      - name: Create backport branch and merge main
+        id: merge
         run: |
-          git checkout develop
-          git pull origin develop
-          git merge origin/main --no-edit
+          git checkout -B "$BACKPORT_BRANCH"
+          if git merge --no-ff origin/main -m "chore: backport main into develop (PR #${PR_NUMBER})"; then
+            echo "conflicts=false" >> "$GITHUB_OUTPUT"
+            echo "✅ Merge limpio de main hacia develop."
+          else
+            echo "conflicts=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Conflictos detectados. Se commitean los marcadores para revisión manual."
+            git add -A
+            git commit -m "chore: backport main into develop with conflicts (PR #${PR_NUMBER}) [needs manual resolution]" || true
+          fi
 
-      - name: Push backport
-        run: |
-          git push origin develop
-        continue-on-error: true
+      - name: Open backport pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ env.BACKPORT_BRANCH }}
+          base: develop
+          title: "chore: backport main → develop (PR #${{ env.PR_NUMBER }})"
+          labels: |
+            backport
+            automated
+          body: |
+            🤖 **Backport automático de `main` a `develop`**
 
-      - name: Create PR if merge conflicts
-        if: failure()
+            Este PR integra los cambios mergeados a `main` desde el PR #${{ env.PR_NUMBER }} (${{ env.PR_TITLE }}) hacia `develop` para mantener ambas ramas sincronizadas.
+
+            ${{ steps.merge.outputs.conflicts == 'true' && '⚠️ **Hay conflictos de merge** en esta rama. Resuélvelos manualmente (los marcadores `<<<<<<<` están commiteados) antes de mergear.' || '✅ Sin conflictos. Listo para revisión y merge.' }}
+
+      - name: Comment on original PR
+        if: always() && github.event_name == 'pull_request' && steps.cpr.outputs.pull-request-url != ''
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: branches } = await github.rest.git.listMatchingRefs({
+            const conflicts = '${{ steps.merge.outputs.conflicts }}' === 'true';
+            const url = '${{ steps.cpr.outputs.pull-request-url }}';
+            const body = conflicts
+              ? `⚠️ **Backport a \`develop\` requiere revisión manual**\n\nHay conflictos al integrar los cambios. PR de backport: ${url}`
+              : `✅ **Backport a \`develop\` creado**\n\nPR: ${url}`;
+            await github.rest.issues.createComment({
+              issue_number: Number(process.env.PR_NUMBER),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: 'heads/backport-main-to-develop'
+              body,
             });
 
-            if (branches.length === 0) {
-              // Crear rama de backport si hay conflictos
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '⚠️ **Backport a develop necesita revisión manual**\n\nHay conflictos al integrar los cambios de main a develop. Por favor, crea un PR manual si es necesario.'
-              })
-            }
-
-      - name: Comment success
-        if: success()
+      - name: Comment if backport could not be created
+        if: always() && github.event_name == 'pull_request' && steps.cpr.outputs.pull-request-url == ''
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            await github.rest.issues.createComment({
+              issue_number: Number(process.env.PR_NUMBER),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ **Backport completado**\n\nLos cambios de `main` han sido automáticamente integrados en `develop`'
-            })
-
+              body: 'ℹ️ **Backport a `develop`**: no fue necesario crear un PR (no hay cambios pendientes) o no se pudo crear automáticamente. Revisa el log del workflow.',
+            });
