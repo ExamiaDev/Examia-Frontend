@@ -4,6 +4,12 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Número del PR original de main que se está backporteando (opcional, sólo informativo)"
+        required: false
+        default: "manual"
 
 permissions:
   contents: write
@@ -14,13 +20,13 @@ jobs:
   backport:
     runs-on: ubuntu-latest
 
-    # Solo ejecutar si el PR fue mergeado exitosamente
-    if: github.event.pull_request.merged == true
+    # Ejecutar si el PR fue mergeado exitosamente o si se dispara manualmente
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
 
     env:
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-      PR_TITLE: ${{ github.event.pull_request.title }}
-      BACKPORT_BRANCH: backport/main-to-develop-pr-${{ github.event.pull_request.number }}
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+      PR_TITLE: ${{ github.event.pull_request.title || format('manual dispatch by @{0}', github.actor) }}
+      BACKPORT_BRANCH: backport/main-to-develop-pr-${{ github.event.pull_request.number || format('{0}-{1}', inputs.pr_number, github.run_id) }}
 
     steps:
       - name: Checkout develop
@@ -66,7 +72,7 @@ jobs:
             ${{ steps.merge.outputs.conflicts == 'true' && '⚠️ **Hay conflictos de merge** en esta rama. Resuélvelos manualmente (los marcadores `<<<<<<<` están commiteados) antes de mergear.' || '✅ Sin conflictos. Listo para revisión y merge.' }}
 
       - name: Comment on original PR
-        if: always() && steps.cpr.outputs.pull-request-url != ''
+        if: always() && github.event_name == 'pull_request' && steps.cpr.outputs.pull-request-url != ''
         uses: actions/github-script@v7
         with:
           script: |
@@ -83,7 +89,7 @@ jobs:
             });
 
       - name: Comment if backport could not be created
-        if: always() && steps.cpr.outputs.pull-request-url == ''
+        if: always() && github.event_name == 'pull_request' && steps.cpr.outputs.pull-request-url == ''
         uses: actions/github-script@v7
         with:
           script: |
