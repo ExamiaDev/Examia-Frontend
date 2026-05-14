@@ -19,16 +19,13 @@ const ROLE_LABELS = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const [user] = useState(() => AuthService.getCurrentUser());
 
   useEffect(() => {
-    const currentUser = AuthService.getCurrentUser();
-    if (!currentUser) {
+    if (!user) {
       navigate('/login');
-    } else {
-      setUser(currentUser);
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   const handleLogout = async () => {
     await AuthService.logout();

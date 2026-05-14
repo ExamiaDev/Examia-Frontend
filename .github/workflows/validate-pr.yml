@@ -4,13 +4,17 @@ on:
   pull_request:
     branches: [develop, main]
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   validate:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [20.x]
 
     steps:
       - name: Checkout code
@@ -42,4 +46,3 @@ jobs:
               repo: context.repo.repo,
               body: '✅ **Validación completada**\n\n- Build: ✅\n- Lint: ✅\n\n_Este PR ha pasado todas las validaciones_'
             })
-
