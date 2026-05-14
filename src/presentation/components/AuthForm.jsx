@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -9,7 +8,6 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
-  Link,
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
@@ -17,7 +15,6 @@ import AuthPageWrapper from './AuthPageWrapper';
 import AuthService from '../../application/services/AuthService';
 
 const AuthForm = ({ onSuccess = () => {} }) => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -98,23 +95,12 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             sx={{ mt: 0.5, mb: 2 }}
           />
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
-            <Typography
-              variant="caption"
-              sx={{ color: '#001f56', fontWeight: 600, fontSize: '0.9rem' }}
-            >
-              Contraseña
-            </Typography>
-            <Link
-              component="button"
-              type="button"
-              onClick={() => navigate('/forgot-password')}
-              underline="hover"
-              sx={{ fontSize: '0.8rem', color: '#0052cc', cursor: 'pointer' }}
-            >
-              ¿Olvidaste tu contraseña?
-            </Link>
-          </Box>
+          <Typography
+            variant="caption"
+            sx={{ display: 'block', color: '#001f56', fontWeight: 600, mb: 0.8, fontSize: '0.9rem' }}
+          >
+            Contraseña
+          </Typography>
           <CustomTextField
             name="password"
             type={showPassword ? 'text' : 'password'}
@@ -159,20 +145,6 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             {loading ? <CircularProgress size={24} color="inherit" /> : 'Ingresar'}
           </Button>
         </form>
-
-        <Box sx={{ textAlign: 'center', mt: 0.5 }}>
-          <Typography variant="body2" sx={{ color: '#666', fontSize: '0.9rem' }}>
-            ¿No tenés cuenta?{' '}
-            <Link
-              component="button"
-              onClick={() => navigate('/register')}
-              underline="hover"
-              sx={{ color: '#001f56', fontWeight: 600, cursor: 'pointer' }}
-            >
-              Registrarse
-            </Link>
-          </Typography>
-        </Box>
 
         <Box
           sx={{
