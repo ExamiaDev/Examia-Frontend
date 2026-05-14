@@ -1,0 +1,46 @@
+name: Enforce PR Branch Rules
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR source branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const headBranch = pr.head.ref;
+            const baseBranch = pr.base.ref;
+            
+            console.log(`PR desde: ${headBranch}`);
+            console.log(`PR hacia: ${baseBranch}`);
+            
+            // Solo permitir PRs desde develop o release/* hacia main
+            const allowedBranches = ['develop'];
+            const allowedPatterns = ['release/'];
+            
+            const isAllowed = 
+              allowedBranches.includes(headBranch) || 
+              allowedPatterns.some(pattern => headBranch.startsWith(pattern));
+            
+            if (!isAllowed && baseBranch === 'main') {
+              // Comentar en el PR
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `❌ **PR Rechazado**\n\n⚠️ Los PRs a \`main\` solo pueden venir desde:\n- ✓ \`develop\` (releases)\n- ✓ \`release/*\` (hotfixes)\n\n❌ Tu rama: \`${headBranch}\`\n\n📝 **Flujo correcto:**\n1. Crea feature desde \`develop\`: \`feature/nombre\`\n2. Haz PR a \`develop\`\n3. Una vez aprobado, crea rama de release\n4. Haz PR desde release a \`main\`\n\n👉 **Acciones:**\n- Cierra este PR\n- Crea un PR hacia \`develop\` en su lugar\n- O espera que otros cambios se merged a develop primero`
+              });
+              
+              // Rechazar el PR
+              core.setFailed(`El PR debe venir desde develop o release/*, no desde ${headBranch}`);
+            } else {
+              console.log(`✅ PR permitido desde ${headBranch}`);
+            }
+
