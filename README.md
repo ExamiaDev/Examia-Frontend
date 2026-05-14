@@ -23,10 +23,10 @@ Frontend profesional para Examia - Una plataforma integral de evaluación educat
 ## ✨ Características
 
 ### Autenticación y Autorización 🔐
-- **Login seguro**: Ingresa con usuario y contraseña
-- **Registro de usuarios**: Crea una nueva cuenta con validaciones
+- **Login seguro**: Ingresa con email y contraseña proporcionadas por administradores
 - **Sesiones persistentes**: Mantén la sesión activa entre recargas
-- **Manejo robusto de errores**: Manejo de credenciales inválidas y usuarios existentes
+- **Manejo robusto de errores**: Manejo de credenciales inválidas y validaciones
+- **Gestión de usuarios en BD**: Los usuarios son creados directamente en la base de datos
 
 ### Interfaz de Usuario 🎨
 - **Diseño responsivo**: Optimizado para desktop, tablet y móvil
@@ -178,17 +178,18 @@ src/
 │   └── http/
 │       └── httpClient.js  # Cliente HTTP configurado
 │
-├── presentation/          # Presentation Layer (UI)
-│   ├── components/
-│   │   ├── AuthForm.jsx      # Formulario de login/registro
-│   │   ├── CustomTextField.jsx
-│   │   └── Logo.jsx
-│   ├── pages/
-│   │   ├── Dashboard.jsx     # Página principal
-│   │   └── auth/
-│   │       └── login/
-│   │           └── LoginPage.jsx
-│   └── layouts/
+| ├── presentation/          # Presentation Layer (UI)
+| │   ├── components/
+| │   │   ├── AuthForm.jsx      # Formulario de login
+| │   │   ├── CustomTextField.jsx
+| │   │   ├── AuthPageWrapper.jsx
+| │   │   └── Logo.jsx
+| │   ├── pages/
+| │   │   ├── Dashboard.jsx     # Página principal
+| │   │   └── auth/
+| │   │       └── login/
+| │   │           └── LoginPage.jsx
+| │   └── layouts/
 │
 ├── config/                # Configuración global
 │   └── environment.js     # Variables de entorno
@@ -245,17 +246,17 @@ El proyecto sigue los principios de **Clean Architecture**:
 ## 🧩 Componentes
 
 ### AuthForm
-Componente principal que maneja tanto login como registro.
+Componente principal que maneja el login de usuarios.
 
 **Props:**
 - `onSuccess`: Callback ejecutado tras autenticación exitosa
 
 **Funcionalidades:**
-- Toggle entre modo login y registro
 - Validación de formularios
 - Visibilidad de contraseña
 - Manejo de errores
 - Loading states
+- Manejo de respuestas del backend (usuario no existe, contraseña incorrecta)
 
 ### Logo
 Componente para mostrar el logo de Examia.
@@ -307,35 +308,6 @@ Response (401 Unauthorized):
 }
 ```
 
-#### Registro
-```
-POST /api/auth/register
-Content-Type: application/json
-
-Request:
-{
-  "username": "string",
-  "email": "string",
-  "password": "string"
-}
-
-Response (201 Created):
-{
-  "token": "jwt_token",
-  "user": {
-    "id": "string",
-    "username": "string",
-    "email": "string",
-    "createdAt": "ISO8601",
-    "updatedAt": "ISO8601"
-  }
-}
-
-Response (409 Conflict):
-{
-  "message": "User already exists with this username or email"
-}
-```
 
 ---
 
@@ -490,12 +462,9 @@ npm run test:coverage
 - Revisa la consola del navegador para ver errores
 
 #### "Invalid credentials"
-- Usuario o contraseña incorrectos
+- Email o contraseña incorrectos
 - Verifica que el usuario existe en el backend
-
-#### "User already exists"
-- El email o username ya está registrado
-- Usa credenciales diferentes
+- Contacta con un administrador si no tienes credenciales
 
 #### "Token expired"
 - La sesión ha expirado
@@ -538,10 +507,10 @@ Para preguntas o sugerencias:
 ## 🗺 Roadmap
 
 ### v0.2.0 (Próximo)
-- [ ] Recuperación de contraseña
 - [ ] Autenticación con Google/GitHub
 - [ ] Perfil de usuario
 - [ ] Tests automatizados
+- [ ] Gestión de sesiones avanzada
 
 ### v0.3.0
 - [ ] Crear exámenes
@@ -564,6 +533,26 @@ Para preguntas o sugerencias:
 ---
 
 ## Historial de Cambios
+
+### 14/05/2026 — Feature: Remove Register Functionality
+
+#### Cambios principales
+- **Eliminación de registro**: Removed `RegisterPage.jsx` completely
+- **Eliminación de recuperación de contraseña**: Removed `ForgotPasswordPage.jsx` completely
+- **Solo login**: Aplicación ahora solo usa login con credenciales otorgadas por administradores
+- **Gestión en BD**: Los usuarios son creados directamente en la base de datos por administradores
+
+#### Cambios en la estructura
+- Removidas carpetas: `src/presentation/pages/auth/register/` y `src/presentation/pages/auth/forgot-password/`
+- ActualRemoción de rutas: `/register` y `/forgot-password` eliminadas de `App.jsx`
+- Simplificación de `AuthForm.jsx`: Solo login, sin toggle
+
+#### Documentación
+- Actualizado README.md para reflejar solo login
+- Documentación de endpoints actualizada (sin registro)
+- Roadmap actualizado (sin recuperación de contraseña)
+
+---
 
 ### 13/05/2026 — Felipe Massun
 
