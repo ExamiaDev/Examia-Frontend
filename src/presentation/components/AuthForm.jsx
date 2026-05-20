@@ -76,7 +76,7 @@ const AuthForm = ({ onSuccess = () => {} }) => {
           variant="body2"
           sx={{ textAlign: 'center', color: '#666', mb: 2.5, fontSize: '0.9rem' }}
         >
-          Plataforma de evaluación digital · Testing de Aplicaciones
+          Plataforma de evaluación digital
         </Typography>
 
         {error && (
@@ -90,7 +90,7 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             variant="caption"
             sx={{ display: 'block', color: '#001f56', fontWeight: 600, mb: 0.8, fontSize: '0.9rem' }}
           >
-            Mail institucional UADE
+            Email
           </Typography>
           <CustomTextField
             name="email"
@@ -99,7 +99,7 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             onChange={handleChange}
             disabled={loading}
             autoComplete="email"
-            placeholder="nombre.apellido@uade.edu.ar"
+            placeholder="tu@email.com"
             sx={{ mt: 0.5, mb: 2 }}
           />
 
