@@ -10,6 +10,7 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
+  Link,
 } from '@mui/material';
 import { Visibility, VisibilityOff, School } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
@@ -102,12 +103,23 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             sx={{ mt: 0.5, mb: 2 }}
           />
 
-          <Typography
-            variant="caption"
-            sx={{ display: 'block', color: '#001f56', fontWeight: 600, mb: 0.8, fontSize: '0.9rem' }}
-          >
-            Contraseña
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
+            <Typography
+              variant="caption"
+              sx={{ color: '#001f56', fontWeight: 600, fontSize: '0.9rem' }}
+            >
+              Contraseña
+            </Typography>
+            <Link
+              component="button"
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              underline="hover"
+              sx={{ fontSize: '0.82rem', color: '#2c5cc5', fontWeight: 500, cursor: 'pointer', background: 'none', border: 'none' }}
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </Box>
           <CustomTextField
             name="password"
             type={showPassword ? 'text' : 'password'}
