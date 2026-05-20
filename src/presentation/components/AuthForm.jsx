@@ -1,20 +1,24 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
+  Divider,
   Paper,
   Typography,
   Alert,
   CircularProgress,
   IconButton,
   InputAdornment,
+  Link,
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Visibility, VisibilityOff, School } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
 import AuthPageWrapper from './AuthPageWrapper';
 import AuthService from '../../application/services/AuthService';
 
 const AuthForm = ({ onSuccess = () => {} }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -95,12 +99,23 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             sx={{ mt: 0.5, mb: 2 }}
           />
 
-          <Typography
-            variant="caption"
-            sx={{ display: 'block', color: '#001f56', fontWeight: 600, mb: 0.8, fontSize: '0.9rem' }}
-          >
-            Contraseña
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
+            <Typography
+              variant="caption"
+              sx={{ color: '#001f56', fontWeight: 600, fontSize: '0.9rem' }}
+            >
+              Contraseña
+            </Typography>
+            <Link
+              component="button"
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              underline="hover"
+              sx={{ fontSize: '0.82rem', color: '#2c5cc5', fontWeight: 500, cursor: 'pointer', background: 'none', border: 'none' }}
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </Box>
           <CustomTextField
             name="password"
             type={showPassword ? 'text' : 'password'}
@@ -146,15 +161,43 @@ const AuthForm = ({ onSuccess = () => {} }) => {
           </Button>
         </form>
 
-        <Box
+        <Divider sx={{ my: 2, color: '#aaa', fontSize: '0.82rem' }}>O</Divider>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<School />}
+          onClick={() => navigate('/uade-login')}
           sx={{
-            mt: 2,
-            pt: 1.2,
-            borderTop: '1px solid #e0e0e0',
-            textAlign: 'center',
+            mb: 2,
+            color: '#001f56',
+            borderColor: '#e0e0e0',
+            backgroundColor: '#f5f5f5',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            padding: '10px',
+            textTransform: 'none',
+            '&:hover': { backgroundColor: '#ebebeb', borderColor: '#c0c0c0' },
           }}
         >
-          <Typography variant="caption" sx={{ color: '#0052cc', fontSize: '0.75rem' }}>
+          Ingresar con usuario UADE
+        </Button>
+
+        <Typography variant="body2" sx={{ textAlign: 'center', color: '#555', mb: 1.5 }}>
+          ¿No tenés cuenta?{' '}
+          <Link
+            component="button"
+            type="button"
+            onClick={() => navigate('/register')}
+            underline="hover"
+            sx={{ color: '#2c5cc5', fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none' }}
+          >
+            Registrate
+          </Link>
+        </Typography>
+
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ color: '#888', fontSize: '0.75rem' }}>
             Docentes: @uade.edu.ar · Alumnos: @alumnos.uade.edu.ar
           </Typography>
         </Box>

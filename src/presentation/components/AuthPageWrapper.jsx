@@ -1,7 +1,7 @@
-import { Box, Container } from '@mui/material';
+import { Box } from '@mui/material';
 import Logo from './Logo';
 
-const AuthPageWrapper = ({ children, maxWidth = 'sm' }) => (
+const AuthPageWrapper = ({ children, maxWidth = '600px' }) => (
   <Box
     sx={{
       display: 'flex',
@@ -25,15 +25,19 @@ const AuthPageWrapper = ({ children, maxWidth = 'sm' }) => (
     >
       <Box
         sx={{
-          width: { xs: 90, sm: 130 },
-          height: { xs: 90, sm: 130 },
+          width: { xs: 100, sm: 140 },
+          height: { xs: 100, sm: 140 },
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          backgroundColor: '#ffffff',
+          borderRadius: '24px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
           overflow: 'hidden',
+          p: 1,
         }}
       >
-        <Logo size={130} variant="full" />
+        <Logo size={120} variant="full" />
       </Box>
     </Box>
 
@@ -47,12 +51,11 @@ const AuthPageWrapper = ({ children, maxWidth = 'sm' }) => (
         py: { xs: 2, sm: 3 },
       }}
     >
-      <Container
-        maxWidth={maxWidth}
-        sx={{ px: { xs: 2, sm: 3 } }}
+      <Box
+        sx={{ width: '100%', maxWidth, mx: 'auto', px: { xs: 2, sm: 3 } }}
       >
         {children}
-      </Container>
+      </Box>
     </Box>
 
     {/* Footer */}
