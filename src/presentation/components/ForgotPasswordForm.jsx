@@ -24,8 +24,6 @@ import CustomTextField from './CustomTextField';
 import AuthPageWrapper from './AuthPageWrapper';
 import AuthService from '../../application/services/AuthService';
 
-const STEPS = ['Verificación', 'Código', 'Nueva contraseña'];
-
 const ICON_SIZE = 48;
 
 const Stepper = ({ activeStep }) => {
