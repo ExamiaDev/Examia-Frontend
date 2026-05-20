@@ -23,10 +23,12 @@ Frontend profesional para Examia - Una plataforma integral de evaluación educat
 ## ✨ Características
 
 ### Autenticación y Autorización 🔐
-- **Login seguro**: Ingresa con email y contraseña proporcionadas por administradores
+- **Login para usuarios externos**: Ingreso con email y contraseña para usuarios no pertenecientes a UADE
+- **Login UADE**: Acceso con credenciales institucionales (email, legajo y contraseña) para usuarios precargados
+- **Registro de usuarios externos**: Permite registrar nuevos usuarios con selección de rol (Alumno/Profesor)
 - **Sesiones persistentes**: Mantén la sesión activa entre recargas
 - **Manejo robusto de errores**: Manejo de credenciales inválidas y validaciones
-- **Gestión de usuarios en BD**: Los usuarios son creados directamente en la base de datos
+- **Roles diferenciados**: Soporte para roles ALUMNO y PROFESOR
 
 ### Interfaz de Usuario 🎨
 - **Diseño responsivo**: Optimizado para desktop, tablet y móvil
@@ -279,32 +281,75 @@ El frontend consume los siguientes endpoints del backend:
 
 ### Autenticación
 
-#### Login
+#### Login (Usuarios externos)
 ```
 POST /api/auth/login
 Content-Type: application/json
 
 Request:
 {
-  "username": "string",
-  "password": "string"
+  "email": "usuario@email.com",
+  "password": "contraseña123"
 }
 
 Response (200 OK):
 {
   "token": "jwt_token",
-  "user": {
-    "id": "string",
-    "username": "string",
-    "email": "string",
-    "createdAt": "ISO8601",
-    "updatedAt": "ISO8601"
-  }
+  "email": "usuario@email.com",
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "role": "PROFESOR",
+  "message": "Inicio de sesión exitoso"
+}
+```
+
+#### Login UADE (Usuarios institucionales)
+```
+POST /api/auth/login-uade
+Content-Type: application/json
+
+Request:
+{
+  "legajo": "1234567",
+  "email": "nombre.apellido@uade.edu.ar",
+  "password": "contraseñaUADE"
 }
 
-Response (401 Unauthorized):
+Response (200 OK):
 {
-  "message": "Invalid username or password"
+  "token": "jwt_token",
+  "email": "nombre.apellido@uade.edu.ar",
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "role": "ALUMNO",
+  "message": "Inicio de sesión exitoso"
+}
+```
+
+#### Registro (Usuarios externos)
+```
+POST /api/auth/register
+Content-Type: application/json
+
+Request:
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "username": "juanperez",
+  "email": "juan@email.com",
+  "recoveryEmail": "juan.recovery@gmail.com",
+  "password": "miPassword123",
+  "role": "ALUMNO"  // o "PROFESOR"
+}
+
+Response (201 Created):
+{
+  "token": "jwt_token",
+  "email": "juan@email.com",
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "role": "ALUMNO",
+  "message": "Registro exitoso"
 }
 ```
 
@@ -533,6 +578,29 @@ Para preguntas o sugerencias:
 ---
 
 ## Historial de Cambios
+
+### 20/05/2026 — Feature: New Register Logic
+
+#### Cambios principales
+- **Login externo actualizado**: El formulario de login para usuarios externos ahora usa campo "Email" genérico en lugar de "Mail institucional UADE"
+- **Login UADE mejorado**: Agregado campo "Número de Legajo" para autenticación institucional
+- **Registro con selección de rol**: Los usuarios externos pueden elegir si son ALUMNO o PROFESOR al registrarse
+- **Usuarios UADE precargados**: Los usuarios de UADE no necesitan registrarse, están precargados en el sistema
+
+#### Nuevos endpoints integrados
+- `POST /api/auth/login` - Login para usuarios externos
+- `POST /api/auth/login-uade` - Login para usuarios UADE (legajo, email, password)
+- `POST /api/auth/register` - Registro con campo `role` (ALUMNO/PROFESOR)
+
+#### Archivos modificados
+- `AuthForm.jsx` - Campo email genérico para usuarios externos
+- `UadeLoginForm.jsx` - Agregado campo Número de Legajo
+- `RegisterForm.jsx` - Agregado selector de rol (Alumno/Profesor)
+- `AuthAPI.js` - Nueva función `loginUade`
+- `AuthService.js` - Nueva función `loginUade` y actualización de `register` con `role`
+- `UadeLoginPage.jsx` - Integración con callback onSuccess
+
+---
 
 ### 14/05/2026 — Feature: Remove Register Functionality
 

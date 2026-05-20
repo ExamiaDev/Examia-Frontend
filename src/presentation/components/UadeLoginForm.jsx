@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   Link,
   Paper,
   Typography,
@@ -11,20 +12,33 @@ import {
 import { ArrowBack } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
 import AuthPageWrapper from './AuthPageWrapper';
+import AuthService from '../../application/services/AuthService';
 
-const UadeLoginForm = () => {
+const UadeLoginForm = ({ onSuccess = () => {} }) => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [error] = useState(null);
+  const [form, setForm] = useState({ email: '', legajo: '', password: '' });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Lógica de autenticación UADE pendiente de implementar
+    setError(null);
+    setLoading(true);
+    try {
+      await AuthService.loginUade(form.email, form.legajo, form.password);
+      setForm({ email: '', legajo: '', password: '' });
+      onSuccess();
+    } catch (err) {
+      setError(err.message || 'Error al iniciar sesión con UADE');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const labelSx = {
@@ -94,6 +108,20 @@ const UadeLoginForm = () => {
 
         <form onSubmit={handleSubmit}>
           <Typography variant="caption" sx={labelSx}>
+            Número de Legajo
+          </Typography>
+          <CustomTextField
+            name="legajo"
+            type="text"
+            value={form.legajo}
+            onChange={handleChange}
+            placeholder="Ej: 1234567"
+            autoComplete="off"
+            disabled={loading}
+            sx={{ mb: 2 }}
+          />
+
+          <Typography variant="caption" sx={labelSx}>
             Mail institucional UADE
           </Typography>
           <CustomTextField
@@ -103,6 +131,7 @@ const UadeLoginForm = () => {
             onChange={handleChange}
             placeholder="nombre.apellido@uade.edu.ar"
             autoComplete="email"
+            disabled={loading}
             sx={{ mb: 2 }}
           />
 
@@ -115,6 +144,7 @@ const UadeLoginForm = () => {
             value={form.password}
             onChange={handleChange}
             autoComplete="current-password"
+            disabled={loading}
             sx={{ mb: 3 }}
           />
 
@@ -122,7 +152,7 @@ const UadeLoginForm = () => {
             type="submit"
             fullWidth
             variant="contained"
-            disabled={!form.email || !form.password}
+            disabled={loading || !form.email || !form.legajo || !form.password}
             sx={{
               backgroundColor: '#001f56',
               fontWeight: 600,
@@ -131,13 +161,13 @@ const UadeLoginForm = () => {
               '&:hover': { backgroundColor: '#000d2b' },
             }}
           >
-            Ingresar
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Ingresar'}
           </Button>
         </form>
 
         <Box sx={{ mt: 2.5, p: 2, backgroundColor: '#f5f7ff', borderRadius: 2, border: '1px solid #dce3f5' }}>
           <Typography variant="caption" sx={{ color: '#555', fontSize: '0.8rem', display: 'block', textAlign: 'center' }}>
-            La integración con el sistema de autenticación UADE está pendiente de implementación.
+            Los usuarios UADE están precargados en el sistema. No es necesario registrarse.
           </Typography>
         </Box>
       </Paper>

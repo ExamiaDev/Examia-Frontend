@@ -12,7 +12,11 @@ const UadeLoginPage = () => {
     }
   }, [navigate]);
 
-  return <UadeLoginForm />;
+  const handleLoginSuccess = () => {
+    navigate('/dashboard');
+  };
+
+  return <UadeLoginForm onSuccess={handleLoginSuccess} />;
 };
 
 export default UadeLoginPage;
