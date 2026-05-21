@@ -81,8 +81,9 @@ const Sidebar = ({ user }) => {
             sx={{
               color: '#fff',
               fontWeight: 700,
-              fontSize: '1rem',
+              fontSize: '1.1rem',
               lineHeight: 1.2,
+              fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
             }}
           >
             Examia
@@ -94,6 +95,7 @@ const Sidebar = ({ user }) => {
               fontWeight: 500,
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
+              fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
             }}
           >
             UADE
@@ -129,8 +131,9 @@ const Sidebar = ({ user }) => {
                   primaryTypographyProps={{
                     sx: {
                       color: '#fff',
-                      fontSize: '0.9rem',
+                      fontSize: '0.875rem',
                       fontWeight: active ? 600 : 400,
+                      fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
                     },
                   }}
                 />
@@ -152,15 +155,17 @@ const Sidebar = ({ user }) => {
             sx={{
               color: '#fff',
               fontWeight: 600,
-              fontSize: '0.9rem',
+              fontSize: '0.875rem',
+              fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
             }}
           >
             {user?.nombre} {user?.apellido?.charAt(0)}.
           </Typography>
           <Typography
             sx={{
-              color: '#fff',
+              color: 'rgba(255,255,255,0.7)',
               fontSize: '0.75rem',
+              fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
             }}
           >
             {user?.email}
@@ -181,11 +186,12 @@ const Sidebar = ({ user }) => {
             <LogoutIcon sx={{ color: '#fff', fontSize: 20 }} />
           </ListItemIcon>
           <ListItemText
-            primary="Cerrar sesion"
+            primary="Cerrar sesión"
             primaryTypographyProps={{
               sx: {
                 color: '#fff',
                 fontSize: '0.85rem',
+                fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
               },
             }}
           />

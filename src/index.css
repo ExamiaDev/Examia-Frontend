@@ -1,3 +1,6 @@
+/* Google Fonts - Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 /* Global Styles */
 * {
   margin: 0;
@@ -13,7 +16,7 @@ body,
 }
 
 body {
-  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color: #333;
