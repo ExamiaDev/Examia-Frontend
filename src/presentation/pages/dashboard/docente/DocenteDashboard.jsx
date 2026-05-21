@@ -6,6 +6,7 @@ import { RoleEnum } from '../../../../domain/enums/RoleEnum';
 import Sidebar from './components/Sidebar';
 import DashboardContent from './components/DashboardContent';
 import ExamenesContent from './components/ExamenesContent';
+import CorreccionesContent from './components/CorreccionesContent';
 
 const DocenteDashboard = () => {
   const navigate = useNavigate();
@@ -33,6 +34,10 @@ const DocenteDashboard = () => {
     
     if (path.includes('/examenes')) {
       return <ExamenesContent />;
+    }
+    
+    if (path.includes('/correcciones')) {
+      return <CorreccionesContent />;
     }
     
     // Default: Mis Cursos (dashboard principal)
