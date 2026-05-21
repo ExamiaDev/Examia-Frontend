@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { TextField } from '@mui/material';
 
 const CustomTextField = ({ ...props }) => {
@@ -11,6 +12,14 @@ const CustomTextField = ({ ...props }) => {
       {...props}
     />
   );
+};
+
+CustomTextField.propTypes = {
+  size: PropTypes.oneOf(['small', 'medium']),
+};
+
+CustomTextField.defaultProps = {
+  size: 'small',
 };
 
 export default CustomTextField;
