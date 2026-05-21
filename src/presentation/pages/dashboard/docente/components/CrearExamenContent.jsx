@@ -165,16 +165,24 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
                 border: '1px solid #e0e0e0',
                 borderRadius: 2,
                 overflow: 'hidden',
+                width: '100%',
               }}
             >
               <Box
                 sx={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${columns.length}, 1fr) auto`,
-                  bgcolor: '#f5f7fa',
-                  borderBottom: '1px solid #e0e0e0',
+                  overflowX: 'auto',
+                  width: '100%',
                 }}
               >
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr)) 48px`,
+                    minWidth: 'fit-content',
+                    bgcolor: '#f5f7fa',
+                    borderBottom: '1px solid #e0e0e0',
+                  }}
+                >
                 {columns.map((col, i) => (
                   <Box
                     key={i}
@@ -208,31 +216,41 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
                   </Box>
                 ))}
                 <Box
-                  sx={{
-                    p: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <IconButton
-                    size="small"
-                    onClick={handleAddColumn}
-                    sx={{ color: '#001f56' }}
+                    sx={{
+                      p: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 48,
+                      flexShrink: 0,
+                    }}
                   >
-                    <AddIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
+                  <IconButton
+                      size="small"
+                      onClick={handleAddColumn}
+                      sx={{ color: '#001f56' }}
+                    >
+                      <AddIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
                 </Box>
               </Box>
-              {Array.from({ length: rows }).map((_, rowIndex) => (
-                <Box
-                  key={rowIndex}
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${columns.length}, 1fr) auto`,
-                    borderBottom: rowIndex < rows - 1 ? '1px solid #e0e0e0' : 'none',
-                  }}
-                >
+              <Box
+                sx={{
+                  overflowX: 'auto',
+                  width: '100%',
+                }}
+              >
+                {Array.from({ length: rows }).map((_, rowIndex) => (
+                  <Box
+                    key={rowIndex}
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr)) 48px`,
+                      minWidth: 'fit-content',
+                      borderBottom: rowIndex < rows - 1 ? '1px solid #e0e0e0' : 'none',
+                    }}
+                  >
                   {columns.map((_, colIndex) => (
                     <Box
                       key={colIndex}
@@ -251,19 +269,20 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
                       />
                     </Box>
                   ))}
-                  <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
-                    {rowIndex === rows - 1 && rows > 1 && (
-                      <IconButton
-                        size="small"
-                        onClick={handleRemoveRow}
-                        sx={{ p: 0.25, color: '#999', '&:hover': { color: '#d32f2f' } }}
-                      >
-                        <CloseIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    )}
+                  <Box sx={{ p: 1, display: 'flex', alignItems: 'center', width: 48, flexShrink: 0 }}>
+                      {rowIndex === rows - 1 && rows > 1 && (
+                        <IconButton
+                          size="small"
+                          onClick={handleRemoveRow}
+                          sx={{ p: 0.25, color: '#999', '&:hover': { color: '#d32f2f' } }}
+                        >
+                          <CloseIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      )}
+                    </Box>
                   </Box>
-                </Box>
-              ))}
+                ))}
+              </Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 2, mt: 1.5 }}>
               <Button
