@@ -159,7 +159,7 @@ const Sidebar = ({ user }) => {
           </Typography>
           <Typography
             sx={{
-              color: 'rgba(255,255,255,0.6)',
+              color: '#fff',
               fontSize: '0.75rem',
             }}
           >
@@ -178,13 +178,13 @@ const Sidebar = ({ user }) => {
           }}
         >
           <ListItemIcon sx={{ minWidth: 36 }}>
-            <LogoutIcon sx={{ color: 'rgba(255,255,255,0.8)', fontSize: 20 }} />
+            <LogoutIcon sx={{ color: '#fff', fontSize: 20 }} />
           </ListItemIcon>
           <ListItemText
             primary="Cerrar sesion"
             primaryTypographyProps={{
               sx: {
-                color: 'rgba(255,255,255,0.8)',
+                color: '#fff',
                 fontSize: '0.85rem',
               },
             }}
