@@ -8,8 +8,6 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
-  Link,
-  Paper,
   Typography,
 } from '@mui/material';
 import {
@@ -22,8 +20,9 @@ import {
   VisibilityOff,
 } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
-import AuthPageWrapper from './AuthPageWrapper';
+import FormLayout from './FormLayout';
 import AuthService from '../../application/services/AuthService';
+import { labelSx, backButtonSx } from './formStyles';
 
 const ICON_SIZE = 48;
 
@@ -152,56 +151,24 @@ const ForgotPasswordForm = () => {
 
   const labelSx = { color: '#001f56', fontWeight: 600, fontSize: '0.9rem', display: 'block', mb: 0.8 };
 
-  return (
-    <AuthPageWrapper maxWidth="680px">
-      <Paper
-        elevation={8}
-        sx={{
-          padding: { xs: 2.5, sm: 3 },
-          width: '100%',
-          borderRadius: 3,
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
-        }}
-      >
-        <Link
-          component="button"
-          type="button"
-          onClick={() => navigate('/login')}
-          underline="hover"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            color: '#666',
-            fontSize: '0.85rem',
-            mb: 2,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <ArrowBack sx={{ fontSize: '1rem' }} />
-          Volver al login
-        </Link>
+  const backButton = (
+    <Box
+      component="button"
+      type="button"
+      onClick={() => navigate('/login')}
+      sx={backButtonSx}
+    >
+      <ArrowBack sx={{ fontSize: '1rem' }} />
+      Volver al login
+    </Box>
+  );
 
-        <Typography
-          variant="h5"
-          sx={{
-            textAlign: 'center',
-            fontWeight: 700,
-            mb: 0.5,
-            color: '#001f56',
-            fontSize: { xs: '1.3rem', sm: '1.5rem' },
-          }}
-        >
-          Recuperar contraseña
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ textAlign: 'center', color: '#666', mb: 3, fontSize: '0.9rem' }}
-        >
-          Seguí los pasos para restablecer tu acceso
-        </Typography>
+  return (
+    <FormLayout
+      title="Recuperar contraseña"
+      subtitle="Seguí los pasos para restablecer tu acceso"
+      backButton={backButton}
+    >
 
         <Stepper activeStep={step} />
 
@@ -389,8 +356,7 @@ const ForgotPasswordForm = () => {
             </Button>
           </form>
         )}
-      </Paper>
-    </AuthPageWrapper>
+    </FormLayout>
   );
 };
 
