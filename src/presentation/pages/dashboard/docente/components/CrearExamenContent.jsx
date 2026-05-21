@@ -12,12 +12,17 @@ import {
   StepLabel,
   LinearProgress,
   IconButton,
+  Collapse,
+  Chip,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
@@ -65,6 +70,332 @@ const questionTypes = [
   },
 ];
 
+const puntajeOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Question Card Component
+function QuestionCard({ question, index, onUpdate, onDelete }) {
+  const [expanded, setExpanded] = useState(true);
+  
+  const typeLabel = questionTypes.find(t => t.id === question.type)?.title || question.type;
+  
+  const handleEnunciadoChange = (e) => {
+    onUpdate({ ...question, enunciado: e.target.value });
+  };
+  
+  const handlePuntajeChange = (e) => {
+    onUpdate({ ...question, puntaje: e.target.value });
+  };
+
+  // Render content based on question type
+  const renderQuestionContent = () => {
+    switch (question.type) {
+      case 'texto-libre':
+        return (
+          <Box>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Enunciado de la pregunta..."
+              value={question.enunciado || ''}
+              onChange={handleEnunciadoChange}
+              sx={{
+                mb: 1,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: '#666' }}>
+              El alumno responderá usando el editor de texto libre.
+            </Typography>
+          </Box>
+        );
+      
+      case 'tabla':
+        return (
+          <Box>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Enunciado de la pregunta..."
+              value={question.enunciado || ''}
+              onChange={handleEnunciadoChange}
+              sx={{
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+            <Box
+              sx={{
+                border: '1px solid #e0e0e0',
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  bgcolor: '#f5f7fa',
+                  borderBottom: '1px solid #e0e0e0',
+                }}
+              >
+                {['Columna 1', 'Columna 2', 'Columna 3', 'Columna 4'].map((col, i) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      p: 1.5,
+                      borderRight: i < 3 ? '1px solid #e0e0e0' : 'none',
+                    }}
+                  >
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder={col}
+                      variant="standard"
+                      InputProps={{ disableUnderline: true }}
+                      sx={{ '& input': { fontWeight: 500, fontSize: '0.875rem' } }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+              {[1, 2, 3].map((row) => (
+                <Box
+                  key={row}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    borderBottom: row < 3 ? '1px solid #e0e0e0' : 'none',
+                  }}
+                >
+                  {[1, 2, 3, 4].map((col) => (
+                    <Box
+                      key={col}
+                      sx={{
+                        p: 1.5,
+                        borderRight: col < 4 ? '1px solid #e0e0e0' : 'none',
+                      }}
+                    >
+                      <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="..."
+                        variant="standard"
+                        InputProps={{ disableUnderline: true }}
+                        sx={{ '& input': { fontSize: '0.875rem' } }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              ))}
+            </Box>
+            <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
+              El alumno completará la matriz de casos.
+            </Typography>
+          </Box>
+        );
+      
+      case 'arbol-decision':
+        return (
+          <Box>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Enunciado de la pregunta..."
+              value={question.enunciado || ''}
+              onChange={handleEnunciadoChange}
+              sx={{
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+            <Box
+              sx={{
+                border: '1px dashed #ccc',
+                borderRadius: 2,
+                p: 4,
+                textAlign: 'center',
+                bgcolor: '#fafafa',
+              }}
+            >
+              <AccountTreeOutlinedIcon sx={{ fontSize: 48, color: '#999', mb: 1 }} />
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                Editor de árbol de decisión
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#999' }}>
+                El alumno construirá un diagrama lógico
+              </Typography>
+            </Box>
+          </Box>
+        );
+      
+      case 'multiple-choice':
+        return (
+          <Box>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Enunciado de la pregunta..."
+              value={question.enunciado || ''}
+              onChange={handleEnunciadoChange}
+              sx={{
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {(question.opciones || ['', '', '', '']).map((opcion, i) => (
+                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      border: '2px solid #001f56',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: '#001f56',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {String.fromCharCode(65 + i)}
+                  </Box>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder={`Opción ${String.fromCharCode(65 + i)}`}
+                    value={opcion}
+                    onChange={(e) => {
+                      const newOpciones = [...(question.opciones || ['', '', '', ''])];
+                      newOpciones[i] = e.target.value;
+                      onUpdate({ ...question, opciones: newOpciones });
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                </Box>
+              ))}
+            </Box>
+            <Typography variant="caption" sx={{ color: '#666', mt: 1.5, display: 'block' }}>
+              El alumno seleccionará una opción correcta.
+            </Typography>
+          </Box>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        border: '1px solid #e0e0e0',
+        borderRadius: 2,
+        mb: 2,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          p: 2,
+          bgcolor: '#fff',
+          borderBottom: expanded ? '1px solid #e0e0e0' : 'none',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <IconButton
+            size="small"
+            onClick={() => setExpanded(!expanded)}
+            sx={{ color: '#666' }}
+          >
+            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </IconButton>
+          <Chip
+            label={`Pregunta ${index + 1}`}
+            size="small"
+            sx={{
+              bgcolor: '#f0f4f8',
+              color: '#333',
+              fontWeight: 500,
+              fontSize: '0.8rem',
+            }}
+          />
+          <Chip
+            label={typeLabel}
+            size="small"
+            sx={{
+              bgcolor: '#001f56',
+              color: '#fff',
+              fontWeight: 500,
+              fontSize: '0.75rem',
+            }}
+          />
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" sx={{ color: '#666' }}>
+              Puntaje
+            </Typography>
+            <Select
+              value={question.puntaje || 1}
+              onChange={handlePuntajeChange}
+              size="small"
+              sx={{
+                minWidth: 70,
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderRadius: 2,
+                },
+              }}
+            >
+              {puntajeOptions.map((p) => (
+                <MenuItem key={p} value={p}>
+                  {p}
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+          <IconButton
+            size="small"
+            onClick={onDelete}
+            sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}
+          >
+            <DeleteOutlineIcon />
+          </IconButton>
+        </Box>
+      </Box>
+      
+      {/* Content */}
+      <Collapse in={expanded}>
+        <Box sx={{ p: 2 }}>
+          {renderQuestionContent()}
+        </Box>
+      </Collapse>
+    </Paper>
+  );
+}
+
 export default function CrearExamenContent() {
   const [activeStep] = useState(0);
   const [selectedTab, setSelectedTab] = useState(0);
@@ -74,21 +405,19 @@ export default function CrearExamenContent() {
     turno: '',
     periodo: '2026 - 1°c',
   });
-  const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', preguntas: 0 }]);
+  const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', preguntas: [] }]);
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
 
   const handleDeleteTema = (temaId, event) => {
     event.stopPropagation();
     if (temas.length > 1) {
       const newTemas = temas.filter(t => t.id !== temaId);
-      // Renumerar los temas
       const renumberedTemas = newTemas.map((tema, index) => ({
         ...tema,
         id: index + 1,
         nombre: `Tema ${index + 1}`,
       }));
       setTemas(renumberedTemas);
-      // Ajustar el tab seleccionado si es necesario
       if (selectedTab >= renumberedTemas.length) {
         setSelectedTab(renumberedTemas.length - 1);
       }
@@ -97,7 +426,7 @@ export default function CrearExamenContent() {
 
   const handleAddTema = () => {
     const newId = temas.length + 1;
-    setTemas([...temas, { id: newId, nombre: `Tema ${newId}`, preguntas: 0 }]);
+    setTemas([...temas, { id: newId, nombre: `Tema ${newId}`, preguntas: [] }]);
     setSelectedTab(temas.length);
   };
 
@@ -110,13 +439,63 @@ export default function CrearExamenContent() {
   };
 
   const handleSelectQuestionType = (typeId) => {
-    // TODO: Handle question type selection
-    console.log('Selected question type:', typeId);
-    setShowQuestionSelector(false);
+    const newQuestion = {
+      id: Date.now(),
+      type: typeId,
+      enunciado: '',
+      puntaje: 1,
+      ...(typeId === 'multiple-choice' && { opciones: ['', '', '', ''] }),
+    };
+    
+    const updatedTemas = temas.map((tema, index) => {
+      if (index === selectedTab) {
+        return {
+          ...tema,
+          preguntas: [...tema.preguntas, newQuestion],
+        };
+      }
+      return tema;
+    });
+    
+    setTemas(updatedTemas);
+    // Keep the selector open to allow adding more questions
   };
 
-  const puntajeTotal = 0;
+  const handleUpdateQuestion = (questionId, updatedQuestion) => {
+    const updatedTemas = temas.map((tema, index) => {
+      if (index === selectedTab) {
+        return {
+          ...tema,
+          preguntas: tema.preguntas.map(q => 
+            q.id === questionId ? updatedQuestion : q
+          ),
+        };
+      }
+      return tema;
+    });
+    setTemas(updatedTemas);
+  };
+
+  const handleDeleteQuestion = (questionId) => {
+    const updatedTemas = temas.map((tema, index) => {
+      if (index === selectedTab) {
+        return {
+          ...tema,
+          preguntas: tema.preguntas.filter(q => q.id !== questionId),
+        };
+      }
+      return tema;
+    });
+    setTemas(updatedTemas);
+  };
+
+  // Calculate total points
+  const puntajeTotal = temas.reduce((total, tema) => {
+    return total + tema.preguntas.reduce((sum, q) => sum + (q.puntaje || 0), 0);
+  }, 0);
   const puntajeMax = 10;
+
+  const currentTema = temas[selectedTab];
 
   return (
     <Box
@@ -361,13 +740,13 @@ export default function CrearExamenContent() {
             </Box>
             <LinearProgress
               variant="determinate"
-              value={(puntajeTotal / puntajeMax) * 100}
+              value={Math.min((puntajeTotal / puntajeMax) * 100, 100)}
               sx={{
                 height: 8,
                 borderRadius: 4,
                 bgcolor: '#e0e0e0',
                 '& .MuiLinearProgress-bar': {
-                  bgcolor: '#001f56',
+                  bgcolor: puntajeTotal > puntajeMax ? '#d32f2f' : '#001f56',
                   borderRadius: 4,
                 },
               }}
@@ -381,8 +760,8 @@ export default function CrearExamenContent() {
           </Box>
 
           {/* Temas Tabs */}
-          <Box sx={{ px: 3, pt: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ px: 3, pt: 2, borderBottom: '1px solid #e0e0e0' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pb: 2 }}>
               {temas.map((tema, index) => (
                 <Box
                   key={tema.id}
@@ -405,7 +784,7 @@ export default function CrearExamenContent() {
                     },
                   }}
                 >
-                  <span>{tema.nombre} ({tema.preguntas})</span>
+                  <span>{tema.nombre} ({tema.preguntas.length})</span>
                   {temas.length > 1 && (
                     <IconButton
                       size="small"
@@ -442,112 +821,127 @@ export default function CrearExamenContent() {
             </Box>
           </Box>
 
-          {/* Agregar Pregunta / Question Type Selector */}
-          {!showQuestionSelector ? (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                py: 8,
-              }}
-            >
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleOpenQuestionSelector}
+          {/* Questions List */}
+          <Box sx={{ p: 3 }}>
+            {currentTema?.preguntas.map((question, index) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                index={index}
+                onUpdate={(updated) => handleUpdateQuestion(question.id, updated)}
+                onDelete={() => handleDeleteQuestion(question.id)}
+              />
+            ))}
+
+            {/* Question Type Selector */}
+            {showQuestionSelector ? (
+              <Paper
+                elevation={0}
                 sx={{
-                  bgcolor: '#001f56',
-                  textTransform: 'none',
-                  fontWeight: 500,
-                  px: 4,
-                  py: 1.5,
+                  border: '1px dashed #ccc',
                   borderRadius: 2,
-                  '&:hover': {
-                    bgcolor: '#002a75',
-                  },
+                  p: 3,
                 }}
               >
-                Agregar pregunta
-              </Button>
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                p: 3,
-                borderTop: '1px dashed #ccc',
-              }}
-            >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 3,
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: '#333' }}
+                  >
+                    Elegí el tipo de pregunta
+                  </Typography>
+                  <Button
+                    onClick={handleCloseQuestionSelector}
+                    sx={{
+                      textTransform: 'none',
+                      color: '#001f56',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </Box>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: 2,
+                  }}
+                >
+                  {questionTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <Paper
+                        key={type.id}
+                        onClick={() => handleSelectQuestionType(type.id)}
+                        elevation={0}
+                        sx={{
+                          p: 3,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 2,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            borderColor: '#001f56',
+                            bgcolor: 'rgba(0, 31, 86, 0.02)',
+                          },
+                        }}
+                      >
+                        <Icon sx={{ fontSize: 28, color: '#001f56', mb: 1.5 }} />
+                        <Typography
+                          variant="body1"
+                          sx={{ fontWeight: 600, color: '#333', mb: 0.5 }}
+                        >
+                          {type.title}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: '#666', fontSize: '0.8rem' }}
+                        >
+                          {type.description}
+                        </Typography>
+                      </Paper>
+                    );
+                  })}
+                </Box>
+              </Paper>
+            ) : (
               <Box
                 sx={{
                   display: 'flex',
-                  justifyContent: 'space-between',
+                  justifyContent: 'center',
                   alignItems: 'center',
-                  mb: 3,
+                  py: currentTema?.preguntas.length > 0 ? 4 : 8,
                 }}
               >
-                <Typography
-                  variant="body1"
-                  sx={{ fontWeight: 500, color: '#333' }}
-                >
-                  Elegí el tipo de pregunta
-                </Typography>
                 <Button
-                  onClick={handleCloseQuestionSelector}
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleOpenQuestionSelector}
                   sx={{
+                    bgcolor: '#001f56',
                     textTransform: 'none',
-                    color: '#001f56',
                     fontWeight: 500,
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: 2,
+                    '&:hover': {
+                      bgcolor: '#002a75',
+                    },
                   }}
                 >
-                  Cancelar
+                  Agregar pregunta
                 </Button>
               </Box>
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: 2,
-                }}
-              >
-                {questionTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <Paper
-                      key={type.id}
-                      onClick={() => handleSelectQuestionType(type.id)}
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        border: '1px solid #e0e0e0',
-                        borderRadius: 2,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          borderColor: '#001f56',
-                          bgcolor: 'rgba(0, 31, 86, 0.02)',
-                        },
-                      }}
-                    >
-                      <Icon sx={{ fontSize: 28, color: '#001f56', mb: 1.5 }} />
-                      <Typography
-                        variant="body1"
-                        sx={{ fontWeight: 600, color: '#333', mb: 0.5 }}
-                      >
-                        {type.title}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: '#666', fontSize: '0.8rem' }}
-                      >
-                        {type.description}
-                      </Typography>
-                    </Paper>
-                  );
-                })}
-              </Box>
-            </Box>
-          )}
+            )}
+          </Box>
         </Paper>
       </Box>
     </Box>

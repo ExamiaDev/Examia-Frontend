@@ -1,10 +1,17 @@
 import { Box, Typography, Button } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import QuickActions from './QuickActions';
 import ActiveCourses from './ActiveCourses';
 import RecentExams from './RecentExams';
 
 const DashboardContent = () => {
+  const navigate = useNavigate();
+
+  const handleCrearExamen = () => {
+    navigate('/docente/examenes/crear');
+  };
+
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
@@ -43,6 +50,7 @@ const DashboardContent = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
+          onClick={handleCrearExamen}
           sx={{
             backgroundColor: '#001f56',
             textTransform: 'none',
