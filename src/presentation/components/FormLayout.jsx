@@ -1,4 +1,4 @@
-import { Box, Paper, Typography } from '@mui/material';
+import { Paper, Typography } from '@mui/material';
 import AuthPageWrapper from './AuthPageWrapper';
 
 /**
@@ -54,4 +54,3 @@ const FormLayout = ({
 );
 
 export default FormLayout;
-
