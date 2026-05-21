@@ -3,24 +3,24 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
+  Box,
   Button,
   Checkbox,
   CircularProgress,
   FormControlLabel,
   IconButton,
   InputAdornment,
-  Link,
-  Paper,
-  Typography,
   RadioGroup,
   Radio,
   FormControl,
   FormLabel,
+  Typography,
 } from '@mui/material';
 import { ArrowBack, Visibility, VisibilityOff } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
-import AuthPageWrapper from './AuthPageWrapper';
+import FormLayout from './FormLayout';
 import AuthService from '../../application/services/AuthService';
+import { labelSx, backButtonSx, primaryButtonSx } from './formStyles';
 
 const INITIAL_FORM = {
   nombre: '',
@@ -75,67 +75,32 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
     }
   };
 
-  const labelSx = { color: '#001f56', fontWeight: 600, fontSize: '0.9rem', display: 'block', mb: 0.8 };
+  const backButton = (
+    <Box
+      component="button"
+      type="button"
+      onClick={() => navigate('/login')}
+      sx={backButtonSx}
+    >
+      <ArrowBack sx={{ fontSize: '1rem' }} />
+      Volver al login
+    </Box>
+  );
 
   return (
-    <AuthPageWrapper>
-      <Paper
-        elevation={8}
-        sx={{
-          padding: { xs: 2.5, sm: 3 },
-          width: '100%',
-          borderRadius: 3,
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
-        }}
-      >
-        <Link
-          component="button"
-          type="button"
-          onClick={() => navigate('/login')}
-          underline="hover"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            color: '#666',
-            fontSize: '0.85rem',
-            mb: 2,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <ArrowBack sx={{ fontSize: '1rem' }} />
-          Volver al login
-        </Link>
+    <FormLayout
+      title="Crear cuenta"
+      subtitle="Regístrate para acceder a Examia"
+      backButton={backButton}
+    >
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-        <Typography
-          variant="h5"
-          sx={{
-            textAlign: 'center',
-            fontWeight: 700,
-            mb: 0.5,
-            color: '#001f56',
-            fontSize: { xs: '1.4rem', sm: '1.6rem' },
-          }}
-        >
-          Crear cuenta
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ textAlign: 'center', color: '#666', mb: 2.5, fontSize: '0.9rem' }}
-        >
-          Registrate para acceder a Examia
-        </Typography>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <Typography variant="caption" sx={labelSx}>Nombre</Typography>
+      <form onSubmit={handleSubmit}>
+        <Typography variant="caption" sx={labelSx}>Nombre</Typography>
           <CustomTextField
             name="nombre"
             value={form.nombre}
@@ -321,18 +286,16 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
 
         <Typography variant="body2" sx={{ textAlign: 'center', color: '#555' }}>
           ¿Ya tenés cuenta?{' '}
-          <Link
+          <Box
             component="button"
             type="button"
             onClick={() => navigate('/login')}
-            underline="hover"
             sx={{ color: '#2c5cc5', fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none' }}
           >
             Iniciar sesión
-          </Link>
+          </Box>
         </Typography>
-      </Paper>
-    </AuthPageWrapper>
+    </FormLayout>
   );
 };
 
