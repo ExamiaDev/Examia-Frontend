@@ -113,6 +113,37 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
         );
       
       case 'tabla':
+        const columns = question.columnas || ['Columna 1', 'Columna 2', 'Columna 3'];
+        const rows = question.filas || 3;
+        
+        const handleAddColumn = () => {
+          const newColumns = [...columns, `Columna ${columns.length + 1}`];
+          onUpdate({ ...question, columnas: newColumns });
+        };
+        
+        const handleAddRow = () => {
+          onUpdate({ ...question, filas: rows + 1 });
+        };
+        
+        const handleUpdateColumn = (colIndex, value) => {
+          const newColumns = [...columns];
+          newColumns[colIndex] = value;
+          onUpdate({ ...question, columnas: newColumns });
+        };
+        
+        const handleRemoveColumn = (colIndex) => {
+          if (columns.length > 2) {
+            const newColumns = columns.filter((_, i) => i !== colIndex);
+            onUpdate({ ...question, columnas: newColumns });
+          }
+        };
+        
+        const handleRemoveRow = () => {
+          if (rows > 1) {
+            onUpdate({ ...question, filas: rows - 1 });
+          }
+        };
+        
         return (
           <Box>
             <TextField
@@ -139,45 +170,75 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
               <Box
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gridTemplateColumns: `repeat(${columns.length}, 1fr) auto`,
                   bgcolor: '#f5f7fa',
                   borderBottom: '1px solid #e0e0e0',
                 }}
               >
-                {['Columna 1', 'Columna 2', 'Columna 3', 'Columna 4'].map((col, i) => (
+                {columns.map((col, i) => (
                   <Box
                     key={i}
                     sx={{
                       p: 1.5,
-                      borderRight: i < 3 ? '1px solid #e0e0e0' : 'none',
+                      borderRight: '1px solid #e0e0e0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
                     }}
                   >
                     <TextField
                       fullWidth
                       size="small"
-                      placeholder={col}
+                      placeholder={`Columna ${i + 1}`}
+                      value={col}
+                      onChange={(e) => handleUpdateColumn(i, e.target.value)}
                       variant="standard"
                       InputProps={{ disableUnderline: true }}
                       sx={{ '& input': { fontWeight: 500, fontSize: '0.875rem' } }}
                     />
+                    {columns.length > 2 && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveColumn(i)}
+                        sx={{ p: 0.25, color: '#999', '&:hover': { color: '#d32f2f' } }}
+                      >
+                        <CloseIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
                   </Box>
                 ))}
-              </Box>
-              {[1, 2, 3].map((row) => (
                 <Box
-                  key={row}
                   sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    borderBottom: row < 3 ? '1px solid #e0e0e0' : 'none',
+                    p: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  {[1, 2, 3, 4].map((col) => (
+                  <IconButton
+                    size="small"
+                    onClick={handleAddColumn}
+                    sx={{ color: '#001f56' }}
+                  >
+                    <AddIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Box>
+              </Box>
+              {Array.from({ length: rows }).map((_, rowIndex) => (
+                <Box
+                  key={rowIndex}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${columns.length}, 1fr) auto`,
+                    borderBottom: rowIndex < rows - 1 ? '1px solid #e0e0e0' : 'none',
+                  }}
+                >
+                  {columns.map((_, colIndex) => (
                     <Box
-                      key={col}
+                      key={colIndex}
                       sx={{
                         p: 1.5,
-                        borderRight: col < 4 ? '1px solid #e0e0e0' : 'none',
+                        borderRight: '1px solid #e0e0e0',
                       }}
                     >
                       <TextField
@@ -190,8 +251,29 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
                       />
                     </Box>
                   ))}
+                  <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+                    {rowIndex === rows - 1 && rows > 1 && (
+                      <IconButton
+                        size="small"
+                        onClick={handleRemoveRow}
+                        sx={{ p: 0.25, color: '#999', '&:hover': { color: '#d32f2f' } }}
+                      >
+                        <CloseIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                  </Box>
                 </Box>
               ))}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, mt: 1.5 }}>
+              <Button
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={handleAddRow}
+                sx={{ textTransform: 'none', color: '#001f56' }}
+              >
+                Agregar fila
+              </Button>
             </Box>
             <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
               El alumno completará la matriz de casos.
@@ -237,6 +319,26 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
         );
       
       case 'multiple-choice':
+        const opciones = question.opciones || ['', '', '', ''];
+        
+        const handleAddOption = () => {
+          const newOpciones = [...opciones, ''];
+          onUpdate({ ...question, opciones: newOpciones });
+        };
+        
+        const handleRemoveOption = (optIndex) => {
+          if (opciones.length > 2) {
+            const newOpciones = opciones.filter((_, i) => i !== optIndex);
+            onUpdate({ ...question, opciones: newOpciones });
+          }
+        };
+        
+        const handleUpdateOption = (optIndex, value) => {
+          const newOpciones = [...opciones];
+          newOpciones[optIndex] = value;
+          onUpdate({ ...question, opciones: newOpciones });
+        };
+        
         return (
           <Box>
             <TextField
@@ -254,7 +356,7 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
               }}
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {(question.opciones || ['', '', '', '']).map((opcion, i) => (
+              {opciones.map((opcion, i) => (
                 <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Box
                     sx={{
@@ -278,21 +380,34 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
                     size="small"
                     placeholder={`Opción ${String.fromCharCode(65 + i)}`}
                     value={opcion}
-                    onChange={(e) => {
-                      const newOpciones = [...(question.opciones || ['', '', '', ''])];
-                      newOpciones[i] = e.target.value;
-                      onUpdate({ ...question, opciones: newOpciones });
-                    }}
+                    onChange={(e) => handleUpdateOption(i, e.target.value)}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
                       },
                     }}
                   />
+                  {opciones.length > 2 && (
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveOption(i)}
+                      sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}
+                    >
+                      <CloseIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  )}
                 </Box>
               ))}
             </Box>
-            <Typography variant="caption" sx={{ color: '#666', mt: 1.5, display: 'block' }}>
+            <Button
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={handleAddOption}
+              sx={{ textTransform: 'none', color: '#001f56', mt: 1.5 }}
+            >
+              Agregar opción
+            </Button>
+            <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
               El alumno seleccionará una opción correcta.
             </Typography>
           </Box>
