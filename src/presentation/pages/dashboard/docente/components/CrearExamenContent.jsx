@@ -20,7 +20,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CloseIcon from '@mui/icons-material/Close';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
@@ -381,7 +381,7 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
             onClick={onDelete}
             sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}
           >
-            <DeleteOutlineIcon />
+            <DeleteIcon />
           </IconButton>
         </Box>
       </Box>
