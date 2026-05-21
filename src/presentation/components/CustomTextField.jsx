@@ -1,6 +1,8 @@
 import { TextField } from '@mui/material';
 
-const CustomTextField = ({ size = 'small', ...props }) => {
+const CustomTextField = ({ ...props }) => {
+  const { size = 'small' } = props;
+
   return (
     <TextField
       fullWidth

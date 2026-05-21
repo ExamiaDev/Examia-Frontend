@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import Logo from './Logo';
 
-const AuthPageWrapper = ({ children, maxWidth = '600px' }) => (
+const AuthPageWrapper = ({ children, maxWidth = '600px' } = {}) => (
   <Box
     sx={{
       display: 'flex',
