@@ -1,4 +1,4 @@
-# 🌳 Flujo de Branching - Examia Frontend
+#  Flujo de Branching - Examia Frontend
 
 ## Diagrama General
 
@@ -34,7 +34,7 @@
 
 ---
 
-## 📊 Ciclo de Vida de una Feature
+##  Ciclo de Vida de una Feature
 
 ### Paso 1: Crear Feature Branch
 
@@ -97,7 +97,7 @@ feature/mi-funcionalidad ──┐
 
 ---
 
-## 🔄 Ciclo de Vida de una Release
+##  Ciclo de Vida de una Release
 
 ### Paso 1: Crear Release Branch
 
@@ -158,7 +158,7 @@ main (después del merge)
 
 ---
 
-## 🚀 Flujo Completo en Acción
+##  Flujo Completo en Acción
 
 ```
 Día 1:
@@ -209,7 +209,7 @@ Día 7:
 
 ---
 
-## 📋 Protecciones de Ramas
+##  Protecciones de Ramas
 
 ### **main** (Producción)
 ```
@@ -238,7 +238,7 @@ Día 7:
 
 ---
 
-## 🤖 GitHub Actions Workflows
+##  GitHub Actions Workflows
 
 ### 1. `validate-pr.yml`
 **Cuándo corre:** En cada PR a develop o main
@@ -286,7 +286,7 @@ npm version major    # 1.0.0 → 2.0.0
 
 ---
 
-## 🎯 Beneficios de Este Flujo
+##  Beneficios de Este Flujo
 
 ✅ **Estabilidad**: main siempre listo para producción
 ✅ **Transparencia**: Todos los cambios en PRs
@@ -297,7 +297,7 @@ npm version major    # 1.0.0 → 2.0.0
 
 ---
 
-## 📚 Referencias
+##  Referencias
 
 - [Git Flow](https://nvie.com/posts/a-successful-git-branching-model/)
 - [GitHub Flow](https://guides.github.com/introduction/flow/)
@@ -306,5 +306,4 @@ npm version major    # 1.0.0 → 2.0.0
 
 ---
 
-**¡Este flujo asegura que Examia se desarrolle de forma organizada y profesional!** 🎓
-
+**¡Este flujo asegura que Examia se desarrolle de forma organizada y profesional!** 

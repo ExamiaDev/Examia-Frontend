@@ -1,8 +1,8 @@
-# Examia Frontend 🎓
+# Examia Frontend 
 
 Frontend profesional para Examia - Una plataforma integral de evaluación educativa que ayuda a estudiantes y educadores a **evaluar, entender y mejorar**.
 
-## 📋 Tabla de Contenidos
+##  Tabla de Contenidos
 
 - [Características](#características)
 - [Tecnologías](#tecnologías)
@@ -22,29 +22,27 @@ Frontend profesional para Examia - Una plataforma integral de evaluación educat
 
 ## ✨ Características
 
-### Autenticación y Autorización 🔐
-- **Login para usuarios externos**: Ingreso con email y contraseña para usuarios no pertenecientes a UADE
-- **Login UADE**: Acceso con credenciales institucionales (email, legajo y contraseña) para usuarios precargados
-- **Registro de usuarios externos**: Permite registrar nuevos usuarios con selección de rol (Alumno/Profesor)
+### Autenticación y Autorización 
+- **Login seguro**: Ingresa con email y contraseña proporcionadas por administradores
 - **Sesiones persistentes**: Mantén la sesión activa entre recargas
 - **Manejo robusto de errores**: Manejo de credenciales inválidas y validaciones
-- **Roles diferenciados**: Soporte para roles ALUMNO y PROFESOR
+- **Gestión de usuarios en BD**: Los usuarios son creados directamente en la base de datos
 
-### Interfaz de Usuario 🎨
+### Interfaz de Usuario 
 - **Diseño responsivo**: Optimizado para desktop, tablet y móvil
 - **Material-UI components**: Componentes profesionales y accesibles
 - **Tema personalizado**: Colores y tipografía coherentes
 - **Contraseña oculta**: Alternancia segura de visibilidad de contraseña
 - **Transiciones fluidas**: Animaciones suaves entre estados
 
-### Navegación 🧭
+### Navegación 
 - **Router protegido**: Redirección automática basada en autenticación
 - **Rutas lógicas**: Estructura clara de navegación (`/login`, `/dashboard`)
 - **Persistencia de sesión**: Sesión automática al cargar la página
 
 ---
 
-## 🛠 Tecnologías
+##  Tecnologías
 
 ### Frontend
 - **React 19.x** - Librería UI moderno y reactivo
@@ -64,7 +62,7 @@ Frontend profesional para Examia - Una plataforma integral de evaluación educat
 
 ---
 
-## 📦 Requisitos Previos
+##  Requisitos Previos
 
 Asegúrate de tener instalado:
 
@@ -74,7 +72,7 @@ Asegúrate de tener instalado:
 
 ---
 
-## 🚀 Instalación
+##  Instalación
 
 ### 1. Clonar el repositorio
 
@@ -115,7 +113,7 @@ VITE_API_URL=http://localhost:8080/api
 
 ---
 
-## 💻 Uso
+##  Uso
 
 ### Desarrollo
 
@@ -155,7 +153,7 @@ npm run lint
 
 ---
 
-## 📁 Estructura del Proyecto
+##  Estructura del Proyecto
 
 Seguimos una **arquitectura clean** con separación clara de responsabilidades:
 
@@ -205,7 +203,7 @@ src/
 
 ---
 
-## 🏗 Arquitectura Clean
+##  Arquitectura Clean
 
 El proyecto sigue los principios de **Clean Architecture**:
 
@@ -245,7 +243,7 @@ El proyecto sigue los principios de **Clean Architecture**:
 
 ---
 
-## 🧩 Componentes
+##  Componentes
 
 ### AuthForm
 Componente principal que maneja el login de usuarios.
@@ -275,88 +273,45 @@ Página protegida que muestra información del usuario autenticado.
 
 ---
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 El frontend consume los siguientes endpoints del backend:
 
 ### Autenticación
 
-#### Login (Usuarios externos)
+#### Login
 ```
 POST /api/auth/login
 Content-Type: application/json
 
 Request:
 {
-  "email": "usuario@email.com",
-  "password": "contraseña123"
+  "username": "string",
+  "password": "string"
 }
 
 Response (200 OK):
 {
   "token": "jwt_token",
-  "email": "usuario@email.com",
-  "nombre": "Juan",
-  "apellido": "Pérez",
-  "role": "PROFESOR",
-  "message": "Inicio de sesión exitoso"
-}
-```
-
-#### Login UADE (Usuarios institucionales)
-```
-POST /api/auth/login-uade
-Content-Type: application/json
-
-Request:
-{
-  "legajo": "1234567",
-  "email": "nombre.apellido@uade.edu.ar",
-  "password": "contraseñaUADE"
+  "user": {
+    "id": "string",
+    "username": "string",
+    "email": "string",
+    "createdAt": "ISO8601",
+    "updatedAt": "ISO8601"
+  }
 }
 
-Response (200 OK):
+Response (401 Unauthorized):
 {
-  "token": "jwt_token",
-  "email": "nombre.apellido@uade.edu.ar",
-  "nombre": "Juan",
-  "apellido": "Pérez",
-  "role": "ALUMNO",
-  "message": "Inicio de sesión exitoso"
-}
-```
-
-#### Registro (Usuarios externos)
-```
-POST /api/auth/register
-Content-Type: application/json
-
-Request:
-{
-  "nombre": "Juan",
-  "apellido": "Pérez",
-  "username": "juanperez",
-  "email": "juan@email.com",
-  "recoveryEmail": "juan.recovery@gmail.com",
-  "password": "miPassword123",
-  "role": "ALUMNO"  // o "PROFESOR"
-}
-
-Response (201 Created):
-{
-  "token": "jwt_token",
-  "email": "juan@email.com",
-  "nombre": "Juan",
-  "apellido": "Pérez",
-  "role": "ALUMNO",
-  "message": "Registro exitoso"
+  "message": "Invalid username or password"
 }
 ```
 
 
 ---
 
-## 🛠 Desarrollo
+##  Desarrollo
 
 ### Flujo de Desarrollo
 
@@ -418,7 +373,7 @@ localStorage.clear()
 
 ---
 
-## 📦 Build y Despliegue
+##  Build y Despliegue
 
 ### Build Optimizado
 
@@ -482,7 +437,7 @@ npm run deploy
 
 ---
 
-## 🧪 Testing (Próximamente)
+##  Testing (Próximamente)
 
 Se añadirán tests con:
 - **Jest** - Test runner
@@ -497,7 +452,7 @@ npm run test:coverage
 
 ---
 
-## 🚨 Manejo de Errores
+##  Manejo de Errores
 
 ### Errores Comunes
 
@@ -518,7 +473,7 @@ npm run test:coverage
 
 ---
 
-## 📚 Recursos
+##  Recursos
 
 - [React Documentation](https://react.dev)
 - [Material-UI Documentation](https://mui.com)
@@ -529,27 +484,27 @@ npm run test:coverage
 
 ---
 
-## 📄 Licencia
+##  Licencia
 
 Este proyecto es parte de Examia y está bajo licencia MIT.
 
 ---
 
-## 👥 Contribuidores
+##  Contribuidores
 
 - **Tu Nombre** - Desarrollo inicial
 
 ---
 
-## 📧 Contacto
+##  Contacto
 
 Para preguntas o sugerencias:
-- 📧 Email: info@examia.com
-- 🐙 GitHub Issues: [Crear issue](https://github.com/ExamiaDev/Examia-Frontend/issues)
+-  Email: info@examia.com
+-  GitHub Issues: [Crear issue](https://github.com/ExamiaDev/Examia-Frontend/issues)
 
 ---
 
-## 🗺 Roadmap
+##  Roadmap
 
 ### v0.2.0 (Próximo)
 - [ ] Autenticación con Google/GitHub
@@ -571,36 +526,13 @@ Para preguntas o sugerencias:
 
 ---
 
-**¡Gracias por usar Examia! 🎓**
+**¡Gracias por usar Examia! **
 
 **Evalúa. Entiende. Mejora.**
 
 ---
 
 ## Historial de Cambios
-
-### 20/05/2026 — Feature: New Register Logic
-
-#### Cambios principales
-- **Login externo actualizado**: El formulario de login para usuarios externos ahora usa campo "Email" genérico en lugar de "Mail institucional UADE"
-- **Login UADE mejorado**: Agregado campo "Número de Legajo" para autenticación institucional
-- **Registro con selección de rol**: Los usuarios externos pueden elegir si son ALUMNO o PROFESOR al registrarse
-- **Usuarios UADE precargados**: Los usuarios de UADE no necesitan registrarse, están precargados en el sistema
-
-#### Nuevos endpoints integrados
-- `POST /api/auth/login` - Login para usuarios externos
-- `POST /api/auth/login-uade` - Login para usuarios UADE (legajo, email, password)
-- `POST /api/auth/register` - Registro con campo `role` (ALUMNO/PROFESOR)
-
-#### Archivos modificados
-- `AuthForm.jsx` - Campo email genérico para usuarios externos
-- `UadeLoginForm.jsx` - Agregado campo Número de Legajo
-- `RegisterForm.jsx` - Agregado selector de rol (Alumno/Profesor)
-- `AuthAPI.js` - Nueva función `loginUade`
-- `AuthService.js` - Nueva función `loginUade` y actualización de `register` con `role`
-- `UadeLoginPage.jsx` - Integración con callback onSuccess
-
----
 
 ### 14/05/2026 — Feature: Remove Register Functionality
 
