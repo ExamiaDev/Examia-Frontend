@@ -339,21 +339,15 @@ const ForgotPasswordForm = () => {
               }}
               sx={{ mb: 3 }}
             />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              disabled={loading || !password || !confirmPassword}
-              sx={{
-                backgroundColor: '#001f56',
-                fontWeight: 600,
-                padding: '12px',
-                fontSize: '1rem',
-                '&:hover': { backgroundColor: '#000d2b' },
-              }}
-            >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Restablecer contraseña'}
-            </Button>
+             <Button
+               type="submit"
+               fullWidth
+               variant="contained"
+               disabled={loading || !password || !confirmPassword}
+               sx={primaryButtonSx}
+             >
+               {loading ? <CircularProgress size={24} color="inherit" /> : 'Restablecer contraseña'}
+             </Button>
           </form>
         )}
     </FormLayout>

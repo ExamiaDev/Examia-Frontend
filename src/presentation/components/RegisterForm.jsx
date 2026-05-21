@@ -265,23 +265,15 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
             sx={{ mb: 2 }}
           />
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={loading || !termsAccepted}
-            sx={{
-              mb: 2,
-              backgroundColor: '#001f56',
-              fontWeight: 600,
-              padding: '10px',
-              fontSize: '1rem',
-              '&:hover': { backgroundColor: '#000d2b' },
-              '&.Mui-disabled': { backgroundColor: '#8fa3cc', color: '#fff' },
-            }}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Crear cuenta'}
-          </Button>
+           <Button
+             type="submit"
+             fullWidth
+             variant="contained"
+             disabled={loading || !termsAccepted}
+             sx={primaryButtonDisabledSx}
+           >
+             {loading ? <CircularProgress size={24} color="inherit" /> : 'Crear cuenta'}
+           </Button>
         </form>
 
         <Typography variant="body2" sx={{ textAlign: 'center', color: '#555' }}>
