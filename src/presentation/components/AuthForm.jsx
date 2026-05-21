@@ -17,6 +17,7 @@ import { Visibility, VisibilityOff, School } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
 import AuthPageWrapper from './AuthPageWrapper';
 import AuthService from '../../application/services/AuthService';
+import { primaryButtonSx, secondaryButtonSx } from './formStyles';
 
 const AuthForm = ({ onSuccess = () => {} }) => {
   const navigate = useNavigate();
@@ -147,46 +148,28 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             sx={{ mt: 0.5, mb: 2.5 }}
           />
 
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{
-              mt: 0.5,
-              mb: 2,
-              backgroundColor: '#001f56',
-              fontWeight: 600,
-              padding: '10px',
-              fontSize: '1rem',
-              '&:hover': { backgroundColor: '#000d2b' },
-            }}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Ingresar'}
-          </Button>
+           <Button
+             type="submit"
+             fullWidth
+             variant="contained"
+             sx={primaryButtonSx}
+             disabled={loading}
+           >
+             {loading ? <CircularProgress size={24} color="inherit" /> : 'Ingresar'}
+           </Button>
         </form>
 
         <Divider sx={{ my: 2, color: '#aaa', fontSize: '0.82rem' }}>O</Divider>
 
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<School />}
-          onClick={() => navigate('/uade-login')}
-          sx={{
-            mb: 2,
-            color: '#001f56',
-            borderColor: '#e0e0e0',
-            backgroundColor: '#f5f5f5',
-            fontWeight: 600,
-            fontSize: '0.95rem',
-            padding: '10px',
-            textTransform: 'none',
-            '&:hover': { backgroundColor: '#ebebeb', borderColor: '#c0c0c0' },
-          }}
-        >
-          Ingresar con usuario UADE
-        </Button>
+         <Button
+           fullWidth
+           variant="outlined"
+           startIcon={<School />}
+           onClick={() => navigate('/uade-login')}
+           sx={secondaryButtonSx}
+         >
+           Ingresar con usuario UADE
+         </Button>
 
         <Typography variant="body2" sx={{ textAlign: 'center', color: '#555', mb: 1.5 }}>
           ¿No tenés cuenta?{' '}
