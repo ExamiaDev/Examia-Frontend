@@ -17,7 +17,7 @@ import { Visibility, VisibilityOff, School } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
 import AuthPageWrapper from './AuthPageWrapper';
 import AuthService from '../../application/services/AuthService';
-import { labelSx, primaryButtonSx, secondaryButtonSx } from './formStyles';
+import { primaryButtonSx, secondaryButtonSx } from './formStyles';
 
 const AuthForm = ({ onSuccess = () => {} }) => {
   const navigate = useNavigate();

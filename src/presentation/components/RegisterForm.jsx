@@ -20,7 +20,7 @@ import { ArrowBack, Visibility, VisibilityOff } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
 import FormLayout from './FormLayout';
 import AuthService from '../../application/services/AuthService';
-import { labelSx, backButtonSx, primaryButtonSx } from './formStyles';
+import { labelSx, backButtonSx, primaryButtonDisabledSx } from './formStyles';
 
 const INITIAL_FORM = {
   nombre: '',

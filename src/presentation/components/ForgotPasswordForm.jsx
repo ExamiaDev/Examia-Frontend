@@ -8,6 +8,7 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
+  Link,
   Typography,
 } from '@mui/material';
 import {
@@ -22,7 +23,7 @@ import {
 import CustomTextField from './CustomTextField';
 import FormLayout from './FormLayout';
 import AuthService from '../../application/services/AuthService';
-import { labelSx, backButtonSx } from './formStyles';
+import { backButtonSx, primaryButtonSx } from './formStyles';
 
 const ICON_SIZE = 48;
 
