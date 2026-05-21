@@ -49,10 +49,11 @@ const Sidebar = ({ user }) => {
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
-        minHeight: '100vh',
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        alignSelf: 'flex-start',
+        left: 0,
+        height: '100vh',
+        zIndex: 1000,
       }}
     >
       {/* Logo y nombre */}

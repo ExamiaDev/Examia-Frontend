@@ -57,7 +57,9 @@ const DocenteDashboard = () => {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
       <Sidebar user={user} />
-      {renderContent()}
+      <Box sx={{ flex: 1, marginLeft: '240px', minHeight: '100vh' }}>
+        {renderContent()}
+      </Box>
     </Box>
   );
 };
