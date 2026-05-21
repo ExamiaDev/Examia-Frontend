@@ -84,7 +84,7 @@ const Sidebar = ({ user }) => {
         <Box>
           <Typography
             sx={{
-              color: '#fff',
+              color: '#fff !important',
               fontWeight: 700,
               fontSize: '1.1rem',
               lineHeight: 1.2,
@@ -95,7 +95,7 @@ const Sidebar = ({ user }) => {
           </Typography>
           <Typography
             sx={{
-              color: 'rgba(255,255,255,0.7)',
+              color: 'rgba(255,255,255,0.7) !important',
               fontSize: '0.7rem',
               fontWeight: 500,
               textTransform: 'uppercase',
@@ -128,14 +128,14 @@ const Sidebar = ({ user }) => {
                   py: 1.2,
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40 }}>
+                <ListItemIcon sx={{ minWidth: 40, color: '#fff' }}>
                   <Icon sx={{ color: '#fff', fontSize: 22 }} />
                 </ListItemIcon>
                 <ListItemText
                   primary={item.label}
-                  primaryTypographyProps={{
-                    sx: {
-                      color: '#fff',
+                  sx={{
+                    '& .MuiListItemText-primary': {
+                      color: '#fff !important',
                       fontSize: '0.875rem',
                       fontWeight: active ? 600 : 400,
                       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -158,7 +158,7 @@ const Sidebar = ({ user }) => {
         <Box sx={{ mb: 2 }}>
           <Typography
             sx={{
-              color: '#fff',
+              color: '#fff !important',
               fontWeight: 600,
               fontSize: '0.875rem',
               fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
@@ -168,7 +168,7 @@ const Sidebar = ({ user }) => {
           </Typography>
           <Typography
             sx={{
-              color: 'rgba(255,255,255,0.7)',
+              color: 'rgba(255,255,255,0.7) !important',
               fontSize: '0.75rem',
               fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
             }}
@@ -187,14 +187,14 @@ const Sidebar = ({ user }) => {
             },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 36 }}>
+          <ListItemIcon sx={{ minWidth: 36, color: '#fff' }}>
             <LogoutIcon sx={{ color: '#fff', fontSize: 20 }} />
           </ListItemIcon>
           <ListItemText
             primary="Cerrar sesión"
-            primaryTypographyProps={{
-              sx: {
-                color: '#fff',
+            sx={{
+              '& .MuiListItemText-primary': {
+                color: '#fff !important',
                 fontSize: '0.85rem',
                 fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
               },
