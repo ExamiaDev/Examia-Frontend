@@ -17,8 +17,8 @@ jobs:
             const headBranch = pr.head.ref;
             const baseBranch = pr.base.ref;
             
-            console.log(`📤 PR desde: ${headBranch}`);
-            console.log(`📥 PR hacia: ${baseBranch}`);
+            console.log(` PR desde: ${headBranch}`);
+            console.log(` PR hacia: ${baseBranch}`);
             
             // Reglas de qué ramas pueden apuntar a dónde
             const rules = {
@@ -52,7 +52,7 @@ jobs:
 
 ⚠️ ${rule.message}
 
-📝 **Flujo Correcto:**
+ **Flujo Correcto:**
 ${baseBranch === 'main' ? `
 1. ✅ Crea features desde \`develop\`: \`git checkout -b feature/nombre\`
 2. ✅ Haz PR a \`develop\`
@@ -65,9 +65,9 @@ ${baseBranch === 'main' ? `
 3. ✅ Espera aprobación y merge
 `}
 
-🔒 Esta es una restricción de rama protegida. No se puede mergear.
+ Esta es una restricción de rama protegida. No se puede mergear.
 
-👉 **Qué hacer:**
+ **Qué hacer:**
 1. Cierra este PR
 2. Crea un nuevo PR con la rama correcta
 3. Si tienes dudas, revisa CONTRIBUTING.md
@@ -101,5 +101,4 @@ ${baseBranch === 'main' ? `
                 body: `✅ **PR Válido**\n\nEsta rama cumple con las reglas de protección:\n- Origen: \`${headBranch}\` ✓\n- Destino: \`${baseBranch}\` ✓`
               });
             }
-
 

@@ -41,6 +41,10 @@ const AuthForm = ({ onSuccess = () => {} }) => {
     }
   };
 
+  const handlePasswordToggle = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <AuthPageWrapper>
       <Paper
@@ -114,7 +118,7 @@ const AuthForm = ({ onSuccess = () => {} }) => {
                   <InputAdornment position="end">
                     <IconButton
                       aria-label="mostrar contraseña"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={handlePasswordToggle}
                       edge="end"
                       disabled={loading}
                     >
@@ -133,7 +137,7 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             variant="contained"
             sx={{
               mt: 0.5,
-              mb: 1.5,
+              mb: 2,
               backgroundColor: '#001f56',
               fontWeight: 600,
               padding: '10px',
@@ -146,15 +150,9 @@ const AuthForm = ({ onSuccess = () => {} }) => {
           </Button>
         </form>
 
-        <Box
-          sx={{
-            mt: 2,
-            pt: 1.2,
-            borderTop: '1px solid #e0e0e0',
-            textAlign: 'center',
-          }}
-        >
-          <Typography variant="caption" sx={{ color: '#0052cc', fontSize: '0.75rem' }}>
+
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ color: '#888', fontSize: '0.75rem' }}>
             Docentes: @uade.edu.ar · Alumnos: @alumnos.uade.edu.ar
           </Typography>
         </Box>

@@ -14,7 +14,7 @@ import AuthService from '../../application/services/AuthService';
 
 const ROLE_LABELS = {
   ALUMNO: 'Alumno',
-  PROFESOR: 'Docente',
+  PROFESOR: 'Profesor',
 };
 
 const Dashboard = () => {

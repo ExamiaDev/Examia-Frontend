@@ -1,6 +1,6 @@
 # Guía de Contribución - Examia Frontend
 
-## 📋 Flujo de Desarrollo
+##  Flujo de Desarrollo
 
 Este proyecto sigue un modelo de **Git Flow** con tres ramas principales:
 
@@ -40,7 +40,7 @@ Este proyecto sigue un modelo de **Git Flow** con tres ramas principales:
 
 ---
 
-## 🚀 Flujo de Trabajo
+##  Flujo de Trabajo
 
 ### 1️⃣ **Para Empezar una Feature**
 
@@ -102,19 +102,19 @@ Luego en GitHub:
 **Template del PR:**
 
 ```markdown
-## 📝 Descripción
+##  Descripción
 Breve descripción de qué hace tu cambio
 
-## 🎯 Tipo de Cambio
+##  Tipo de Cambio
 - [ ] ✨ Nueva funcionalidad
-- [ ] 🐛 Corrección de bug
+- [ ]  Corrección de bug
 - [ ] ♻️ Refactorización
-- [ ] 📚 Documentación
+- [ ]  Documentación
 
-## 🔗 Issues Relacionados
+##  Issues Relacionados
 Closes #123
 
-## 🧪 Testing
+##  Testing
 Describe cómo testear estos cambios
 
 ## ✅ Checklist
@@ -136,7 +136,7 @@ Una vez aprobado por al menos 1 reviewer:
 
 ---
 
-## 🔄 Flujo de Release
+##  Flujo de Release
 
 Cuando estés listo para llevar cambios a producción:
 
@@ -180,7 +180,7 @@ Una vez aprobado:
 
 ---
 
-## 🚨 Reglas Importantes
+##  Reglas Importantes
 
 ### ✅ Para pushear a develop:
 - [ ] PR creado y descrito
@@ -197,7 +197,7 @@ Una vez aprobado:
 
 ---
 
-## 📚 Recursos
+##  Recursos
 
 - [Convenciones de Commit](https://www.conventionalcommits.org/en/v1.0.0/)
 - [GitHub Flow](https://guides.github.com/introduction/flow/)
@@ -205,10 +205,9 @@ Una vez aprobado:
 
 ---
 
-## 🤝 Preguntas?
+##  Preguntas?
 
 Si tienes dudas sobre el flujo, contacta al equipo o revisa los PRs anteriores como referencia.
 
-**¡Gracias por contribuir a Examia!** 🎓
-
+**¡Gracias por contribuir a Examia!** 
 
