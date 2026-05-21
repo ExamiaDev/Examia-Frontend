@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 import PropTypes from 'prop-types';
 import { Box, Paper, Typography } from '@mui/material';
+=======
+import { Paper, Typography } from '@mui/material';
+>>>>>>> 082eeed07c27a956eb6894403587ce82a9970195
 import AuthPageWrapper from './AuthPageWrapper';
 
 /**
@@ -54,6 +58,7 @@ const FormLayout = ({
   </AuthPageWrapper>
 );
 
+<<<<<<< HEAD
 FormLayout.propTypes = {
   children: PropTypes.node,
   title: PropTypes.string,
@@ -70,4 +75,6 @@ FormLayout.defaultProps = {
   showSubtitle: true,
 };
 
+=======
+>>>>>>> 082eeed07c27a956eb6894403587ce82a9970195
 export default FormLayout;
