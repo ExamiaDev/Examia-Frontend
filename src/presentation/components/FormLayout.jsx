@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Box, Paper, Typography } from '@mui/material';
+import { Paper, Typography } from '@mui/material';
 import AuthPageWrapper from './AuthPageWrapper';
 
 /**
@@ -69,5 +69,4 @@ FormLayout.defaultProps = {
   backButton: null,
   showSubtitle: true,
 };
-
 export default FormLayout;
