@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { Box, Paper, Typography } from '@mui/material';
 import AuthPageWrapper from './AuthPageWrapper';
 
@@ -22,7 +23,7 @@ const FormLayout = ({
         boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
       }}
     >
-      {backButton && backButton}
+      {backButton}
 
       {title && (
         <Typography
@@ -53,5 +54,20 @@ const FormLayout = ({
   </AuthPageWrapper>
 );
 
-export default FormLayout;
+FormLayout.propTypes = {
+  children: PropTypes.node,
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
+  backButton: PropTypes.node,
+  showSubtitle: PropTypes.bool,
+};
 
+FormLayout.defaultProps = {
+  children: null,
+  title: null,
+  subtitle: null,
+  backButton: null,
+  showSubtitle: true,
+};
+
+export default FormLayout;

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -209,6 +210,14 @@ const AuthForm = ({ onSuccess = () => {} }) => {
       </Paper>
     </AuthPageWrapper>
   );
+};
+
+AuthForm.propTypes = {
+  onSuccess: PropTypes.func,
+};
+
+AuthForm.defaultProps = {
+  onSuccess: () => {},
 };
 
 export default AuthForm;

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -124,6 +125,14 @@ const UadeLoginForm = ({ onSuccess = () => {} }) => {
       </Box>
     </FormLayout>
   );
+};
+
+UadeLoginForm.propTypes = {
+  onSuccess: PropTypes.func,
+};
+
+UadeLoginForm.defaultProps = {
+  onSuccess: () => {},
 };
 
 export default UadeLoginForm;
