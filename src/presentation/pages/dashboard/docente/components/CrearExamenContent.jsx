@@ -6,19 +6,18 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
   Paper,
   Stepper,
   Step,
   StepLabel,
   LinearProgress,
-  Tabs,
-  Tab,
+  IconButton,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 import { useState } from 'react';
 
 const steps = ['Crear examen', 'Cargar respuestas', 'Generar acceso'];
@@ -46,13 +45,28 @@ export default function CrearExamenContent() {
   });
   const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', preguntas: 0 }]);
 
-  const handleTabChange = (event, newValue) => {
-    if (newValue === temas.length) {
-      // Agregar nuevo tema
-      setTemas([...temas, { id: temas.length + 1, nombre: `Tema ${temas.length + 1}`, preguntas: 0 }]);
-    } else {
-      setSelectedTab(newValue);
+  const handleDeleteTema = (temaId, event) => {
+    event.stopPropagation();
+    if (temas.length > 1) {
+      const newTemas = temas.filter(t => t.id !== temaId);
+      // Renumerar los temas
+      const renumberedTemas = newTemas.map((tema, index) => ({
+        ...tema,
+        id: index + 1,
+        nombre: `Tema ${index + 1}`,
+      }));
+      setTemas(renumberedTemas);
+      // Ajustar el tab seleccionado si es necesario
+      if (selectedTab >= renumberedTemas.length) {
+        setSelectedTab(renumberedTemas.length - 1);
+      }
     }
+  };
+
+  const handleAddTema = () => {
+    const newId = temas.length + 1;
+    setTemas([...temas, { id: newId, nombre: `Tema ${newId}`, preguntas: 0 }]);
+    setSelectedTab(temas.length);
   };
 
   const puntajeTotal = 0;
@@ -322,50 +336,64 @@ export default function CrearExamenContent() {
 
           {/* Temas Tabs */}
           <Box sx={{ px: 3, pt: 2 }}>
-            <Tabs
-              value={selectedTab}
-              onChange={handleTabChange}
-              sx={{
-                minHeight: 40,
-                '& .MuiTabs-indicator': {
-                  display: 'none',
-                },
-              }}
-            >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               {temas.map((tema, index) => (
-                <Tab
+                <Box
                   key={tema.id}
-                  label={`${tema.nombre} (${tema.preguntas})`}
+                  onClick={() => setSelectedTab(index)}
                   sx={{
-                    textTransform: 'none',
-                    minHeight: 40,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    px: 2,
+                    py: 1,
                     borderRadius: 2,
-                    mr: 1,
+                    cursor: 'pointer',
                     bgcolor: selectedTab === index ? '#001f56' : 'transparent',
                     color: selectedTab === index ? '#fff' : '#333',
-                    '&.Mui-selected': {
-                      color: '#fff',
-                    },
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    transition: 'all 0.2s',
                     '&:hover': {
                       bgcolor: selectedTab === index ? '#001f56' : 'rgba(0, 31, 86, 0.08)',
                     },
                   }}
-                />
+                >
+                  <span>{tema.nombre} ({tema.preguntas})</span>
+                  {temas.length > 1 && (
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleDeleteTema(tema.id, e)}
+                      sx={{
+                        p: 0.25,
+                        ml: 0.5,
+                        color: selectedTab === index ? 'rgba(255,255,255,0.7)' : '#666',
+                        '&:hover': {
+                          color: selectedTab === index ? '#fff' : '#001f56',
+                          bgcolor: 'transparent',
+                        },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  )}
+                </Box>
               ))}
-              <Tab
-                icon={<AddIcon sx={{ fontSize: 18 }} />}
-                iconPosition="start"
-                label="Agregar tema"
+              <Button
+                startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+                onClick={handleAddTema}
                 sx={{
                   textTransform: 'none',
-                  minHeight: 40,
                   color: '#001f56',
+                  fontWeight: 500,
                   '&:hover': {
                     bgcolor: 'rgba(0, 31, 86, 0.08)',
                   },
                 }}
-              />
-            </Tabs>
+              >
+                Agregar tema
+              </Button>
+            </Box>
           </Box>
 
           {/* Agregar Pregunta */}

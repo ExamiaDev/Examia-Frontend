@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -52,6 +53,12 @@ const getEstadoChip = (estado) => {
 };
 
 export default function ExamenesContent() {
+  const navigate = useNavigate();
+
+  const handleCrearExamen = () => {
+    navigate('/docente/examenes/crear');
+  };
+
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
@@ -91,6 +98,7 @@ export default function ExamenesContent() {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
+          onClick={handleCrearExamen}
           sx={{
             backgroundColor: '#001f56',
             textTransform: 'none',

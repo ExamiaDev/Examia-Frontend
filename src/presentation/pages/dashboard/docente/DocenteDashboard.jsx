@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import DashboardContent from './components/DashboardContent';
 import ExamenesContent from './components/ExamenesContent';
 import CorreccionesContent from './components/CorreccionesContent';
+import CrearExamenContent from './components/CrearExamenContent';
 
 const DocenteDashboard = () => {
   const navigate = useNavigate();
@@ -31,6 +32,10 @@ const DocenteDashboard = () => {
   // Determinar qué contenido mostrar basado en la ruta
   const renderContent = () => {
     const path = location.pathname;
+    
+    if (path.includes('/examenes/crear')) {
+      return <CrearExamenContent />;
+    }
     
     if (path.includes('/examenes')) {
       return <ExamenesContent />;
