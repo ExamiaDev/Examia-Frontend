@@ -36,6 +36,12 @@ export const primaryButtonSx = {
   '&:hover': { backgroundColor: '#000d2b' },
 };
 
+// Estilos para botones principales con estado deshabilitado visible
+export const primaryButtonDisabledSx = {
+  ...primaryButtonSx,
+  '&.Mui-disabled': { backgroundColor: '#8fa3cc', color: '#fff' },
+};
+
 // Estilos para botones secundarios
 export const secondaryButtonSx = {
   mb: 2,
