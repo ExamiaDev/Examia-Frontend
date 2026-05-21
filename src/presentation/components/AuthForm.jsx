@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
+  Divider,
   Paper,
   Typography,
   Alert,
@@ -9,12 +11,13 @@ import {
   IconButton,
   InputAdornment,
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Visibility, VisibilityOff, School } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
 import AuthPageWrapper from './AuthPageWrapper';
 import AuthService from '../../application/services/AuthService';
 
 const AuthForm = ({ onSuccess = () => {} }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -150,6 +153,27 @@ const AuthForm = ({ onSuccess = () => {} }) => {
           </Button>
         </form>
 
+        <Divider sx={{ my: 2, color: '#aaa', fontSize: '0.82rem' }}>O</Divider>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<School />}
+          onClick={() => navigate('/uade-login')}
+          sx={{
+            mb: 2,
+            color: '#001f56',
+            borderColor: '#e0e0e0',
+            backgroundColor: '#f5f5f5',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            padding: '10px',
+            textTransform: 'none',
+            '&:hover': { backgroundColor: '#ebebeb', borderColor: '#c0c0c0' },
+          }}
+        >
+          Ingresar con usuario UADE
+        </Button>
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="caption" sx={{ color: '#888', fontSize: '0.75rem' }}>
