@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
-  Box,
   Button,
   Checkbox,
   CircularProgress,
@@ -12,6 +11,10 @@ import {
   Link,
   Paper,
   Typography,
+  RadioGroup,
+  Radio,
+  FormControl,
+  FormLabel,
 } from '@mui/material';
 import { ArrowBack, Visibility, VisibilityOff } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
@@ -26,6 +29,7 @@ const INITIAL_FORM = {
   recoveryEmail: '',
   password: '',
   confirmPassword: '',
+  role: 'ALUMNO',
 };
 
 const RegisterForm = ({ onSuccess = () => {} }) => {
@@ -59,6 +63,7 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
         email: form.email,
         recoveryEmail: form.recoveryEmail,
         password: form.password,
+        role: form.role,
       });
       setForm(INITIAL_FORM);
       onSuccess();
@@ -233,6 +238,48 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
             }}
             sx={{ mb: 1.5 }}
           />
+
+          <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
+            <FormLabel
+              component="legend"
+              sx={{
+                color: '#001f56',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                '&.Mui-focused': { color: '#001f56' }
+              }}
+            >
+              ¿Cuál es tu rol?
+            </FormLabel>
+            <RadioGroup
+              row
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              sx={{ mt: 1 }}
+            >
+              <FormControlLabel
+                value="ALUMNO"
+                control={
+                  <Radio
+                    disabled={loading}
+                    sx={{ color: '#001f56', '&.Mui-checked': { color: '#001f56' } }}
+                  />
+                }
+                label="Alumno"
+              />
+              <FormControlLabel
+                value="PROFESOR"
+                control={
+                  <Radio
+                    disabled={loading}
+                    sx={{ color: '#001f56', '&.Mui-checked': { color: '#001f56' } }}
+                  />
+                }
+                label="Profesor"
+              />
+            </RadioGroup>
+          </FormControl>
 
           <FormControlLabel
             control={

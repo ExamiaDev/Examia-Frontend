@@ -17,6 +17,24 @@ export const AuthAPI = {
     }
   },
 
+  loginUade: async (email, legajo, password) => {
+    try {
+      const response = await httpClient.post('/auth/login-uade', { legajo, email, password });
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 401) {
+        throw new InvalidCredentialsError('Credenciales UADE incorrectas');
+      }
+      if (error.response?.status === 404) {
+        throw new AuthenticationError('Usuario UADE no encontrado. Verificá tu legajo y email.');
+      }
+      if (error.response?.data?.message) {
+        throw new AuthenticationError(error.response.data.message);
+      }
+      throw new AuthenticationError('Error al iniciar sesión con UADE. Intentá de nuevo.');
+    }
+  },
+
   register: async (data) => {
     try {
       const response = await httpClient.post('/auth/register', data);

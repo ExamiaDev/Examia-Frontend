@@ -1,8 +1,8 @@
-# Examia Frontend 🎓
+# Examia Frontend 
 
 Frontend profesional para Examia - Una plataforma integral de evaluación educativa que ayuda a estudiantes y educadores a **evaluar, entender y mejorar**.
 
-## 📋 Tabla de Contenidos
+##  Tabla de Contenidos
 
 - [Características](#características)
 - [Tecnologías](#tecnologías)
@@ -22,27 +22,27 @@ Frontend profesional para Examia - Una plataforma integral de evaluación educat
 
 ## ✨ Características
 
-### Autenticación y Autorización 🔐
+### Autenticación y Autorización 
 - **Login seguro**: Ingresa con email y contraseña proporcionadas por administradores
 - **Sesiones persistentes**: Mantén la sesión activa entre recargas
 - **Manejo robusto de errores**: Manejo de credenciales inválidas y validaciones
 - **Gestión de usuarios en BD**: Los usuarios son creados directamente en la base de datos
 
-### Interfaz de Usuario 🎨
+### Interfaz de Usuario 
 - **Diseño responsivo**: Optimizado para desktop, tablet y móvil
 - **Material-UI components**: Componentes profesionales y accesibles
 - **Tema personalizado**: Colores y tipografía coherentes
 - **Contraseña oculta**: Alternancia segura de visibilidad de contraseña
 - **Transiciones fluidas**: Animaciones suaves entre estados
 
-### Navegación 🧭
+### Navegación 
 - **Router protegido**: Redirección automática basada en autenticación
 - **Rutas lógicas**: Estructura clara de navegación (`/login`, `/dashboard`)
 - **Persistencia de sesión**: Sesión automática al cargar la página
 
 ---
 
-## 🛠 Tecnologías
+##  Tecnologías
 
 ### Frontend
 - **React 19.x** - Librería UI moderno y reactivo
@@ -62,7 +62,7 @@ Frontend profesional para Examia - Una plataforma integral de evaluación educat
 
 ---
 
-## 📦 Requisitos Previos
+##  Requisitos Previos
 
 Asegúrate de tener instalado:
 
@@ -72,7 +72,7 @@ Asegúrate de tener instalado:
 
 ---
 
-## 🚀 Instalación
+##  Instalación
 
 ### 1. Clonar el repositorio
 
@@ -113,7 +113,7 @@ VITE_API_URL=http://localhost:8080/api
 
 ---
 
-## 💻 Uso
+##  Uso
 
 ### Desarrollo
 
@@ -153,7 +153,7 @@ npm run lint
 
 ---
 
-## 📁 Estructura del Proyecto
+##  Estructura del Proyecto
 
 Seguimos una **arquitectura clean** con separación clara de responsabilidades:
 
@@ -203,7 +203,7 @@ src/
 
 ---
 
-## 🏗 Arquitectura Clean
+##  Arquitectura Clean
 
 El proyecto sigue los principios de **Clean Architecture**:
 
@@ -243,7 +243,7 @@ El proyecto sigue los principios de **Clean Architecture**:
 
 ---
 
-## 🧩 Componentes
+##  Componentes
 
 ### AuthForm
 Componente principal que maneja el login de usuarios.
@@ -273,7 +273,7 @@ Página protegida que muestra información del usuario autenticado.
 
 ---
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 El frontend consume los siguientes endpoints del backend:
 
@@ -311,7 +311,7 @@ Response (401 Unauthorized):
 
 ---
 
-## 🛠 Desarrollo
+##  Desarrollo
 
 ### Flujo de Desarrollo
 
@@ -373,7 +373,7 @@ localStorage.clear()
 
 ---
 
-## 📦 Build y Despliegue
+##  Build y Despliegue
 
 ### Build Optimizado
 
@@ -437,7 +437,7 @@ npm run deploy
 
 ---
 
-## 🧪 Testing (Próximamente)
+##  Testing (Próximamente)
 
 Se añadirán tests con:
 - **Jest** - Test runner
@@ -452,7 +452,7 @@ npm run test:coverage
 
 ---
 
-## 🚨 Manejo de Errores
+##  Manejo de Errores
 
 ### Errores Comunes
 
@@ -473,7 +473,7 @@ npm run test:coverage
 
 ---
 
-## 📚 Recursos
+##  Recursos
 
 - [React Documentation](https://react.dev)
 - [Material-UI Documentation](https://mui.com)
@@ -484,27 +484,27 @@ npm run test:coverage
 
 ---
 
-## 📄 Licencia
+##  Licencia
 
 Este proyecto es parte de Examia y está bajo licencia MIT.
 
 ---
 
-## 👥 Contribuidores
+##  Contribuidores
 
 - **Tu Nombre** - Desarrollo inicial
 
 ---
 
-## 📧 Contacto
+##  Contacto
 
 Para preguntas o sugerencias:
-- 📧 Email: info@examia.com
-- 🐙 GitHub Issues: [Crear issue](https://github.com/ExamiaDev/Examia-Frontend/issues)
+-  Email: info@examia.com
+-  GitHub Issues: [Crear issue](https://github.com/ExamiaDev/Examia-Frontend/issues)
 
 ---
 
-## 🗺 Roadmap
+##  Roadmap
 
 ### v0.2.0 (Próximo)
 - [ ] Autenticación con Google/GitHub
@@ -526,7 +526,7 @@ Para preguntas o sugerencias:
 
 ---
 
-**¡Gracias por usar Examia! 🎓**
+**¡Gracias por usar Examia! **
 
 **Evalúa. Entiende. Mejora.**
 

@@ -2,7 +2,7 @@ import AuthAPI from '../../infrastructure/api/AuthAPI';
 import { ValidationError } from '../../domain/errors/AppErrors';
 
 export const AuthService = {
-  register: async ({ nombre, apellido, username, email, recoveryEmail, password }) => {
+  register: async ({ nombre, apellido, username, email, recoveryEmail, password, role }) => {
     if (!nombre || !apellido || !username || !email || !recoveryEmail || !password) {
       throw new ValidationError('Todos los campos son obligatorios');
     }
@@ -10,7 +10,7 @@ export const AuthService = {
       throw new ValidationError('El nombre de usuario no puede contener espacios');
     }
 
-    const response = await AuthAPI.register({ nombre, apellido, username, email, recoveryEmail, password });
+    const response = await AuthAPI.register({ nombre, apellido, username, email, recoveryEmail, password, role });
 
     if (response.token) {
       localStorage.setItem('authToken', response.token);
@@ -41,6 +41,28 @@ export const AuthService = {
       nombre: response.nombre,
       apellido: response.apellido,
       role: response.role,
+    };
+    localStorage.setItem('user', JSON.stringify(user));
+
+    return response;
+  },
+
+  loginUade: async (email, legajo, password) => {
+    if (!email || !legajo || !password) {
+      throw new ValidationError('Email, legajo y contraseña son obligatorios');
+    }
+
+    const response = await AuthAPI.loginUade(email, legajo, password);
+
+    if (response.token) {
+      localStorage.setItem('authToken', response.token);
+    }
+    const user = {
+      email: response.email,
+      nombre: response.nombre,
+      apellido: response.apellido,
+      role: response.role,
+      legajo: response.legajo,
     };
     localStorage.setItem('user', JSON.stringify(user));
 
