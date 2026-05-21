@@ -11,6 +11,7 @@ import {
   Chip,
 } from '@mui/material';
 import AuthService from '../../application/services/AuthService';
+import { RoleEnum } from '../../domain/enums/RoleEnum';
 
 const ROLE_LABELS = {
   ALUMNO: 'Alumno',
@@ -24,6 +25,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user) {
       navigate('/login');
+      return;
+    }
+    // Redirigir profesores a su dashboard especifico
+    if (user.role === RoleEnum.PROFESOR) {
+      navigate('/docente');
     }
   }, [navigate, user]);
 

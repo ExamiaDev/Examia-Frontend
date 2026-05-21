@@ -5,6 +5,7 @@ import LoginPage from './presentation/pages/auth/login/LoginPage';
 import RegisterPage from './presentation/pages/auth/register/RegisterPage';
 import UadeLoginPage from './presentation/pages/auth/uade-login/UadeLoginPage';
 import Dashboard from './presentation/pages/Dashboard';
+import DocenteDashboard from './presentation/pages/dashboard/docente/DocenteDashboard';
 
 const theme = createTheme({
   palette: {
@@ -38,6 +39,8 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/uade-login" element={<UadeLoginPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/docente" element={<DocenteDashboard />} />
+          <Route path="/docente/*" element={<DocenteDashboard />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
