@@ -145,7 +145,7 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
         };
         
 return (
-          <Box sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+          <Box>
             <TextField
               fullWidth
               multiline
@@ -164,25 +164,21 @@ return (
               sx={{
                 border: '1px solid #e0e0e0',
                 borderRadius: 2,
-                overflowX: 'auto',
-                maxWidth: '100%',
+                overflow: 'hidden',
               }}
             >
               <Box
                 sx={{
-                  display: 'flex',
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${columns.length}, 1fr) auto`,
                   bgcolor: '#f5f7fa',
                   borderBottom: '1px solid #e0e0e0',
-                  minWidth: columns.length > 3 ? `${columns.length * 150 + 48}px` : 'auto',
                 }}
               >
                 {columns.map((col, i) => (
                   <Box
                     key={i}
                     sx={{
-                      flex: '1 1 150px',
-                      minWidth: 120,
-                      maxWidth: 200,
                       p: 1.5,
                       borderRight: '1px solid #e0e0e0',
                       display: 'flex',
@@ -213,8 +209,6 @@ return (
                 ))}
                 <Box
                   sx={{
-                    width: 48,
-                    flexShrink: 0,
                     p: 1,
                     display: 'flex',
                     alignItems: 'center',
@@ -234,18 +228,15 @@ return (
                 <Box
                   key={rowIndex}
                   sx={{
-                    display: 'flex',
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${columns.length}, 1fr) auto`,
                     borderBottom: rowIndex < rows - 1 ? '1px solid #e0e0e0' : 'none',
-                    minWidth: columns.length > 3 ? `${columns.length * 150 + 48}px` : 'auto',
                   }}
                 >
                   {columns.map((_, colIndex) => (
                     <Box
                       key={colIndex}
                       sx={{
-                        flex: '1 1 150px',
-                        minWidth: 120,
-                        maxWidth: 200,
                         p: 1.5,
                         borderRight: '1px solid #e0e0e0',
                       }}
@@ -260,7 +251,7 @@ return (
                       />
                     </Box>
                   ))}
-                  <Box sx={{ width: 48, flexShrink: 0, p: 1, display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
                     {rowIndex === rows - 1 && rows > 1 && (
                       <IconButton
                         size="small"
