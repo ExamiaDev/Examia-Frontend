@@ -175,6 +175,20 @@ const AuthForm = ({ onSuccess = () => {} }) => {
           Ingresar con usuario UADE
         </Button>
 
+        <Typography variant="body2" sx={{ textAlign: 'center', color: '#555', mb: 1.5 }}>
+          ¿No tenés cuenta?{' '}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/register');
+            }}
+            style={{ color: '#2c5cc5', fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}
+          >
+            Registrate
+          </a>
+        </Typography>
+
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="caption" sx={{ color: '#888', fontSize: '0.75rem' }}>
             Docentes: @uade.edu.ar · Alumnos: @alumnos.uade.edu.ar

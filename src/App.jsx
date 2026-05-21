@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import LoginPage from './presentation/pages/auth/login/LoginPage';
+import RegisterPage from './presentation/pages/auth/register/RegisterPage';
 import UadeLoginPage from './presentation/pages/auth/uade-login/UadeLoginPage';
 import Dashboard from './presentation/pages/Dashboard';
 
@@ -34,6 +35,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/uade-login" element={<UadeLoginPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
