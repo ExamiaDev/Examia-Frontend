@@ -23,7 +23,7 @@ import {
 import CustomTextField from './CustomTextField';
 import FormLayout from './FormLayout';
 import AuthService from '../../application/services/AuthService';
-import { backButtonSx, primaryButtonSx } from './formStyles';
+import { labelSx, backButtonSx, primaryButtonSx } from './formStyles';
 
 const ICON_SIZE = 48;
 
@@ -149,8 +149,6 @@ const ForgotPasswordForm = () => {
       setLoading(false);
     }
   };
-
-  const labelSx = { color: '#001f56', fontWeight: 600, fontSize: '0.9rem', display: 'block', mb: 0.8 };
 
   const backButton = (
     <Box
