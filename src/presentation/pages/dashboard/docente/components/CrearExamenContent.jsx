@@ -18,6 +18,10 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CloseIcon from '@mui/icons-material/Close';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import { useState } from 'react';
 
 const steps = ['Crear examen', 'Cargar respuestas', 'Generar acceso'];
@@ -34,6 +38,33 @@ const turnos = [
   { id: 3, nombre: 'Noche' },
 ];
 
+const questionTypes = [
+  {
+    id: 'texto-libre',
+    title: 'Texto libre',
+    description: 'Respuesta abierta',
+    icon: DescriptionOutlinedIcon,
+  },
+  {
+    id: 'tabla',
+    title: 'Tabla',
+    description: 'Matriz de casos',
+    icon: TableChartOutlinedIcon,
+  },
+  {
+    id: 'arbol-decision',
+    title: 'Árbol de decisión',
+    description: 'Diagrama lógico',
+    icon: AccountTreeOutlinedIcon,
+  },
+  {
+    id: 'multiple-choice',
+    title: 'Múltiple choice',
+    description: 'Opciones cerradas',
+    icon: FormatListBulletedIcon,
+  },
+];
+
 export default function CrearExamenContent() {
   const [activeStep] = useState(0);
   const [selectedTab, setSelectedTab] = useState(0);
@@ -44,6 +75,7 @@ export default function CrearExamenContent() {
     periodo: '2026 - 1°c',
   });
   const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', preguntas: 0 }]);
+  const [showQuestionSelector, setShowQuestionSelector] = useState(false);
 
   const handleDeleteTema = (temaId, event) => {
     event.stopPropagation();
@@ -67,6 +99,20 @@ export default function CrearExamenContent() {
     const newId = temas.length + 1;
     setTemas([...temas, { id: newId, nombre: `Tema ${newId}`, preguntas: 0 }]);
     setSelectedTab(temas.length);
+  };
+
+  const handleOpenQuestionSelector = () => {
+    setShowQuestionSelector(true);
+  };
+
+  const handleCloseQuestionSelector = () => {
+    setShowQuestionSelector(false);
+  };
+
+  const handleSelectQuestionType = (typeId) => {
+    // TODO: Handle question type selection
+    console.log('Selected question type:', typeId);
+    setShowQuestionSelector(false);
   };
 
   const puntajeTotal = 0;
@@ -396,33 +442,112 @@ export default function CrearExamenContent() {
             </Box>
           </Box>
 
-          {/* Agregar Pregunta */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              py: 8,
-            }}
-          >
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
+          {/* Agregar Pregunta / Question Type Selector */}
+          {!showQuestionSelector ? (
+            <Box
               sx={{
-                bgcolor: '#001f56',
-                textTransform: 'none',
-                fontWeight: 500,
-                px: 4,
-                py: 1.5,
-                borderRadius: 2,
-                '&:hover': {
-                  bgcolor: '#002a75',
-                },
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                py: 8,
               }}
             >
-              Agregar pregunta
-            </Button>
-          </Box>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenQuestionSelector}
+                sx={{
+                  bgcolor: '#001f56',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  '&:hover': {
+                    bgcolor: '#002a75',
+                  },
+                }}
+              >
+                Agregar pregunta
+              </Button>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                p: 3,
+                borderTop: '1px dashed #ccc',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 3,
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  sx={{ fontWeight: 500, color: '#333' }}
+                >
+                  Elegí el tipo de pregunta
+                </Typography>
+                <Button
+                  onClick={handleCloseQuestionSelector}
+                  sx={{
+                    textTransform: 'none',
+                    color: '#001f56',
+                    fontWeight: 500,
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </Box>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: 2,
+                }}
+              >
+                {questionTypes.map((type) => {
+                  const Icon = type.icon;
+                  return (
+                    <Paper
+                      key={type.id}
+                      onClick={() => handleSelectQuestionType(type.id)}
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 2,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          borderColor: '#001f56',
+                          bgcolor: 'rgba(0, 31, 86, 0.02)',
+                        },
+                      }}
+                    >
+                      <Icon sx={{ fontSize: 28, color: '#001f56', mb: 1.5 }} />
+                      <Typography
+                        variant="body1"
+                        sx={{ fontWeight: 600, color: '#333', mb: 0.5 }}
+                      >
+                        {type.title}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: '#666', fontSize: '0.8rem' }}
+                      >
+                        {type.description}
+                      </Typography>
+                    </Paper>
+                  );
+                })}
+              </Box>
+            </Box>
+          )}
         </Paper>
       </Box>
     </Box>
