@@ -1,20 +1,24 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
+  Divider,
   Paper,
   Typography,
   Alert,
   CircularProgress,
   IconButton,
   InputAdornment,
+  Link,
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Visibility, VisibilityOff, School } from '@mui/icons-material';
 import CustomTextField from './CustomTextField';
 import AuthPageWrapper from './AuthPageWrapper';
 import AuthService from '../../application/services/AuthService';
 
 const AuthForm = ({ onSuccess = () => {} }) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -72,7 +76,7 @@ const AuthForm = ({ onSuccess = () => {} }) => {
           variant="body2"
           sx={{ textAlign: 'center', color: '#666', mb: 2.5, fontSize: '0.9rem' }}
         >
-          Plataforma de evaluación digital · Testing de Aplicaciones
+          Plataforma de evaluación digital
         </Typography>
 
         {error && (
@@ -86,7 +90,7 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             variant="caption"
             sx={{ display: 'block', color: '#001f56', fontWeight: 600, mb: 0.8, fontSize: '0.9rem' }}
           >
-            Mail institucional UADE
+            Email
           </Typography>
           <CustomTextField
             name="email"
@@ -95,16 +99,27 @@ const AuthForm = ({ onSuccess = () => {} }) => {
             onChange={handleChange}
             disabled={loading}
             autoComplete="email"
-            placeholder="nombre.apellido@uade.edu.ar"
+            placeholder="tu@email.com"
             sx={{ mt: 0.5, mb: 2 }}
           />
 
-          <Typography
-            variant="caption"
-            sx={{ display: 'block', color: '#001f56', fontWeight: 600, mb: 0.8, fontSize: '0.9rem' }}
-          >
-            Contraseña
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
+            <Typography
+              variant="caption"
+              sx={{ color: '#001f56', fontWeight: 600, fontSize: '0.9rem' }}
+            >
+              Contraseña
+            </Typography>
+            <Link
+              component="button"
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              underline="hover"
+              sx={{ fontSize: '0.82rem', color: '#2c5cc5', fontWeight: 500, cursor: 'pointer', background: 'none', border: 'none' }}
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </Box>
           <CustomTextField
             name="password"
             type={showPassword ? 'text' : 'password'}
@@ -150,6 +165,41 @@ const AuthForm = ({ onSuccess = () => {} }) => {
           </Button>
         </form>
 
+        <Divider sx={{ my: 2, color: '#aaa', fontSize: '0.82rem' }}>O</Divider>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<School />}
+          onClick={() => navigate('/uade-login')}
+          sx={{
+            mb: 2,
+            color: '#001f56',
+            borderColor: '#e0e0e0',
+            backgroundColor: '#f5f5f5',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            padding: '10px',
+            textTransform: 'none',
+            '&:hover': { backgroundColor: '#ebebeb', borderColor: '#c0c0c0' },
+          }}
+        >
+          Ingresar con usuario UADE
+        </Button>
+
+        <Typography variant="body2" sx={{ textAlign: 'center', color: '#555', mb: 1.5 }}>
+          ¿No tenés cuenta?{' '}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/register');
+            }}
+            style={{ color: '#2c5cc5', fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}
+          >
+            Registrate
+          </a>
+        </Typography>
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="caption" sx={{ color: '#888', fontSize: '0.75rem' }}>
