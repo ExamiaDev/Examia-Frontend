@@ -13,10 +13,10 @@ import {
   MenuItem,
   FormControl,
 } from '@mui/material';
-import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import GroupsIcon from '@mui/icons-material/Groups';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
+import ChatIcon from '@mui/icons-material/Chat';
 import { useState } from 'react';
 
 const mockAlumnos = [
@@ -288,28 +288,28 @@ const MetricasContent = () => {
           }}
         >
           <StatCard
-            icon={PeopleOutlineIcon}
+            icon={GroupsIcon}
             label="ALUMNOS"
             value="32"
             bgColor="#e3f2fd"
             iconColor="#1976d2"
           />
           <StatCard
-            icon={CheckCircleOutlineIcon}
+            icon={CheckCircleIcon}
             label="COMPLETADOS"
             value="84%"
             bgColor="#e8f5e9"
             iconColor="#2e7d32"
           />
           <StatCard
-            icon={WarningAmberIcon}
+            icon={WarningIcon}
             label="ENTREGAS PARCIALES"
             value="6%"
             bgColor="#fff3e0"
             iconColor="#f57c00"
           />
           <StatCard
-            icon={ChatBubbleOutlineIcon}
+            icon={ChatIcon}
             label="PROMEDIO"
             value="7.4"
             bgColor="#e3f2fd"
