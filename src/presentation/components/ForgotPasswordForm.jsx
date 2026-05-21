@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -391,6 +392,14 @@ const ForgotPasswordForm = () => {
       </Paper>
     </AuthPageWrapper>
   );
+};
+
+ForgotPasswordForm.propTypes = {
+  onSuccess: PropTypes.func,
+};
+
+ForgotPasswordForm.defaultProps = {
+  onSuccess: () => {},
 };
 
 export default ForgotPasswordForm;
