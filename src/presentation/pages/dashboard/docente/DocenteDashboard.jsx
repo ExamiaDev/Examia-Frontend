@@ -8,6 +8,7 @@ import DashboardContent from './components/DashboardContent';
 import ExamenesContent from './components/ExamenesContent';
 import CorreccionesContent from './components/CorreccionesContent';
 import CrearExamenContent from './components/CrearExamenContent';
+import MetricasContent from './components/MetricasContent';
 
 const DocenteDashboard = () => {
   const navigate = useNavigate();
@@ -43,6 +44,10 @@ const DocenteDashboard = () => {
     
     if (path.includes('/correcciones')) {
       return <CorreccionesContent />;
+    }
+    
+    if (path.includes('/metricas')) {
+      return <MetricasContent />;
     }
     
     // Default: Mis Cursos (dashboard principal)
