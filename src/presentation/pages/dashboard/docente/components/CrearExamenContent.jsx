@@ -117,7 +117,7 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
           </Box>
         );
       
-      case 'tabla':
+      case 'tabla': {
         const columns = question.columnas || ['Columna 1', 'Columna 2', 'Columna 3'];
         const rows = question.filas || 3;
         
@@ -149,7 +149,7 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
           }
         };
         
-return (
+        return (
           <Box>
             <TextField
               fullWidth
@@ -285,6 +285,7 @@ return (
             </Typography>
           </Box>
         );
+      }
       
       case 'arbol-decision':
         return (
@@ -323,7 +324,7 @@ return (
           </Box>
         );
       
-      case 'multiple-choice':
+      case 'multiple-choice': {
         const opciones = question.opciones || ['', '', '', ''];
         
         const handleAddOption = () => {
@@ -417,6 +418,7 @@ return (
             </Typography>
           </Box>
         );
+      }
       
       default:
         return null;
