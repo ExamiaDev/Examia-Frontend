@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -11,34 +12,33 @@ import {
   TableRow,
   Paper,
   Chip,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import ExamService from '../../../../../application/services/ExamService';
 
-const mockExams = [
-  {
-    id: 1,
-    nombre: 'Parcial 1',
-    curso: 'Testing - Mañana',
-    estado: 'Publicado',
-  },
-  {
-    id: 2,
-    nombre: 'Recuperatorio',
-    curso: 'Testing - Tarde',
-    estado: 'Borrador',
-  },
-  {
-    id: 3,
-    nombre: 'Parcial 2',
-    curso: 'Testing - Noche',
-    estado: 'Activo',
-  },
-];
+// Mapea el status del backend a la etiqueta que mostramos
+const STATUS_LABELS = {
+  borrador: 'Borrador',
+  BORRADOR: 'Borrador',
+  DRAFT: 'Borrador',
+  publicado: 'Publicado',
+  PUBLICADO: 'Publicado',
+  PUBLISHED: 'Publicado',
+  activo: 'Activo',
+  ACTIVO: 'Activo',
+  ACTIVE: 'Activo',
+  finalizado: 'Finalizado',
+  FINALIZADO: 'Finalizado',
+  FINISHED: 'Finalizado',
+};
 
-const getEstadoChip = (estado) => {
+const getEstadoChip = (status) => {
+  const label = STATUS_LABELS[status] || status || '—';
   return (
     <Chip
-      label={estado}
+      label={label}
       size="small"
       sx={{
         backgroundColor: '#fff',
@@ -54,6 +54,33 @@ const getEstadoChip = (estado) => {
 
 export default function ExamenesContent() {
   const navigate = useNavigate();
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchExams = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await ExamService.getExams();
+        if (mounted) {
+          // Soportamos respuestas tipo array o { content: [...] } (paginadas)
+          const list = Array.isArray(data) ? data : (data?.content || data?.exams || []);
+          setExams(list);
+        }
+      } catch (err) {
+        if (mounted) setError(err.message || 'Error al obtener los exámenes');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchExams();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleCrearExamen = () => {
     navigate('/docente/examenes/crear');
@@ -124,7 +151,25 @@ export default function ExamenesContent() {
           py: 3,
         }}
       >
-        {/* Tabla de exámenes */}
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress sx={{ color: '#001f56' }} />
+          </Box>
+        )}
+
+        {!loading && error && (
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        )}
+
+        {!loading && !error && exams.length === 0 && (
+          <Box sx={{ textAlign: 'center', py: 6, color: '#6b7280' }}>
+            <Typography sx={{ fontSize: '0.95rem' }}>
+              Todavía no tenés exámenes creados. Hacé click en <strong>Crear examen</strong> para empezar.
+            </Typography>
+          </Box>
+        )}
+
+        {!loading && !error && exams.length > 0 && (
         <TableContainer
           component={Paper}
           elevation={0}
@@ -175,7 +220,7 @@ export default function ExamenesContent() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {mockExams.map((exam) => (
+              {exams.map((exam) => (
                 <TableRow
                   key={exam.id}
                   sx={{
@@ -190,12 +235,12 @@ export default function ExamenesContent() {
                       fontSize: '0.875rem',
                     }}
                   >
-                    {exam.nombre}
+                    {exam.title || exam.nombre || '(sin título)'}
                   </TableCell>
                   <TableCell sx={{ color: '#666', fontSize: '0.875rem' }}>
-                    {exam.curso}
+                    {exam.subjectName || exam.subjectId || exam.curso || '—'}
                   </TableCell>
-                  <TableCell>{getEstadoChip(exam.estado)}</TableCell>
+                  <TableCell>{getEstadoChip(exam.status || exam.estado)}</TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                       <Button
@@ -254,6 +299,7 @@ export default function ExamenesContent() {
             </TableBody>
           </Table>
         </TableContainer>
+        )}
       </Box>
     </Box>
   );

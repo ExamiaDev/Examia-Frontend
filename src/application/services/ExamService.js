@@ -25,25 +25,25 @@ export class ExamService {
    */
   static async createExam(examData) {
     try {
-      // Validar datos requeridos
-      if (!examData.nombre || examData.nombre.trim() === '') {
+      // Validar datos requeridos (campos en inglés según el contrato del backend)
+      if (!examData.title || examData.title.trim() === '') {
         throw new AppError('El nombre del examen es obligatorio');
       }
-      if (!examData.curso || examData.curso.trim() === '') {
-        throw new AppError('El curso es obligatorio');
+      if (!examData.subjectId || examData.subjectId.trim() === '') {
+        throw new AppError('El curso/materia es obligatorio');
       }
-      if (!examData.puntajeTotal || examData.puntajeTotal <= 0) {
+      if (!examData.totalPoints || examData.totalPoints <= 0) {
         throw new AppError('El puntaje total debe ser mayor a 0');
       }
-      if (!Array.isArray(examData.preguntas) || examData.preguntas.length === 0) {
+      if (!Array.isArray(examData.questions) || examData.questions.length === 0) {
         throw new AppError('El examen debe tener al menos una pregunta');
       }
 
       // Validar puntajes de preguntas
-      const sumaPuntajes = examData.preguntas.reduce((sum, q) => sum + (q.puntaje || 0), 0);
-      if (sumaPuntajes !== examData.puntajeTotal) {
+      const sumaPuntajes = examData.questions.reduce((sum, q) => sum + (q.points || 0), 0);
+      if (sumaPuntajes !== examData.totalPoints) {
         throw new AppError(
-          `La suma de puntajes (${sumaPuntajes}) debe coincidir con el puntaje total (${examData.puntajeTotal})`
+          `La suma de puntajes (${sumaPuntajes}) debe coincidir con el puntaje total (${examData.totalPoints})`
         );
       }
 
@@ -109,12 +109,12 @@ export class ExamService {
       }
 
       // Validar puntajes si se actualizan preguntas
-      if (examData.preguntas && Array.isArray(examData.preguntas)) {
-        const sumaPuntajes = examData.preguntas.reduce((sum, q) => sum + (q.puntaje || 0), 0);
-        const puntajeTotal = examData.puntajeTotal || 10;
-        if (sumaPuntajes !== puntajeTotal) {
+      if (examData.questions && Array.isArray(examData.questions)) {
+        const sumaPuntajes = examData.questions.reduce((sum, q) => sum + (q.points || 0), 0);
+        const totalPoints = examData.totalPoints || 10;
+        if (sumaPuntajes !== totalPoints) {
           throw new AppError(
-            `La suma de puntajes (${sumaPuntajes}) debe coincidir con el puntaje total (${puntajeTotal})`
+            `La suma de puntajes (${sumaPuntajes}) debe coincidir con el puntaje total (${totalPoints})`
           );
         }
       }

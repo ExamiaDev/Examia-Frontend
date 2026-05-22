@@ -14,7 +14,12 @@ import {
   IconButton,
   Collapse,
   Chip,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import ExamService from '../../../../../application/services/ExamService';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
@@ -512,6 +517,7 @@ return (
 }
 
 export default function CrearExamenContent() {
+  const navigate = useNavigate();
   const [activeStep] = useState(0);
   const [selectedTab, setSelectedTab] = useState(0);
   const [formData, setFormData] = useState({
@@ -522,6 +528,133 @@ export default function CrearExamenContent() {
   });
   const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', preguntas: [] }]);
   const [showQuestionSelector, setShowQuestionSelector] = useState(false);
+  const [examId, setExamId] = useState(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [continuing, setContinuing] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, severity: 'success', message: '' });
+
+  const handleCloseSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
+
+  const showMessage = (severity, message) => setSnackbar({ open: true, severity, message });
+
+  // Mapea los tipos de pregunta de la UI a los enums que espera el backend
+  const QUESTION_TYPE_MAP = {
+    'texto-libre': 'LONG_ANSWER',
+    'tabla': 'MATCHING',
+    'arbol-decision': 'ORDERING',
+    'multiple-choice': 'MULTIPLE_CHOICE',
+  };
+
+  // Mapea el estado UI al payload que espera el backend (campos en inglés)
+  const buildExamPayload = (status) => {
+    const questions = temas.flatMap((tema) =>
+      tema.preguntas.map((q) => ({
+        type: QUESTION_TYPE_MAP[q.type] || 'LONG_ANSWER',
+        text: q.enunciado || '',
+        points: q.puntaje || 0,
+        topic: tema.nombre,
+        ...(q.opciones && { options: q.opciones }),
+        ...(q.columnas && { columns: q.columnas }),
+        ...(q.filas && { rows: q.filas }),
+      }))
+    );
+
+    return {
+      title: formData.nombre,
+      subjectId: formData.curso ? String(formData.curso) : '',
+      shift: formData.turno ? String(formData.turno) : '',
+      period: formData.periodo,
+      totalPoints: 10,
+      questions,
+      status,
+    };
+  };
+
+  const validateRequiredFields = () => {
+    if (!formData.nombre.trim()) {
+      showMessage('error', 'El nombre del examen es obligatorio');
+      return false;
+    }
+    if (!formData.curso) {
+      showMessage('error', 'Tenés que seleccionar un curso');
+      return false;
+    }
+    if (!formData.turno) {
+      showMessage('error', 'Tenés que seleccionar un turno');
+      return false;
+    }
+    return true;
+  };
+
+  const handleGuardarBorrador = async () => {
+    if (!formData.nombre.trim()) {
+      showMessage('error', 'Ingresá al menos un nombre para guardar el borrador');
+      return;
+    }
+    setSavingDraft(true);
+    try {
+      const payload = buildExamPayload('borrador');
+      // Para borrador permitimos puntaje incompleto: lo recalculamos al actual
+      payload.totalPoints = payload.questions.reduce((sum, q) => sum + (q.points || 0), 0) || 10;
+      console.log('[ExamRequest] Guardar borrador payload:', JSON.stringify(payload, null, 2));
+
+      let result;
+      if (examId) {
+        result = await ExamService.updateExam(examId, payload);
+      } else {
+        result = await ExamService.createExam(payload);
+        if (result?.id) setExamId(result.id);
+      }
+      showMessage('success', 'Borrador guardado correctamente');
+    } catch (error) {
+      showMessage('error', error.message || 'No se pudo guardar el borrador');
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const handleContinuar = async () => {
+    if (!validateRequiredFields()) return;
+
+    const totalPreguntas = temas.reduce((acc, t) => acc + t.preguntas.length, 0);
+    if (totalPreguntas === 0) {
+      showMessage('error', 'Agregá al menos una pregunta antes de continuar');
+      return;
+    }
+
+    const sumaPuntajes = temas.reduce(
+      (acc, t) => acc + t.preguntas.reduce((s, q) => s + (q.puntaje || 0), 0),
+      0
+    );
+    if (sumaPuntajes !== 10) {
+      showMessage('error', `La suma de puntajes debe ser exactamente 10 (actual: ${sumaPuntajes})`);
+      return;
+    }
+
+    setContinuing(true);
+    try {
+      const payload = buildExamPayload('borrador');
+      console.log('[ExamRequest] Continuar payload:', JSON.stringify(payload, null, 2));
+      let saved;
+      if (examId) {
+        saved = await ExamService.updateExam(examId, payload);
+      } else {
+        saved = await ExamService.createExam(payload);
+        if (saved?.id) setExamId(saved.id);
+      }
+      showMessage('success', 'Examen guardado, pasando al siguiente paso...');
+      const id = saved?.id || examId;
+      setTimeout(() => {
+        if (id) {
+          navigate(`/docente/examenes/${id}/respuestas`);
+        }
+      }, 800);
+    } catch (error) {
+      showMessage('error', error.message || 'No se pudo continuar');
+    } finally {
+      setContinuing(false);
+    }
+  };
 
   const handleDeleteTema = (temaId, event) => {
     event.stopPropagation();
@@ -653,7 +786,9 @@ export default function CrearExamenContent() {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             variant="outlined"
-            startIcon={<SaveIcon />}
+            startIcon={savingDraft ? <CircularProgress size={16} /> : <SaveIcon />}
+            onClick={handleGuardarBorrador}
+            disabled={savingDraft || continuing}
             sx={{
               borderColor: '#001f56',
               color: '#001f56',
@@ -666,11 +801,13 @@ export default function CrearExamenContent() {
               },
             }}
           >
-            Guardar borrador
+            {savingDraft ? 'Guardando...' : 'Guardar borrador'}
           </Button>
           <Button
             variant="contained"
-            endIcon={<ArrowForwardIcon />}
+            endIcon={continuing ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <ArrowForwardIcon />}
+            onClick={handleContinuar}
+            disabled={savingDraft || continuing}
             sx={{
               bgcolor: '#001f56',
               textTransform: 'none',
@@ -681,7 +818,7 @@ export default function CrearExamenContent() {
               },
             }}
           >
-            Continuar
+            {continuing ? 'Procesando...' : 'Continuar'}
           </Button>
         </Box>
       </Box>
@@ -1059,6 +1196,22 @@ export default function CrearExamenContent() {
           </Box>
         </Paper>
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
