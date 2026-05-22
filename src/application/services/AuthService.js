@@ -1,5 +1,28 @@
 import AuthAPI from '../../infrastructure/api/AuthAPI';
 import { ValidationError } from '../../domain/errors/AppErrors';
+import { debugJwt } from '../../utils/jwt';
+
+// Extrae el JWT del response soportando distintos nombres de campo
+const extractToken = (response) =>
+  response?.token || response?.accessToken || response?.jwt || response?.access_token || null;
+
+const persistSession = (response, extras = {}) => {
+  const token = extractToken(response);
+  if (token) {
+    localStorage.setItem('authToken', token);
+    debugJwt(token, 'authToken guardado');
+  } else {
+    console.warn('[Auth] El response no contiene un token reconocible:', response);
+  }
+  const user = {
+    email: response.email,
+    nombre: response.nombre,
+    apellido: response.apellido,
+    role: response.role,
+    ...extras,
+  };
+  localStorage.setItem('user', JSON.stringify(user));
+};
 
 export const AuthService = {
   register: async ({ nombre, apellido, username, email, recoveryEmail, password, role }) => {
@@ -11,18 +34,7 @@ export const AuthService = {
     }
 
     const response = await AuthAPI.register({ nombre, apellido, username, email, recoveryEmail, password, role });
-
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
-    }
-    const user = {
-      email: response.email,
-      nombre: response.nombre,
-      apellido: response.apellido,
-      role: response.role,
-    };
-    localStorage.setItem('user', JSON.stringify(user));
-
+    persistSession(response);
     return response;
   },
 
@@ -32,18 +44,7 @@ export const AuthService = {
     }
 
     const response = await AuthAPI.login(email, password);
-
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
-    }
-    const user = {
-      email: response.email,
-      nombre: response.nombre,
-      apellido: response.apellido,
-      role: response.role,
-    };
-    localStorage.setItem('user', JSON.stringify(user));
-
+    persistSession(response);
     return response;
   },
 
@@ -53,19 +54,7 @@ export const AuthService = {
     }
 
     const response = await AuthAPI.loginUade(email, legajo, password);
-
-    if (response.token) {
-      localStorage.setItem('authToken', response.token);
-    }
-    const user = {
-      email: response.email,
-      nombre: response.nombre,
-      apellido: response.apellido,
-      role: response.role,
-      legajo: response.legajo,
-    };
-    localStorage.setItem('user', JSON.stringify(user));
-
+    persistSession(response, { legajo: response.legajo });
     return response;
   },
 

@@ -5,6 +5,7 @@ import LoginPage from './presentation/pages/auth/login/LoginPage';
 import RegisterPage from './presentation/pages/auth/register/RegisterPage';
 import UadeLoginPage from './presentation/pages/auth/uade-login/UadeLoginPage';
 import Dashboard from './presentation/pages/Dashboard';
+import DocenteDashboard from './presentation/pages/dashboard/docente/DocenteDashboard';
 
 const theme = createTheme({
   palette: {
@@ -21,10 +22,23 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: { fontWeight: 600 },
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h4: { fontWeight: 700 },
     h5: { fontWeight: 600 },
     h6: { fontWeight: 600 },
+    body1: { fontWeight: 400 },
+    body2: { fontWeight: 400 },
+    button: { fontWeight: 500 },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 500,
+        },
+      },
+    },
   },
 });
 
@@ -38,6 +52,8 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/uade-login" element={<UadeLoginPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/docente" element={<DocenteDashboard />} />
+          <Route path="/docente/*" element={<DocenteDashboard />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
