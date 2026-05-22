@@ -245,7 +245,7 @@ export default function ExamenesContent() {
                           },
                         }}
                       >
-                        Corregir
+                        Corregí
                       </Button>
                     </Box>
                   </TableCell>

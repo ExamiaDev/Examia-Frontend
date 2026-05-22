@@ -10,7 +10,7 @@ const actions = [
     id: 'crear-examen',
     icon: AddIcon,
     title: 'Crear examen',
-    description: 'Disena un nuevo examen',
+    description: 'Diseña un nuevo examen',
     iconBg: '#eef2ff',
     iconColor: '#001f56',
   },

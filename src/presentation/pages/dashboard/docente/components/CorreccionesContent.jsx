@@ -233,7 +233,7 @@ const CorreccionesContent = () => {
                         },
                       }}
                     >
-                      Corregir
+                      Corregí
                     </Button>
                   </TableCell>
                 </TableRow>

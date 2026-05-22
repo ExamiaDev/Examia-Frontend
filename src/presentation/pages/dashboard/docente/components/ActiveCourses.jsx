@@ -11,7 +11,7 @@ const courses = [
     year: '2026',
     grade: '1C',
     students: 32,
-    shift: 'Manana',
+    shift: 'Mañana',
     shiftColor: '#001f56',
   },
   {

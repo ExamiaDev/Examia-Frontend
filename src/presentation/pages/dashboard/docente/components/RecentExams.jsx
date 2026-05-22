@@ -55,7 +55,7 @@ const RecentExams = () => {
           mb: 2,
         }}
       >
-        Examenes Recientes
+        Exámenes Recientes
       </Typography>
       <Paper
         elevation={0}
