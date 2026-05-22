@@ -9,7 +9,7 @@ export class User {
     this.id = id;
     this.username = username;
     this.email = email;
-    this.role = role; // PROFESOR o ALUMNO
+    this.role = role; // DOCENTE o ALUMNO
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }

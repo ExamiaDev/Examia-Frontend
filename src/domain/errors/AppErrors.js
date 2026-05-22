@@ -3,6 +3,13 @@
  * Custom error classes for domain-specific exceptions
  */
 
+export class AppError extends Error {
+  constructor(message = 'Ocurrió un error') {
+    super(message);
+    this.name = 'AppError';
+  }
+}
+
 export class AuthenticationError extends Error {
   constructor(message = 'Authentication failed') {
     super(message);

@@ -4,7 +4,7 @@
  */
 
 export const RoleEnum = {
-  PROFESOR: 'PROFESOR',
+  DOCENTE: 'DOCENTE',
   ALUMNO: 'ALUMNO',
 };
 
@@ -15,7 +15,7 @@ export const RoleEnum = {
  */
 export const getRoleDisplayName = (role) => {
   const displayNames = {
-    [RoleEnum.PROFESOR]: 'Profesor',
+    [RoleEnum.DOCENTE]: 'Docente',
     [RoleEnum.ALUMNO]: 'Alumno',
   };
   return displayNames[role] || role;
