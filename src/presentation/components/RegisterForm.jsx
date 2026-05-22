@@ -235,14 +235,14 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
                 label="Alumno"
               />
               <FormControlLabel
-                value="PROFESOR"
+                value="DOCENTE"
                 control={
                   <Radio
                     disabled={loading}
                     sx={{ color: '#001f56', '&.Mui-checked': { color: '#001f56' } }}
                   />
                 }
-                label="Profesor"
+                label="Docente"
               />
             </RadioGroup>
           </FormControl>

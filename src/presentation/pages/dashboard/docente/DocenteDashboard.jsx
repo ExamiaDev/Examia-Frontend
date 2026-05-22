@@ -20,13 +20,13 @@ const DocenteDashboard = () => {
       navigate('/login');
       return;
     }
-    // Solo permitir acceso a profesores
-    if (user.role !== RoleEnum.PROFESOR) {
+    // Solo permitir acceso a docentes
+    if (user.role !== RoleEnum.DOCENTE) {
       navigate('/dashboard');
     }
   }, [navigate, user]);
 
-  if (!user || user.role !== RoleEnum.PROFESOR) {
+  if (!user || user.role !== RoleEnum.DOCENTE) {
     return null;
   }
 

@@ -15,7 +15,7 @@ import { RoleEnum } from '../../domain/enums/RoleEnum';
 
 const ROLE_LABELS = {
   ALUMNO: 'Alumno',
-  PROFESOR: 'Profesor',
+  DOCENTE: 'Docente',
 };
 
 const Dashboard = () => {
@@ -27,8 +27,8 @@ const Dashboard = () => {
       navigate('/login');
       return;
     }
-    // Redirigir profesores a su dashboard especifico
-    if (user.role === RoleEnum.PROFESOR) {
+    // Redirigir docentes a su dashboard especifico
+    if (user.role === RoleEnum.DOCENTE) {
       navigate('/docente');
     }
   }, [navigate, user]);
