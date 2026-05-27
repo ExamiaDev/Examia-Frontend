@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import DashboardContent from './components/DashboardContent';
 import ExamenesContent from './components/ExamenesContent';
 import CorreccionesContent from './components/CorreccionesContent';
+import CorreccionDetalleContent from './components/CorreccionDetalleContent';
 import CrearExamenContent from './components/CrearExamenContent';
 import MetricasContent from './components/MetricasContent';
 
@@ -43,6 +44,16 @@ const DocenteDashboard = () => {
     }
     
     if (path.includes('/correcciones')) {
+      const segments = path.split('/').filter(Boolean);
+      // ['docente', 'correcciones', examId, submissionId]
+      if (segments.length >= 4) {
+        // /docente/correcciones/:examId/:submissionId → corrección individual
+        return <CorreccionDetalleContent examId={segments[2]} submissionId={segments[3]} />;
+      }
+      if (segments.length === 3) {
+        // /docente/correcciones/:examId → pre-seleccionar examen (viene desde Exámenes)
+        return <CorreccionesContent initialExamId={segments[2]} />;
+      }
       return <CorreccionesContent />;
     }
     

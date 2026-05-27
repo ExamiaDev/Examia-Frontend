@@ -15,9 +15,11 @@ const persistSession = (response, extras = {}) => {
     console.warn('[Auth] El response no contiene un token reconocible:', response);
   }
   const user = {
+    id: response.id,
     email: response.email,
     nombre: response.nombre,
     apellido: response.apellido,
+    legajo: response.legajo,
     role: response.role,
     ...extras,
   };
@@ -54,7 +56,7 @@ export const AuthService = {
     }
 
     const response = await AuthAPI.loginUade(email, legajo, password);
-    persistSession(response, { legajo: response.legajo });
+    persistSession(response);
     return response;
   },
 
