@@ -9,6 +9,7 @@ import ExamenesContent from './components/ExamenesContent';
 import CorreccionesContent from './components/CorreccionesContent';
 import CorreccionDetalleContent from './components/CorreccionDetalleContent';
 import CrearExamenContent from './components/CrearExamenContent';
+import CursoContent from './components/CursoContent';
 import MetricasContent from './components/MetricasContent';
 
 const DocenteDashboard = () => {
@@ -37,6 +38,11 @@ const DocenteDashboard = () => {
     
     if (path.includes('/examenes/crear')) {
       return <CrearExamenContent />;
+    }
+
+    if (path.includes('/cursos/')) {
+      const segments = path.split('/').filter(Boolean);
+      return <CursoContent courseId={segments[2]} />;
     }
     
     if (path.includes('/examenes')) {

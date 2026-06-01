@@ -11,6 +11,7 @@ import {
   Chip,
   Button,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const exams = [
   {
@@ -43,6 +44,10 @@ const exams = [
 ];
 
 const RecentExams = () => {
+  const navigate = useNavigate();
+
+  const goToCorrecciones = () => navigate('/docente/correcciones');
+
   return (
     <Box>
       <Typography
@@ -166,13 +171,17 @@ const RecentExams = () => {
                       color: '#111827',
                       fontSize: '0.9rem',
                       borderBottom: '1px solid #e5e7eb',
+                      cursor: exam.pending > 0 ? 'pointer' : 'default',
+                      '&:hover': exam.pending > 0 ? { color: '#001f56' } : undefined,
                     }}
+                    onClick={() => exam.pending > 0 && goToCorrecciones()}
                   >
                     {exam.pending}
                   </TableCell>
                   <TableCell align="right" sx={{ borderBottom: '1px solid #e5e7eb' }}>
                     <Button
                       variant="text"
+                      onClick={goToCorrecciones}
                       sx={{
                         color: '#001f56',
                         textTransform: 'none',

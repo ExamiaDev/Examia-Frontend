@@ -451,40 +451,42 @@ export default function CrearExamenContent() {
   // Mapea los tipos de pregunta de la UI a los enums que espera el backend
   const QUESTION_TYPE_MAP = {
     'texto-libre': 'LONG_ANSWER',
-    'tabla': 'MATCHING',
-    'arbol-decision': 'ORDERING',
+    'tabla': 'MATRIX',
+    'arbol-decision': 'DECISION_TREE',
     'multiple-choice': 'MULTIPLE_CHOICE',
+  };
+
+  const buildMatchingPairs = (pares) =>
+    Object.fromEntries((pares || []).filter((p) => p.izquierda).map((p) => [p.izquierda, p.derecha || '']));
+
+  const buildQuestionPayload = (tema, q) => {
+    const base = {
+      type: QUESTION_TYPE_MAP[q.type] || 'LONG_ANSWER',
+      text: q.enunciado || '',
+      points: q.puntaje || 0,
+      topic: tema.nombre,
+      topicColor: tema.color || TOPIC_COLORS[0],
+    };
+
+    if (q.type === 'multiple-choice' && q.opciones) {
+      base.options = q.opciones;
+      if (q.correcta != null) {
+        base.correctAnswers = [q.correcta];
+      }
+    }
+    if (q.type === 'arbol-decision' && q.items) {
+      base.correctOrder = q.items.filter(Boolean);
+    }
+    if (q.type === 'tabla' && q.pares) {
+      base.matchingPairs = buildMatchingPairs(q.pares);
+    }
+
+    return base;
   };
 
   // Mapea el estado UI al payload que espera el backend (campos en inglés)
   const buildExamPayload = (status) => {
-    const questions = temas.flatMap((tema) =>
-      tema.preguntas.map((q) => {
-        const base = {
-          type: QUESTION_TYPE_MAP[q.type] || 'LONG_ANSWER',
-          text: q.enunciado || '',
-          points: q.puntaje || 0,
-          topic: tema.nombre,
-          topicColor: tema.color || TOPIC_COLORS[0],
-        };
-        if (q.type === 'multiple-choice' && q.opciones) {
-          base.options = q.opciones;
-          if (q.correcta != null) {
-            base.correctAnswers = [q.correcta];
-          }
-        }
-        if (q.type === 'arbol-decision' && q.items) {
-          base.correctOrder = q.items.filter(Boolean);
-        }
-        if (q.type === 'tabla' && q.pares) {
-          base.matchingPairs = Object.fromEntries(
-            q.pares.filter((p) => p.izquierda).map((p) => [p.izquierda, p.derecha || ''])
-          );
-        }
-        return base;
-      })
-    );
-
+    const questions = temas.flatMap((tema) => tema.preguntas.map((q) => buildQuestionPayload(tema, q)));
     const totalPoints = temas.length * 10;
 
     return {

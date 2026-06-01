@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -18,7 +19,6 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
-  Divider,
   Snackbar,
   Dialog,
   DialogTitle,
@@ -33,7 +33,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import SendIcon from '@mui/icons-material/Send';
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
@@ -49,7 +48,34 @@ const TYPE_LABELS = {
   FILL_IN_THE_BLANK: 'Completar el espacio',
   ORDERING: 'Ordenar',
   MATCHING: 'Relacionar',
+  DECISION_TREE: 'Árbol de decisión',
+  MATRIX: 'Matriz',
 };
+
+const QuestionShape = PropTypes.shape({
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  type: PropTypes.string,
+  text: PropTypes.string,
+  points: PropTypes.number,
+  options: PropTypes.arrayOf(PropTypes.string),
+  topic: PropTypes.string,
+  topicColor: PropTypes.string,
+  matchingPairs: PropTypes.objectOf(PropTypes.string),
+});
+
+const AnswerShape = PropTypes.shape({
+  questionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  selectedOptions: PropTypes.arrayOf(PropTypes.number),
+  textAnswer: PropTypes.string,
+  orderAnswer: PropTypes.arrayOf(PropTypes.string),
+  matchingAnswer: PropTypes.objectOf(PropTypes.string),
+});
+
+const GroupShape = PropTypes.shape({
+  topic: PropTypes.string,
+  color: PropTypes.string,
+  questions: PropTypes.arrayOf(QuestionShape),
+});
 
 const emptyAnswer = (question) => {
   const base = { questionId: question.id };
@@ -62,11 +88,13 @@ const emptyAnswer = (question) => {
     case 'SHORT_ANSWER':
     case 'FILL_IN_THE_BLANK':
       return { ...base, textAnswer: '' };
-    case 'ORDERING': {
+    case 'ORDERING':
+    case 'DECISION_TREE': {
       const src = question.correctOrder?.length ? question.correctOrder : (question.options ?? []);
       return { ...base, orderAnswer: [...src].sort(() => Math.random() - 0.5) };
     }
     case 'MATCHING':
+    case 'MATRIX':
       return { ...base, matchingAnswer: {} };
     default:
       return base;
@@ -208,8 +236,10 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
       case 'LONG_ANSWER': return <TextAnswer answer={answer} onChange={onChange} multiline />;
       case 'SHORT_ANSWER':
       case 'FILL_IN_THE_BLANK': return <TextAnswer answer={answer} onChange={onChange} />;
-      case 'ORDERING': return <OrderingAnswer answer={answer} onChange={onChange} />;
-      case 'MATCHING': return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
+      case 'ORDERING':
+      case 'DECISION_TREE': return <OrderingAnswer answer={answer} onChange={onChange} />;
+      case 'MATCHING':
+      case 'MATRIX': return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
       default: return <Typography color="text.secondary">Tipo no soportado: {question.type}</Typography>;
     }
   };
@@ -244,6 +274,9 @@ const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
           {exam.subjectName || exam.subjectId}
           {exam.durationMinutes ? ` · ${exam.durationMinutes} min` : ''}
         </Typography>
+        <Typography variant="body2" sx={{ color: '#888', mb: 1 }}>
+          Progreso: {totalAnswered}/{totalQuestions} preguntas respondidas.
+        </Typography>
         <Typography variant="body2" sx={{ color: '#888' }}>
           Elegí el tema que te asignó el profesor. Solo podés entregar uno.
         </Typography>
@@ -259,7 +292,7 @@ const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
             const colSize = Math.max(3, Math.floor(12 / groups.length));
 
             return (
-              <Grid item xs={12} sm={colSize} key={group.topic}>
+              <Grid size={{ xs: 12, sm: colSize }} key={group.topic}>
                 <Paper
                   elevation={0}
                   onClick={() => onSelectTopic(idx)}
@@ -380,6 +413,69 @@ const TopicQuestionsView = ({ group, topicIdx, answers, onAnswerChange, onBack, 
   );
 };
 
+MultipleChoiceAnswer.propTypes = {
+  question: QuestionShape.isRequired,
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+TrueFalseAnswer.propTypes = {
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+MultipleSelectionAnswer.propTypes = {
+  question: QuestionShape.isRequired,
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+TextAnswer.propTypes = {
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+  multiline: PropTypes.bool,
+};
+
+OrderingAnswer.propTypes = {
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+MatchingAnswer.propTypes = {
+  question: QuestionShape.isRequired,
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+QuestionCard.propTypes = {
+  question: QuestionShape.isRequired,
+  index: PropTypes.number.isRequired,
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+  topicColor: PropTypes.string,
+};
+
+TopicSelectionView.propTypes = {
+  exam: PropTypes.shape({
+    title: PropTypes.string,
+    subjectName: PropTypes.string,
+    subjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    durationMinutes: PropTypes.number,
+  }).isRequired,
+  groups: PropTypes.arrayOf(GroupShape).isRequired,
+  answers: PropTypes.object.isRequired,
+  onSelectTopic: PropTypes.func.isRequired,
+};
+
+TopicQuestionsView.propTypes = {
+  group: GroupShape.isRequired,
+  topicIdx: PropTypes.number.isRequired,
+  answers: PropTypes.object.isRequired,
+  onAnswerChange: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
+  onFinish: PropTypes.func.isRequired,
+};
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 const RealizarExamenContent = ({ examId }) => {
@@ -451,11 +547,11 @@ const RealizarExamenContent = ({ examId }) => {
   const topicTotal = selectedGroup ? selectedGroup.questions.length : 0;
 
   const handleSubmit = async () => {
-    setConfirmOpen(false);
     setSubmitting(true);
     try {
       const answersList = (selectedGroup?.questions ?? []).map((q) => answers[q.id] ?? emptyAnswer(q));
       await SubmissionService.submitExam(examId, answersList);
+      setConfirmOpen(false);
       setSnackbar({ open: true, message: '¡Examen entregado exitosamente!', severity: 'success' });
       setTimeout(() => navigate('/alumno'), 1800);
     } catch (err) {
@@ -529,7 +625,7 @@ const RealizarExamenContent = ({ examId }) => {
         <DialogTitle sx={{ fontWeight: 700, color: '#001f56' }}>Confirmar entrega</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Respondiste {topicAnswered} de {topicTotal} pregunta{topicTotal !== 1 ? 's' : ''} del tema seleccionado.
+            Respondiste {topicAnswered} de {topicTotal} pregunta{topicTotal === 1 ? '' : 's'} del tema seleccionado.
             {topicAnswered < topicTotal && ` Hay ${topicTotal - topicAnswered} sin responder.`} ¿Querés entregar el examen?
           </DialogContentText>
         </DialogContent>

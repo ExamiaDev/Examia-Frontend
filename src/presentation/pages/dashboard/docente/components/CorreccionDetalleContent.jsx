@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -34,11 +35,27 @@ const QUESTION_TYPE_LABELS = {
   LONG_ANSWER: 'Respuesta extensa',
   FILL_IN_THE_BLANK: 'Completar',
   ORDERING: 'Ordenar',
+  DECISION_TREE: 'Árbol de decisión',
   MATCHING: 'Emparejar',
+  MATRIX: 'Matriz',
 };
 
 const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE'];
 const isAutoGradable = (type) => AUTO_GRADABLE.includes(type);
+
+const AnswerShape = PropTypes.shape({
+  questionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  questionType: PropTypes.string,
+  points: PropTypes.number,
+  earnedScore: PropTypes.number,
+  teacherFeedback: PropTypes.string,
+  questionText: PropTypes.string,
+  correctAnswers: PropTypes.arrayOf(PropTypes.number),
+  selectedOptions: PropTypes.arrayOf(PropTypes.number),
+  orderAnswer: PropTypes.arrayOf(PropTypes.string),
+  matchingPairs: PropTypes.objectOf(PropTypes.string),
+  matchingAnswer: PropTypes.objectOf(PropTypes.string),
+});
 
 const autoScore = (answer) => {
   if (answer.questionType === 'MULTIPLE_CHOICE' || answer.questionType === 'TRUE_FALSE') {
@@ -52,7 +69,7 @@ const autoScore = (answer) => {
     const hits = [...correct].filter((c) => selected.has(c)).length;
     const wrong = [...selected].filter((s) => !correct.has(s)).length;
     const net = Math.max(0, hits - wrong);
-    return correct.size > 0 ? parseFloat(((net / correct.size) * answer.points).toFixed(2)) : 0;
+    return correct.size > 0 ? Number.parseFloat(((net / correct.size) * answer.points).toFixed(2)) : 0;
   }
   return null;
 };
@@ -126,7 +143,7 @@ const OrderingAnswer = ({ answer }) => {
       {student.map((item, idx) => {
         const ok = correct[idx] === item;
         return (
-          <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: ok ? '#e8f5e9' : '#fce4ec', border: `1px solid ${ok ? '#a5d6a7' : '#ef9a9a'}`, borderRadius: 1, px: 2, py: 1 }}>
+          <Box key={`${item}-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: ok ? '#e8f5e9' : '#fce4ec', border: `1px solid ${ok ? '#a5d6a7' : '#ef9a9a'}`, borderRadius: 1, px: 2, py: 1 }}>
             <Typography variant="caption" sx={{ fontWeight: 700, color: '#666', minWidth: 20 }}>{idx + 1}.</Typography>
             <Typography variant="body2" sx={{ flex: 1, color: '#333' }}>{item}</Typography>
             {ok ? <CheckCircleIcon sx={{ fontSize: 18, color: '#2e7d32' }} /> : <CancelIcon sx={{ fontSize: 18, color: '#c62828' }} />}
@@ -136,7 +153,7 @@ const OrderingAnswer = ({ answer }) => {
       <Divider sx={{ my: 0.5 }} />
       <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>Orden correcto:</Typography>
       {correct.map((item, idx) => (
-        <Box key={idx} sx={{ display: 'flex', gap: 1.5, px: 2, py: 0.75, bgcolor: '#e3f2fd', borderRadius: 1, border: '1px solid #90caf9' }}>
+        <Box key={`correct-${item}-${idx}`} sx={{ display: 'flex', gap: 1.5, px: 2, py: 0.75, bgcolor: '#e3f2fd', borderRadius: 1, border: '1px solid #90caf9' }}>
           <Typography variant="caption" sx={{ fontWeight: 700, color: '#1565c0', minWidth: 20 }}>{idx + 1}.</Typography>
           <Typography variant="body2" sx={{ color: '#1565c0' }}>{item}</Typography>
         </Box>
@@ -168,98 +185,321 @@ const MatchingAnswer = ({ answer }) => {
 
 // ─── Card de pregunta ─────────────────────────────────────────────────────────
 
+const QuestionHeader = ({ answer, index, isAuto, readOnly, scoreNum }) => (
+  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Typography variant="body2" sx={{ color: '#666', fontWeight: 600 }}>Pregunta {index + 1}</Typography>
+      <Chip
+        label={QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
+        size="small"
+        sx={{ bgcolor: isAuto ? '#e3f2fd' : '#f3e5f5', color: isAuto ? '#1565c0' : '#6a1b9a', fontSize: '0.72rem', height: 22 }}
+      />
+      {isAuto && (
+        <Chip label="Auto-corregida" size="small" sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontSize: '0.72rem', height: 22 }} />
+      )}
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+      {readOnly && scoreNum != null ? (
+        <Chip
+          label={`${scoreNum} / ${answer.points} pts`}
+          size="small"
+          sx={{ bgcolor: scoreNum >= answer.points ? '#e8f5e9' : '#fff3e0', color: scoreNum >= answer.points ? '#2e7d32' : '#e65100', fontWeight: 700, fontSize: '0.75rem' }}
+        />
+      ) : (
+        <Typography variant="body2" sx={{ color: '#888', fontWeight: 500 }}>
+          {answer.points} pt{answer.points !== 1 ? 's' : ''}
+        </Typography>
+      )}
+    </Box>
+  </Box>
+);
+
+const QuestionBody = ({ answer }) => {
+  if (['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE'].includes(answer.questionType)) {
+    return <MultipleChoiceAnswer answer={answer} />;
+  }
+  if (['LONG_ANSWER', 'SHORT_ANSWER', 'FILL_IN_THE_BLANK'].includes(answer.questionType)) {
+    return <TextAnswer answer={answer} />;
+  }
+  if (['ORDERING', 'DECISION_TREE'].includes(answer.questionType)) {
+    return <OrderingAnswer answer={answer} />;
+  }
+  if (['MATCHING', 'MATRIX'].includes(answer.questionType)) {
+    return <MatchingAnswer answer={answer} />;
+  }
+  return null;
+};
+
+const QuestionFooter = ({ answer, readOnly, scoreValue, feedbackValue, onScoreChange, onFeedbackChange }) => {
+  if (readOnly) {
+    if (!answer.teacherFeedback) return null;
+
+    return (
+      <Box sx={{ bgcolor: '#fffde7', borderRadius: 1, px: 2, py: 1.5, border: '1px solid #fff176' }}>
+        <Typography variant="caption" sx={{ color: '#f57f17', fontWeight: 600, display: 'block', mb: 0.5 }}>
+          Comentario del docente
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#333', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{answer.teacherFeedback}</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <TextField
+        label="Puntaje"
+        type="number"
+        size="small"
+        value={scoreValue}
+        onChange={(e) => onScoreChange(answer.questionId, e.target.value)}
+        error={scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue))}
+        helperText={scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue)) ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
+        slotProps={{
+          htmlInput: { min: 0, max: answer.points, step: 0.1 },
+          input: { endAdornment: <InputAdornment position="end">pts</InputAdornment> },
+        }}
+        sx={{ width: 140 }}
+      />
+      <TextField
+        label="Comentario (opcional)"
+        size="small"
+        value={feedbackValue}
+        onChange={(e) => onFeedbackChange(answer.questionId, e.target.value)}
+        placeholder="Feedback para el alumno..."
+        multiline
+        minRows={1}
+        sx={{ flex: 1, minWidth: 200 }}
+      />
+    </Box>
+  );
+};
+
+QuestionHeader.propTypes = {
+  answer: AnswerShape.isRequired,
+  index: PropTypes.number.isRequired,
+  isAuto: PropTypes.bool.isRequired,
+  readOnly: PropTypes.bool.isRequired,
+  scoreNum: PropTypes.number,
+};
+
+QuestionBody.propTypes = {
+  answer: AnswerShape.isRequired,
+};
+
+QuestionFooter.propTypes = {
+  answer: AnswerShape.isRequired,
+  readOnly: PropTypes.bool.isRequired,
+  scoreValue: PropTypes.string,
+  feedbackValue: PropTypes.string,
+  onScoreChange: PropTypes.func.isRequired,
+  onFeedbackChange: PropTypes.func.isRequired,
+};
+
 const QuestionCard = ({ answer, index, scoreValue, feedbackValue, onScoreChange, onFeedbackChange, readOnly }) => {
   const isAuto = isAutoGradable(answer.questionType);
-  const scoreNum = readOnly ? answer.earnedScore : parseFloat(scoreValue);
-  const isScoreValid = !isNaN(parseFloat(scoreValue)) && parseFloat(scoreValue) >= 0 && parseFloat(scoreValue) <= answer.points;
+  const scoreNum = readOnly ? answer.earnedScore : Number.parseFloat(scoreValue);
 
   return (
     <Paper elevation={0} sx={{
       border: '1px solid #e0e0e0', borderRadius: 2, p: 3, mb: 3,
       borderLeft: isAuto ? '4px solid #42a5f5' : '4px solid #7c3aed',
     }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography variant="body2" sx={{ color: '#666', fontWeight: 600 }}>Pregunta {index + 1}</Typography>
-          <Chip
-            label={QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
-            size="small"
-            sx={{ bgcolor: isAuto ? '#e3f2fd' : '#f3e5f5', color: isAuto ? '#1565c0' : '#6a1b9a', fontSize: '0.72rem', height: 22 }}
-          />
-          {isAuto && (
-            <Chip label="Auto-corregida" size="small" sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontSize: '0.72rem', height: 22 }} />
-          )}
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-          {readOnly && scoreNum != null && (
-            <Chip
-              label={`${scoreNum} / ${answer.points} pts`}
-              size="small"
-              sx={{ bgcolor: scoreNum >= answer.points ? '#e8f5e9' : '#fff3e0', color: scoreNum >= answer.points ? '#2e7d32' : '#e65100', fontWeight: 700, fontSize: '0.75rem' }}
-            />
-          )}
-          {!readOnly && (
-            <Typography variant="body2" sx={{ color: '#888', fontWeight: 500 }}>
-              {answer.points} pt{answer.points !== 1 ? 's' : ''}
-            </Typography>
-          )}
-        </Box>
-      </Box>
+      <QuestionHeader answer={answer} index={index} isAuto={isAuto} readOnly={readOnly} scoreNum={scoreNum} />
 
       <Typography variant="body1" sx={{ fontWeight: 500, color: '#222', mb: 1.5, lineHeight: 1.5 }}>
         {answer.questionText}
       </Typography>
 
-      {(answer.questionType === 'MULTIPLE_CHOICE' || answer.questionType === 'MULTIPLE_SELECTION' || answer.questionType === 'TRUE_FALSE') && (
-        <MultipleChoiceAnswer answer={answer} />
-      )}
-      {(answer.questionType === 'LONG_ANSWER' || answer.questionType === 'SHORT_ANSWER' || answer.questionType === 'FILL_IN_THE_BLANK') && (
-        <TextAnswer answer={answer} />
-      )}
-      {answer.questionType === 'ORDERING' && <OrderingAnswer answer={answer} />}
-      {answer.questionType === 'MATCHING' && <MatchingAnswer answer={answer} />}
+      <QuestionBody answer={answer} />
 
       <Divider sx={{ my: 2.5 }} />
-      {readOnly ? (
-        answer.teacherFeedback ? (
-          <Box sx={{ bgcolor: '#fffde7', borderRadius: 1, px: 2, py: 1.5, border: '1px solid #fff176' }}>
-            <Typography variant="caption" sx={{ color: '#f57f17', fontWeight: 600, display: 'block', mb: 0.5 }}>
-              Comentario del docente
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#333', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{answer.teacherFeedback}</Typography>
-          </Box>
-        ) : null
-      ) : (
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <TextField
-            label="Puntaje"
-            type="number"
-            size="small"
-            value={scoreValue}
-            onChange={(e) => onScoreChange(answer.questionId, e.target.value)}
-            inputProps={{ min: 0, max: answer.points, step: 0.1 }}
-            error={scoreValue !== '' && !isScoreValid}
-            helperText={scoreValue !== '' && !isScoreValid ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
-            InputProps={{ endAdornment: <InputAdornment position="end">pts</InputAdornment> }}
-            sx={{ width: 140 }}
-          />
-          <TextField
-            label="Comentario (opcional)"
-            size="small"
-            value={feedbackValue}
-            onChange={(e) => onFeedbackChange(answer.questionId, e.target.value)}
-            placeholder="Feedback para el alumno..."
-            multiline
-            minRows={1}
-            sx={{ flex: 1, minWidth: 200 }}
-          />
-        </Box>
-      )}
+      <QuestionFooter
+        answer={answer}
+        readOnly={readOnly}
+        scoreValue={scoreValue}
+        feedbackValue={feedbackValue}
+        onScoreChange={onScoreChange}
+        onFeedbackChange={onFeedbackChange}
+      />
     </Paper>
   );
 };
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+QuestionCard.propTypes = {
+  answer: AnswerShape.isRequired,
+  index: PropTypes.number.isRequired,
+  scoreValue: PropTypes.string,
+  feedbackValue: PropTypes.string,
+  onScoreChange: PropTypes.func.isRequired,
+  onFeedbackChange: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool.isRequired,
+};
+
+const LoadingView = () => (
+  <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+    <CircularProgress sx={{ color: '#001f56' }} />
+  </Box>
+);
+
+const ErrorView = ({ error, onBack }) => (
+  <Box sx={{ p: 4 }}>
+    <Alert severity="error">{error}</Alert>
+    <Button sx={{ mt: 2 }} onClick={onBack}>Volver</Button>
+  </Box>
+);
+
+ErrorView.propTypes = {
+  error: PropTypes.string.isRequired,
+  onBack: PropTypes.func.isRequired,
+};
+
+const groupAnswersByTopic = (answers) => {
+  const topics = [];
+  const seenTopics = new Set();
+
+  answers.forEach((answer) => {
+    const topic = answer.topic || 'Sin tema';
+    if (!seenTopics.has(topic)) {
+      seenTopics.add(topic);
+      topics.push(topic);
+    }
+  });
+
+  return {
+    topics,
+    hasTemas: topics.length > 1 || (topics.length === 1 && topics[0] !== 'Sin tema'),
+  };
+};
+
+const TopicAnswersSection = ({ submission, questionScores, onScoreChange, onFeedbackChange, readOnly }) => {
+  const answers = submission.answers || [];
+  const { topics, hasTemas } = groupAnswersByTopic(answers);
+  let globalIdx = 0;
+
+  return (
+    <>
+      {topics.map((topic) => {
+        const topicAnswers = answers.filter((a) => (a.topic || 'Sin tema') === topic);
+        return (
+          <Box key={topic}>
+            {hasTemas && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, mt: globalIdx > 0 ? 1 : 0 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#001f56' }}>{topic}</Typography>
+                <Divider sx={{ flex: 1 }} />
+                <Typography variant="caption" sx={{ color: '#888', flexShrink: 0 }}>
+                  {topicAnswers.reduce((s, a) => s + (a.points || 0), 0)} pts
+                </Typography>
+              </Box>
+            )}
+            {topicAnswers.map((answer) => {
+              const idx = globalIdx++;
+              return (
+                <QuestionCard
+                  key={answer.questionId}
+                  answer={answer}
+                  index={idx}
+                  scoreValue={questionScores[answer.questionId]?.score ?? ''}
+                  feedbackValue={questionScores[answer.questionId]?.feedback ?? ''}
+                  onScoreChange={onScoreChange}
+                  onFeedbackChange={onFeedbackChange}
+                  readOnly={readOnly}
+                />
+              );
+            })}
+          </Box>
+        );
+      })}
+    </>
+  );
+};
+
+TopicAnswersSection.propTypes = {
+  submission: PropTypes.shape({
+    answers: PropTypes.arrayOf(AnswerShape),
+  }).isRequired,
+  questionScores: PropTypes.object.isRequired,
+  onScoreChange: PropTypes.func.isRequired,
+  onFeedbackChange: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool.isRequired,
+};
+
+const GeneralFeedbackSection = ({ readOnly, teacherFeedback, setTeacherFeedback }) => (
+  <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, p: 3, mb: 3 }}>
+    <Typography variant="body1" sx={{ fontWeight: 600, color: '#333', mb: 1.5 }}>
+      Comentario general
+    </Typography>
+    {readOnly ? (
+      teacherFeedback ? (
+        <Typography variant="body2" sx={{ color: '#333', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+          {teacherFeedback}
+        </Typography>
+      ) : (
+        <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic' }}>Sin comentario general.</Typography>
+      )
+    ) : (
+      <TextField
+        fullWidth
+        multiline
+        minRows={3}
+        placeholder="Escribí un comentario general para el alumno..."
+        value={teacherFeedback}
+        onChange={(e) => setTeacherFeedback(e.target.value)}
+      />
+    )}
+  </Paper>
+);
+
+GeneralFeedbackSection.propTypes = {
+  readOnly: PropTypes.bool.isRequired,
+  teacherFeedback: PropTypes.string,
+  setTeacherFeedback: PropTypes.func.isRequired,
+};
+
+const ReviewActions = ({ readOnly, allScored, hasValidScores, saving, handleSubmit, onCancel }) => (
+  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, pb: 4 }}>
+    {readOnly ? (
+      <Button
+        variant="outlined"
+        onClick={onCancel}
+        sx={{ textTransform: 'none', borderColor: '#001f56', color: '#001f56' }}
+      >
+        Volver
+      </Button>
+    ) : (
+      <>
+        <Button
+          variant="outlined"
+          onClick={onCancel}
+          sx={{ textTransform: 'none', borderColor: '#001f56', color: '#001f56' }}
+        >
+          Cancelar
+        </Button>
+        <Button
+          variant="contained"
+          disabled={!allScored || !hasValidScores || saving}
+          onClick={handleSubmit}
+          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
+          sx={{
+            bgcolor: '#001f56', color: '#fff', textTransform: 'none', fontWeight: 600, px: 3,
+            '&:hover': { bgcolor: '#003080' },
+            '&:disabled': { bgcolor: '#ccc' },
+          }}
+        >
+          {saving ? 'Guardando...' : 'Guardar corrección'}
+        </Button>
+      </>
+    )}
+  </Box>
+);
+
+ReviewActions.propTypes = {
+  readOnly: PropTypes.bool.isRequired,
+  allScored: PropTypes.bool.isRequired,
+  hasValidScores: PropTypes.bool.isRequired,
+  saving: PropTypes.bool.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+};
 
 const CorreccionDetalleContent = ({ examId, submissionId }) => {
   const navigate = useNavigate();
@@ -268,29 +508,32 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-
   const [questionScores, setQuestionScores] = useState({});
   const [teacherFeedback, setTeacherFeedback] = useState('');
 
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+
+    const loadSubmission = async () => {
       setLoading(true);
       setError(null);
+
       try {
         const data = await SubmissionService.getSubmission(examId, submissionId);
         if (!mounted) return;
-        setSubmission(data);
 
-        const initial = {};
+        setSubmission(data);
+        const initialScores = {};
+
         (data.answers || []).forEach((ans) => {
           const auto = autoScore(ans);
-          initial[ans.questionId] = {
-            score: auto !== null ? String(auto) : '',
+          initialScores[ans.questionId] = {
+            score: auto === null ? '' : String(auto),
             feedback: ans.teacherFeedback || '',
           };
         });
-        setQuestionScores(initial);
+
+        setQuestionScores(initialScores);
         if (data.teacherFeedback) setTeacherFeedback(data.teacherFeedback);
       } catch (err) {
         if (mounted) setError(err.message || 'Error al cargar la entrega');
@@ -298,21 +541,28 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
         if (mounted) setLoading(false);
       }
     };
-    load();
+
+    loadSubmission();
     return () => { mounted = false; };
   }, [examId, submissionId]);
 
   const handleScoreChange = useCallback((questionId, value) => {
-    setQuestionScores((prev) => ({ ...prev, [questionId]: { ...prev[questionId], score: value } }));
+    setQuestionScores((prev) => ({
+      ...prev,
+      [questionId]: { ...prev[questionId], score: value },
+    }));
   }, []);
 
   const handleFeedbackChange = useCallback((questionId, value) => {
-    setQuestionScores((prev) => ({ ...prev, [questionId]: { ...prev[questionId], feedback: value } }));
+    setQuestionScores((prev) => ({
+      ...prev,
+      [questionId]: { ...prev[questionId], feedback: value },
+    }));
   }, []);
 
   const totalScore = Object.values(questionScores).reduce((acc, { score }) => {
-    const n = parseFloat(score);
-    return acc + (isNaN(n) ? 0 : n);
+    const numeric = parseFloat(score);
+    return acc + (isNaN(numeric) ? 0 : numeric);
   }, 0);
 
   const allScored = submission
@@ -321,13 +571,14 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
 
   const hasValidScores = submission
     ? (submission.answers || []).every(({ questionId, points }) => {
-        const val = parseFloat(questionScores[questionId]?.score);
-        return !isNaN(val) && val >= 0 && val <= points;
+        const value = parseFloat(questionScores[questionId]?.score);
+        return !isNaN(value) && value >= 0 && value <= points;
       })
     : false;
 
   const handleSubmit = async () => {
     if (!allScored || !hasValidScores) return;
+
     setSaving(true);
     try {
       const questionGrades = (submission.answers || []).map(({ questionId }) => ({
@@ -351,41 +602,14 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <CircularProgress sx={{ color: '#001f56' }} />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 4 }}>
-        <Alert severity="error">{error}</Alert>
-        <Button sx={{ mt: 2 }} onClick={() => navigate('/docente/correcciones')}>Volver</Button>
-      </Box>
-    );
-  }
-
+  if (loading) return <LoadingView />;
+  if (error) return <ErrorView error={error} onBack={() => navigate('/docente/correcciones')} />;
   if (!submission) return null;
 
   const readOnly = submission.status === 'GRADED';
 
-  // Agrupar preguntas por tema
-  const topics = [];
-  const seenTopics = new Set();
-  (submission.answers || []).forEach((a) => {
-    const t = a.topic || 'Sin tema';
-    if (!seenTopics.has(t)) { seenTopics.add(t); topics.push(t); }
-  });
-  const hasTemas = topics.length > 1 || (topics.length === 1 && topics[0] !== 'Sin tema');
-
-  let globalIdx = 0;
-
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa', minHeight: '100vh' }}>
-      {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 4, pb: 2 }}>
         <Tooltip title="Volver a entregas">
           <IconButton onClick={() => navigate('/docente/correcciones')} sx={{ mt: 0.25, color: '#001f56' }}>
@@ -407,7 +631,6 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
         </Paper>
       </Box>
 
-      {/* Info del alumno */}
       <Box sx={{ px: 4, pb: 2 }}>
         <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, px: 3, py: 2, display: 'flex', alignItems: 'center', gap: 2, bgcolor: '#fff' }}>
           <PersonIcon sx={{ color: '#001f56', fontSize: 32 }} />
@@ -437,66 +660,24 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
         </Paper>
       </Box>
 
-      {/* Preguntas agrupadas por tema */}
       <Box sx={{ px: 4, pb: 2, flex: 1 }}>
         <Typography variant="h6" sx={{ fontWeight: 600, color: '#333', mb: 2 }}>
           Respuestas ({(submission.answers || []).length} pregunta{(submission.answers || []).length !== 1 ? 's' : ''})
         </Typography>
 
-        {topics.map((topic) => {
-          const topicAnswers = (submission.answers || []).filter((a) => (a.topic || 'Sin tema') === topic);
-          return (
-            <Box key={topic}>
-              {hasTemas && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, mt: globalIdx > 0 ? 1 : 0 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#001f56' }}>{topic}</Typography>
-                  <Divider sx={{ flex: 1 }} />
-                  <Typography variant="caption" sx={{ color: '#888', flexShrink: 0 }}>
-                    {topicAnswers.reduce((s, a) => s + (a.points || 0), 0)} pts
-                  </Typography>
-                </Box>
-              )}
-              {topicAnswers.map((answer) => {
-                const idx = globalIdx++;
-                return (
-                  <QuestionCard
-                    key={answer.questionId}
-                    answer={answer}
-                    index={idx}
-                    scoreValue={questionScores[answer.questionId]?.score ?? ''}
-                    feedbackValue={questionScores[answer.questionId]?.feedback ?? ''}
-                    onScoreChange={handleScoreChange}
-                    onFeedbackChange={handleFeedbackChange}
-                    readOnly={readOnly}
-                  />
-                );
-              })}
-            </Box>
-          );
-        })}
+        <TopicAnswersSection
+          submission={submission}
+          questionScores={questionScores}
+          onScoreChange={handleScoreChange}
+          onFeedbackChange={handleFeedbackChange}
+          readOnly={readOnly}
+        />
 
-        {/* Comentario general */}
-        <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, p: 3, mb: 3 }}>
-          <Typography variant="body1" sx={{ fontWeight: 600, color: '#333', mb: 1.5 }}>
-            Comentario general
-          </Typography>
-          {readOnly ? (
-            submission.teacherFeedback ? (
-              <Typography variant="body2" sx={{ color: '#333', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {submission.teacherFeedback}
-              </Typography>
-            ) : (
-              <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic' }}>Sin comentario general.</Typography>
-            )
-          ) : (
-            <TextField
-              fullWidth multiline minRows={3}
-              placeholder="Escribí un comentario general para el alumno..."
-              value={teacherFeedback}
-              onChange={(e) => setTeacherFeedback(e.target.value)}
-            />
-          )}
-        </Paper>
+        <GeneralFeedbackSection
+          readOnly={readOnly}
+          teacherFeedback={submission.teacherFeedback}
+          setTeacherFeedback={setTeacherFeedback}
+        />
 
         {!readOnly && !allScored && (
           <Alert severity="info" sx={{ mb: 2 }}>
@@ -509,40 +690,14 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, pb: 4 }}>
-          {readOnly ? (
-            <Button
-              variant="outlined"
-              onClick={() => navigate('/docente/correcciones')}
-              sx={{ textTransform: 'none', borderColor: '#001f56', color: '#001f56' }}
-            >
-              Volver
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant="outlined"
-                onClick={() => navigate('/docente/correcciones')}
-                sx={{ textTransform: 'none', borderColor: '#001f56', color: '#001f56' }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="contained"
-                disabled={!allScored || !hasValidScores || saving}
-                onClick={handleSubmit}
-                startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
-                sx={{
-                  bgcolor: '#001f56', color: '#fff', textTransform: 'none', fontWeight: 600, px: 3,
-                  '&:hover': { bgcolor: '#003080' },
-                  '&:disabled': { bgcolor: '#ccc' },
-                }}
-              >
-                {saving ? 'Guardando...' : 'Guardar corrección'}
-              </Button>
-            </>
-          )}
-        </Box>
+        <ReviewActions
+          readOnly={readOnly}
+          allScored={allScored}
+          hasValidScores={hasValidScores}
+          saving={saving}
+          handleSubmit={handleSubmit}
+          onCancel={() => navigate('/docente/correcciones')}
+        />
       </Box>
 
       <Snackbar

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -29,7 +30,9 @@ const QUESTION_TYPE_LABELS = {
   LONG_ANSWER: 'Respuesta extensa',
   FILL_IN_THE_BLANK: 'Completar',
   ORDERING: 'Ordenar',
+  DECISION_TREE: 'Árbol de decisión',
   MATCHING: 'Emparejar',
+  MATRIX: 'Matriz',
 };
 
 const formatDate = (iso) => {
@@ -183,8 +186,8 @@ const QuestionCard = ({ answer, index }) => {
       {(answer.questionType === 'LONG_ANSWER' || answer.questionType === 'SHORT_ANSWER' || answer.questionType === 'FILL_IN_THE_BLANK') && (
         <TextAnswer answer={answer} />
       )}
-      {answer.questionType === 'ORDERING' && <OrderingAnswer answer={answer} />}
-      {answer.questionType === 'MATCHING' && <MatchingAnswer answer={answer} />}
+      {(answer.questionType === 'ORDERING' || answer.questionType === 'DECISION_TREE') && <OrderingAnswer answer={answer} />}
+      {(answer.questionType === 'MATCHING' || answer.questionType === 'MATRIX') && <MatchingAnswer answer={answer} />}
 
       {answer.teacherFeedback && (
         <>
@@ -199,6 +202,23 @@ const QuestionCard = ({ answer, index }) => {
       )}
     </Paper>
   );
+};
+
+const AnswerShape = PropTypes.shape({
+  questionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  questionType: PropTypes.string,
+  orderAnswer: PropTypes.arrayOf(PropTypes.string),
+  matchingPairs: PropTypes.objectOf(PropTypes.string),
+  matchingAnswer: PropTypes.objectOf(PropTypes.string),
+  earnedScore: PropTypes.number,
+  points: PropTypes.number,
+  teacherFeedback: PropTypes.string,
+  questionText: PropTypes.string,
+});
+
+QuestionCard.propTypes = {
+  answer: AnswerShape.isRequired,
+  index: PropTypes.number.isRequired,
 };
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -349,6 +369,10 @@ const ResultadoDetalleContent = ({ submissionId }) => {
       </Box>
     </Box>
   );
+};
+
+ResultadoDetalleContent.propTypes = {
+  submissionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
 export default ResultadoDetalleContent;
