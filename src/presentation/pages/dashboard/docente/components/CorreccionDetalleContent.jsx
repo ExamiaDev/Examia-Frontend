@@ -24,6 +24,8 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SendIcon from '@mui/icons-material/Send';
 import PersonIcon from '@mui/icons-material/Person';
 import SubmissionService from '../../../../../application/services/SubmissionService';
+import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
+import { getDecisionTree, pathsAreEqual } from '../../../../components/decisionTreeUtils';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,7 +42,7 @@ const QUESTION_TYPE_LABELS = {
   MATRIX: 'Matriz',
 };
 
-const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE'];
+const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE', 'ORDERING', 'DECISION_TREE'];
 const isAutoGradable = (type) => AUTO_GRADABLE.includes(type);
 
 const AnswerShape = PropTypes.shape({
@@ -53,6 +55,11 @@ const AnswerShape = PropTypes.shape({
   correctAnswers: PropTypes.arrayOf(PropTypes.number),
   selectedOptions: PropTypes.arrayOf(PropTypes.number),
   orderAnswer: PropTypes.arrayOf(PropTypes.string),
+  correctOrder: PropTypes.arrayOf(PropTypes.string),
+  decisionTree: PropTypes.shape({
+    rootId: PropTypes.string,
+    nodes: PropTypes.object,
+  }),
   matchingPairs: PropTypes.objectOf(PropTypes.string),
   matchingAnswer: PropTypes.objectOf(PropTypes.string),
 });
@@ -70,6 +77,23 @@ const autoScore = (answer) => {
     const wrong = [...selected].filter((s) => !correct.has(s)).length;
     const net = Math.max(0, hits - wrong);
     return correct.size > 0 ? Number.parseFloat(((net / correct.size) * answer.points).toFixed(2)) : 0;
+  }
+  if (answer.questionType === 'ORDERING') {
+    const correct = answer.correctOrder || [];
+    const student = answer.orderAnswer || [];
+    const ok = correct.length === student.length && correct.every((item, idx) => item === student[idx]);
+    return ok ? answer.points : 0;
+  }
+  if (answer.questionType === 'DECISION_TREE') {
+    const tree = getDecisionTree(answer);
+    if (tree) {
+      const ok = pathsAreEqual(answer.orderAnswer || [], answer.correctOrder || []);
+      return ok ? answer.points : 0;
+    }
+    const correct = answer.correctOrder || [];
+    const student = answer.orderAnswer || [];
+    const ok = correct.length === student.length && correct.every((item, idx) => item === student[idx]);
+    return ok ? answer.points : 0;
   }
   return null;
 };
@@ -221,7 +245,21 @@ const QuestionBody = ({ answer }) => {
   if (['LONG_ANSWER', 'SHORT_ANSWER', 'FILL_IN_THE_BLANK'].includes(answer.questionType)) {
     return <TextAnswer answer={answer} />;
   }
-  if (['ORDERING', 'DECISION_TREE'].includes(answer.questionType)) {
+  if (answer.questionType === 'ORDERING') {
+    return <OrderingAnswer answer={answer} />;
+  }
+  if (answer.questionType === 'DECISION_TREE') {
+    const tree = getDecisionTree(answer);
+    if (tree) {
+      return (
+        <DecisionTreeAnswer
+          question={answer}
+          answer={answer}
+          readOnly
+          showCorrectPath
+        />
+      );
+    }
     return <OrderingAnswer answer={answer} />;
   }
   if (['MATCHING', 'MATRIX'].includes(answer.questionType)) {
