@@ -170,93 +170,119 @@ const MatchingAnswer = ({ answer }) => {
 
 // ─── Card de pregunta ─────────────────────────────────────────────────────────
 
+const QuestionHeader = ({ answer, index, isAuto, readOnly, scoreNum }) => (
+  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Typography variant="body2" sx={{ color: '#666', fontWeight: 600 }}>Pregunta {index + 1}</Typography>
+      <Chip
+        label={QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
+        size="small"
+        sx={{ bgcolor: isAuto ? '#e3f2fd' : '#f3e5f5', color: isAuto ? '#1565c0' : '#6a1b9a', fontSize: '0.72rem', height: 22 }}
+      />
+      {isAuto && (
+        <Chip label="Auto-corregida" size="small" sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontSize: '0.72rem', height: 22 }} />
+      )}
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+      {readOnly && scoreNum != null ? (
+        <Chip
+          label={`${scoreNum} / ${answer.points} pts`}
+          size="small"
+          sx={{ bgcolor: scoreNum >= answer.points ? '#e8f5e9' : '#fff3e0', color: scoreNum >= answer.points ? '#2e7d32' : '#e65100', fontWeight: 700, fontSize: '0.75rem' }}
+        />
+      ) : (
+        <Typography variant="body2" sx={{ color: '#888', fontWeight: 500 }}>
+          {answer.points} pt{answer.points !== 1 ? 's' : ''}
+        </Typography>
+      )}
+    </Box>
+  </Box>
+);
+
+const QuestionBody = ({ answer }) => {
+  if (['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE'].includes(answer.questionType)) {
+    return <MultipleChoiceAnswer answer={answer} />;
+  }
+  if (['LONG_ANSWER', 'SHORT_ANSWER', 'FILL_IN_THE_BLANK'].includes(answer.questionType)) {
+    return <TextAnswer answer={answer} />;
+  }
+  if (['ORDERING', 'DECISION_TREE'].includes(answer.questionType)) {
+    return <OrderingAnswer answer={answer} />;
+  }
+  if (['MATCHING', 'MATRIX'].includes(answer.questionType)) {
+    return <MatchingAnswer answer={answer} />;
+  }
+  return null;
+};
+
+const QuestionFooter = ({ answer, readOnly, scoreValue, feedbackValue, onScoreChange, onFeedbackChange }) => {
+  if (readOnly) {
+    if (!answer.teacherFeedback) return null;
+
+    return (
+      <Box sx={{ bgcolor: '#fffde7', borderRadius: 1, px: 2, py: 1.5, border: '1px solid #fff176' }}>
+        <Typography variant="caption" sx={{ color: '#f57f17', fontWeight: 600, display: 'block', mb: 0.5 }}>
+          Comentario del docente
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#333', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{answer.teacherFeedback}</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <TextField
+        label="Puntaje"
+        type="number"
+        size="small"
+        value={scoreValue}
+        onChange={(e) => onScoreChange(answer.questionId, e.target.value)}
+        inputProps={{ min: 0, max: answer.points, step: 0.1 }}
+        error={scoreValue !== '' && isNaN(parseFloat(scoreValue))}
+        helperText={scoreValue !== '' && isNaN(parseFloat(scoreValue)) ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
+        InputProps={{ endAdornment: <InputAdornment position="end">pts</InputAdornment> }}
+        sx={{ width: 140 }}
+      />
+      <TextField
+        label="Comentario (opcional)"
+        size="small"
+        value={feedbackValue}
+        onChange={(e) => onFeedbackChange(answer.questionId, e.target.value)}
+        placeholder="Feedback para el alumno..."
+        multiline
+        minRows={1}
+        sx={{ flex: 1, minWidth: 200 }}
+      />
+    </Box>
+  );
+};
+
 const QuestionCard = ({ answer, index, scoreValue, feedbackValue, onScoreChange, onFeedbackChange, readOnly }) => {
   const isAuto = isAutoGradable(answer.questionType);
   const scoreNum = readOnly ? answer.earnedScore : parseFloat(scoreValue);
-  const isScoreValid = !isNaN(parseFloat(scoreValue)) && parseFloat(scoreValue) >= 0 && parseFloat(scoreValue) <= answer.points;
 
   return (
     <Paper elevation={0} sx={{
       border: '1px solid #e0e0e0', borderRadius: 2, p: 3, mb: 3,
       borderLeft: isAuto ? '4px solid #42a5f5' : '4px solid #7c3aed',
     }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography variant="body2" sx={{ color: '#666', fontWeight: 600 }}>Pregunta {index + 1}</Typography>
-          <Chip
-            label={QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
-            size="small"
-            sx={{ bgcolor: isAuto ? '#e3f2fd' : '#f3e5f5', color: isAuto ? '#1565c0' : '#6a1b9a', fontSize: '0.72rem', height: 22 }}
-          />
-          {isAuto && (
-            <Chip label="Auto-corregida" size="small" sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', fontSize: '0.72rem', height: 22 }} />
-          )}
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-          {readOnly && scoreNum != null && (
-            <Chip
-              label={`${scoreNum} / ${answer.points} pts`}
-              size="small"
-              sx={{ bgcolor: scoreNum >= answer.points ? '#e8f5e9' : '#fff3e0', color: scoreNum >= answer.points ? '#2e7d32' : '#e65100', fontWeight: 700, fontSize: '0.75rem' }}
-            />
-          )}
-          {!readOnly && (
-            <Typography variant="body2" sx={{ color: '#888', fontWeight: 500 }}>
-              {answer.points} pt{answer.points !== 1 ? 's' : ''}
-            </Typography>
-          )}
-        </Box>
-      </Box>
+      <QuestionHeader answer={answer} index={index} isAuto={isAuto} readOnly={readOnly} scoreNum={scoreNum} />
 
       <Typography variant="body1" sx={{ fontWeight: 500, color: '#222', mb: 1.5, lineHeight: 1.5 }}>
         {answer.questionText}
       </Typography>
 
-      {(answer.questionType === 'MULTIPLE_CHOICE' || answer.questionType === 'MULTIPLE_SELECTION' || answer.questionType === 'TRUE_FALSE') && (
-        <MultipleChoiceAnswer answer={answer} />
-      )}
-      {(answer.questionType === 'LONG_ANSWER' || answer.questionType === 'SHORT_ANSWER' || answer.questionType === 'FILL_IN_THE_BLANK') && (
-        <TextAnswer answer={answer} />
-      )}
-      {(answer.questionType === 'ORDERING' || answer.questionType === 'DECISION_TREE') && <OrderingAnswer answer={answer} />}
-      {(answer.questionType === 'MATCHING' || answer.questionType === 'MATRIX') && <MatchingAnswer answer={answer} />}
+      <QuestionBody answer={answer} />
 
       <Divider sx={{ my: 2.5 }} />
-      {readOnly ? (
-        answer.teacherFeedback ? (
-          <Box sx={{ bgcolor: '#fffde7', borderRadius: 1, px: 2, py: 1.5, border: '1px solid #fff176' }}>
-            <Typography variant="caption" sx={{ color: '#f57f17', fontWeight: 600, display: 'block', mb: 0.5 }}>
-              Comentario del docente
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#333', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{answer.teacherFeedback}</Typography>
-          </Box>
-        ) : null
-      ) : (
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <TextField
-            label="Puntaje"
-            type="number"
-            size="small"
-            value={scoreValue}
-            onChange={(e) => onScoreChange(answer.questionId, e.target.value)}
-            inputProps={{ min: 0, max: answer.points, step: 0.1 }}
-            error={scoreValue !== '' && !isScoreValid}
-            helperText={scoreValue !== '' && !isScoreValid ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
-            InputProps={{ endAdornment: <InputAdornment position="end">pts</InputAdornment> }}
-            sx={{ width: 140 }}
-          />
-          <TextField
-            label="Comentario (opcional)"
-            size="small"
-            value={feedbackValue}
-            onChange={(e) => onFeedbackChange(answer.questionId, e.target.value)}
-            placeholder="Feedback para el alumno..."
-            multiline
-            minRows={1}
-            sx={{ flex: 1, minWidth: 200 }}
-          />
-        </Box>
-      )}
+      <QuestionFooter
+        answer={answer}
+        readOnly={readOnly}
+        scoreValue={scoreValue}
+        feedbackValue={feedbackValue}
+        onScoreChange={onScoreChange}
+        onFeedbackChange={onFeedbackChange}
+      />
     </Paper>
   );
 };
