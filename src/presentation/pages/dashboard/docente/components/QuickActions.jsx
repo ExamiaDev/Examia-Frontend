@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Box, Paper, Typography } from '@mui/material';
 import {
   Add as AddIcon,
@@ -8,6 +9,7 @@ import {
 const actions = [
   {
     id: 'crear-examen',
+    path: '/docente/examenes/crear',
     icon: AddIcon,
     title: 'Crear examen',
     description: 'Diseña un nuevo examen',
@@ -16,6 +18,7 @@ const actions = [
   },
   {
     id: 'correcciones',
+    path: '/docente/correcciones',
     icon: AssignmentIcon,
     title: 'Correcciones pendientes',
     description: '12 entregas por revisar',
@@ -24,6 +27,7 @@ const actions = [
   },
   {
     id: 'publicar',
+    path: '/docente/examenes',
     icon: SendIcon,
     title: 'Publicar notas',
     description: 'Notifica a tus alumnos',
@@ -33,6 +37,8 @@ const actions = [
 ];
 
 const QuickActions = () => {
+  const navigate = useNavigate();
+
   return (
     <Box
       sx={{
@@ -52,6 +58,15 @@ const QuickActions = () => {
           <Paper
             key={action.id}
             elevation={0}
+            onClick={() => navigate(action.path)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigate(action.path);
+              }
+            }}
+            role="button"
+            tabIndex={0}
             sx={{
               display: 'flex',
               alignItems: 'center',

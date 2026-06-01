@@ -11,7 +11,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
   CircularProgress,
   Alert,
   Switch,
@@ -36,38 +35,6 @@ import httpClient from '../../../../../infrastructure/http/httpClient';
 const TURNO_LABELS = { 1: 'Mañana', 2: 'Tarde', 3: 'Noche' };
 
 // Mapea el status del backend a la etiqueta que mostramos
-const STATUS_LABELS = {
-  borrador: 'Borrador',
-  BORRADOR: 'Borrador',
-  DRAFT: 'Borrador',
-  publicado: 'Publicado',
-  PUBLICADO: 'Publicado',
-  PUBLISHED: 'Publicado',
-  activo: 'Activo',
-  ACTIVO: 'Activo',
-  ACTIVE: 'Activo',
-  finalizado: 'Finalizado',
-  FINALIZADO: 'Finalizado',
-  FINISHED: 'Finalizado',
-};
-
-const getEstadoChip = (status) => {
-  const label = STATUS_LABELS[status] || status || '—';
-  return (
-    <Chip
-      label={label}
-      size="small"
-      sx={{
-        backgroundColor: '#fff',
-        color: '#001f56',
-        border: '1px solid #001f56',
-        fontWeight: 500,
-        fontSize: '0.75rem',
-        height: 26,
-      }}
-    />
-  );
-};
 
 export default function ExamenesContent() {
   const navigate = useNavigate();
@@ -228,9 +195,23 @@ export default function ExamenesContent() {
 
         {!loading && !error && exams.length === 0 && (
           <Box sx={{ textAlign: 'center', py: 6, color: '#6b7280' }}>
-            <Typography sx={{ fontSize: '0.95rem' }}>
-              Todavía no tenés exámenes creados. Hacé click en <strong>Crear examen</strong> para empezar.
+            <Typography sx={{ fontSize: '0.95rem', mb: 2 }}>
+              Todavía no tenés exámenes creados.
             </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCrearExamen}
+              sx={{
+                backgroundColor: '#001f56',
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+                '&:hover': { backgroundColor: '#00153d' },
+              }}
+            >
+              Crear examen
+            </Button>
           </Box>
         )}
 
