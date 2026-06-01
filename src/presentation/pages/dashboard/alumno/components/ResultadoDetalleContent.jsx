@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -201,6 +202,27 @@ const QuestionCard = ({ answer, index }) => {
       )}
     </Paper>
   );
+};
+
+const AnswerShape = PropTypes.shape({
+  questionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  questionType: PropTypes.string,
+  orderAnswer: PropTypes.arrayOf(PropTypes.string),
+  matchingPairs: PropTypes.objectOf(PropTypes.string),
+  matchingAnswer: PropTypes.objectOf(PropTypes.string),
+  earnedScore: PropTypes.number,
+  points: PropTypes.number,
+  teacherFeedback: PropTypes.string,
+  questionText: PropTypes.string,
+});
+
+QuestionCard.propTypes = {
+  answer: AnswerShape.isRequired,
+  index: PropTypes.number.isRequired,
+};
+
+ResultadoDetalleContent.propTypes = {
+  submissionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
 // ─── Componente principal ─────────────────────────────────────────────────────

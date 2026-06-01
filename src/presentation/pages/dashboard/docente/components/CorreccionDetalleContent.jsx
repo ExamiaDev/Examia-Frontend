@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -42,6 +43,20 @@ const QUESTION_TYPE_LABELS = {
 const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE'];
 const isAutoGradable = (type) => AUTO_GRADABLE.includes(type);
 
+const AnswerShape = PropTypes.shape({
+  questionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  questionType: PropTypes.string,
+  points: PropTypes.number,
+  earnedScore: PropTypes.number,
+  teacherFeedback: PropTypes.string,
+  questionText: PropTypes.string,
+  correctAnswers: PropTypes.arrayOf(PropTypes.number),
+  selectedOptions: PropTypes.arrayOf(PropTypes.number),
+  orderAnswer: PropTypes.arrayOf(PropTypes.string),
+  matchingPairs: PropTypes.objectOf(PropTypes.string),
+  matchingAnswer: PropTypes.objectOf(PropTypes.string),
+});
+
 const autoScore = (answer) => {
   if (answer.questionType === 'MULTIPLE_CHOICE' || answer.questionType === 'TRUE_FALSE') {
     const selected = (answer.selectedOptions || []).slice().sort().join(',');
@@ -54,7 +69,7 @@ const autoScore = (answer) => {
     const hits = [...correct].filter((c) => selected.has(c)).length;
     const wrong = [...selected].filter((s) => !correct.has(s)).length;
     const net = Math.max(0, hits - wrong);
-    return correct.size > 0 ? parseFloat(((net / correct.size) * answer.points).toFixed(2)) : 0;
+    return correct.size > 0 ? Number.parseFloat(((net / correct.size) * answer.points).toFixed(2)) : 0;
   }
   return null;
 };
@@ -128,7 +143,7 @@ const OrderingAnswer = ({ answer }) => {
       {student.map((item, idx) => {
         const ok = correct[idx] === item;
         return (
-          <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: ok ? '#e8f5e9' : '#fce4ec', border: `1px solid ${ok ? '#a5d6a7' : '#ef9a9a'}`, borderRadius: 1, px: 2, py: 1 }}>
+          <Box key={`${item}-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: ok ? '#e8f5e9' : '#fce4ec', border: `1px solid ${ok ? '#a5d6a7' : '#ef9a9a'}`, borderRadius: 1, px: 2, py: 1 }}>
             <Typography variant="caption" sx={{ fontWeight: 700, color: '#666', minWidth: 20 }}>{idx + 1}.</Typography>
             <Typography variant="body2" sx={{ flex: 1, color: '#333' }}>{item}</Typography>
             {ok ? <CheckCircleIcon sx={{ fontSize: 18, color: '#2e7d32' }} /> : <CancelIcon sx={{ fontSize: 18, color: '#c62828' }} />}
@@ -138,7 +153,7 @@ const OrderingAnswer = ({ answer }) => {
       <Divider sx={{ my: 0.5 }} />
       <Typography variant="caption" sx={{ color: '#666', fontWeight: 600 }}>Orden correcto:</Typography>
       {correct.map((item, idx) => (
-        <Box key={idx} sx={{ display: 'flex', gap: 1.5, px: 2, py: 0.75, bgcolor: '#e3f2fd', borderRadius: 1, border: '1px solid #90caf9' }}>
+        <Box key={`correct-${item}-${idx}`} sx={{ display: 'flex', gap: 1.5, px: 2, py: 0.75, bgcolor: '#e3f2fd', borderRadius: 1, border: '1px solid #90caf9' }}>
           <Typography variant="caption" sx={{ fontWeight: 700, color: '#1565c0', minWidth: 20 }}>{idx + 1}.</Typography>
           <Typography variant="body2" sx={{ color: '#1565c0' }}>{item}</Typography>
         </Box>
@@ -238,8 +253,8 @@ const QuestionFooter = ({ answer, readOnly, scoreValue, feedbackValue, onScoreCh
         value={scoreValue}
         onChange={(e) => onScoreChange(answer.questionId, e.target.value)}
         inputProps={{ min: 0, max: answer.points, step: 0.1 }}
-        error={scoreValue !== '' && isNaN(parseFloat(scoreValue))}
-        helperText={scoreValue !== '' && isNaN(parseFloat(scoreValue)) ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
+        error={scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue))}
+        helperText={scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue)) ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
         InputProps={{ endAdornment: <InputAdornment position="end">pts</InputAdornment> }}
         sx={{ width: 140 }}
       />
@@ -257,9 +272,40 @@ const QuestionFooter = ({ answer, readOnly, scoreValue, feedbackValue, onScoreCh
   );
 };
 
+QuestionHeader.propTypes = {
+  answer: AnswerShape.isRequired,
+  index: PropTypes.number.isRequired,
+  isAuto: PropTypes.bool.isRequired,
+  readOnly: PropTypes.bool.isRequired,
+  scoreNum: PropTypes.number,
+};
+
+QuestionBody.propTypes = {
+  answer: AnswerShape.isRequired,
+};
+
+QuestionFooter.propTypes = {
+  answer: AnswerShape.isRequired,
+  readOnly: PropTypes.bool.isRequired,
+  scoreValue: PropTypes.string,
+  feedbackValue: PropTypes.string,
+  onScoreChange: PropTypes.func.isRequired,
+  onFeedbackChange: PropTypes.func.isRequired,
+};
+
+QuestionCard.propTypes = {
+  answer: AnswerShape.isRequired,
+  index: PropTypes.number.isRequired,
+  scoreValue: PropTypes.string,
+  feedbackValue: PropTypes.string,
+  onScoreChange: PropTypes.func.isRequired,
+  onFeedbackChange: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool.isRequired,
+};
+
 const QuestionCard = ({ answer, index, scoreValue, feedbackValue, onScoreChange, onFeedbackChange, readOnly }) => {
   const isAuto = isAutoGradable(answer.questionType);
-  const scoreNum = readOnly ? answer.earnedScore : parseFloat(scoreValue);
+  const scoreNum = readOnly ? answer.earnedScore : Number.parseFloat(scoreValue);
 
   return (
     <Paper elevation={0} sx={{
@@ -314,7 +360,7 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
         (data.answers || []).forEach((ans) => {
           const auto = autoScore(ans);
           initial[ans.questionId] = {
-            score: auto !== null ? String(auto) : '',
+            score: auto === null ? '' : String(auto),
             feedback: ans.teacherFeedback || '',
           };
         });

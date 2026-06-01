@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -50,6 +51,31 @@ const TYPE_LABELS = {
   DECISION_TREE: 'Árbol de decisión',
   MATRIX: 'Matriz',
 };
+
+const QuestionShape = PropTypes.shape({
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  type: PropTypes.string,
+  text: PropTypes.string,
+  points: PropTypes.number,
+  options: PropTypes.arrayOf(PropTypes.string),
+  topic: PropTypes.string,
+  topicColor: PropTypes.string,
+  matchingPairs: PropTypes.objectOf(PropTypes.string),
+});
+
+const AnswerShape = PropTypes.shape({
+  questionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  selectedOptions: PropTypes.arrayOf(PropTypes.number),
+  textAnswer: PropTypes.string,
+  orderAnswer: PropTypes.arrayOf(PropTypes.string),
+  matchingAnswer: PropTypes.objectOf(PropTypes.string),
+});
+
+const GroupShape = PropTypes.shape({
+  topic: PropTypes.string,
+  color: PropTypes.string,
+  questions: PropTypes.arrayOf(QuestionShape),
+});
 
 const emptyAnswer = (question) => {
   const base = { questionId: question.id };
@@ -387,6 +413,69 @@ const TopicQuestionsView = ({ group, topicIdx, answers, onAnswerChange, onBack, 
   );
 };
 
+MultipleChoiceAnswer.propTypes = {
+  question: QuestionShape.isRequired,
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+TrueFalseAnswer.propTypes = {
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+MultipleSelectionAnswer.propTypes = {
+  question: QuestionShape.isRequired,
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+TextAnswer.propTypes = {
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+  multiline: PropTypes.bool,
+};
+
+OrderingAnswer.propTypes = {
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+MatchingAnswer.propTypes = {
+  question: QuestionShape.isRequired,
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+QuestionCard.propTypes = {
+  question: QuestionShape.isRequired,
+  index: PropTypes.number.isRequired,
+  answer: AnswerShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+  topicColor: PropTypes.string,
+};
+
+TopicSelectionView.propTypes = {
+  exam: PropTypes.shape({
+    title: PropTypes.string,
+    subjectName: PropTypes.string,
+    subjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    durationMinutes: PropTypes.number,
+  }).isRequired,
+  groups: PropTypes.arrayOf(GroupShape).isRequired,
+  answers: PropTypes.object.isRequired,
+  onSelectTopic: PropTypes.func.isRequired,
+};
+
+TopicQuestionsView.propTypes = {
+  group: GroupShape.isRequired,
+  topicIdx: PropTypes.number.isRequired,
+  answers: PropTypes.object.isRequired,
+  onAnswerChange: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
+  onFinish: PropTypes.func.isRequired,
+};
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 const RealizarExamenContent = ({ examId }) => {
@@ -536,7 +625,7 @@ const RealizarExamenContent = ({ examId }) => {
         <DialogTitle sx={{ fontWeight: 700, color: '#001f56' }}>Confirmar entrega</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Respondiste {topicAnswered} de {topicTotal} pregunta{topicTotal !== 1 ? 's' : ''} del tema seleccionado.
+            Respondiste {topicAnswered} de {topicTotal} pregunta{topicTotal === 1 ? '' : 's'} del tema seleccionado.
             {topicAnswered < topicTotal && ` Hay ${topicTotal - topicAnswered} sin responder.`} ¿Querés entregar el examen?
           </DialogContentText>
         </DialogContent>

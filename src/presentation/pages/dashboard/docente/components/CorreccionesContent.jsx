@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -49,6 +50,16 @@ const StatusChip = ({ status, score }) => {
       sx={{ bgcolor: '#fce4ec', color: '#c62828', fontWeight: 500, fontSize: '0.75rem' }}
     />
   );
+};
+
+StatusChip.propTypes = {
+  status: PropTypes.string.isRequired,
+  score: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+};
+
+ExamsView.propTypes = {
+  onSelectExam: PropTypes.func.isRequired,
+  initialExamId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 // ─── Vista: lista de exámenes con conteo de entregas ──────────────────────────
@@ -116,7 +127,9 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
             {loading
               ? 'Cargando...'
               : totalPending > 0
-              ? `Tenés ${totalPending} entrega${totalPending !== 1 ? 's' : ''} esperando revisión.`
+              ? (totalPending === 1
+                ? 'Tenés 1 entrega esperando revisión.'
+                : `Tenés ${totalPending} entregas esperando revisión.`)
               : 'No hay entregas pendientes de corrección.'}
           </Typography>
         </Box>
@@ -252,7 +265,9 @@ const SubmissionsView = ({ exam, onBack }) => {
               {loading
                 ? 'Cargando entregas...'
                 : pendingCount > 0
-                ? `${pendingCount} entrega${pendingCount !== 1 ? 's' : ''} pendiente${pendingCount !== 1 ? 's' : ''} de corrección.`
+                ? (pendingCount === 1
+                  ? '1 entrega pendiente de corrección.'
+                  : `${pendingCount} entregas pendientes de corrección.`)
                 : 'Todas las entregas están corregidas.'}
             </Typography>
           </Box>
