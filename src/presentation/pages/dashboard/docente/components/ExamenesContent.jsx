@@ -195,9 +195,23 @@ export default function ExamenesContent() {
 
         {!loading && !error && exams.length === 0 && (
           <Box sx={{ textAlign: 'center', py: 6, color: '#6b7280' }}>
-            <Typography sx={{ fontSize: '0.95rem' }}>
-              Todavía no tenés exámenes creados. Hacé click en <strong>Crear examen</strong> para empezar.
+            <Typography sx={{ fontSize: '0.95rem', mb: 2 }}>
+              Todavía no tenés exámenes creados.
             </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCrearExamen}
+              sx={{
+                backgroundColor: '#001f56',
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+                '&:hover': { backgroundColor: '#00153d' },
+              }}
+            >
+              Crear examen
+            </Button>
           </Box>
         )}
 

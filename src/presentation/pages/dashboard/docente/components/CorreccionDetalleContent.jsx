@@ -252,10 +252,12 @@ const QuestionFooter = ({ answer, readOnly, scoreValue, feedbackValue, onScoreCh
         size="small"
         value={scoreValue}
         onChange={(e) => onScoreChange(answer.questionId, e.target.value)}
-        inputProps={{ min: 0, max: answer.points, step: 0.1 }}
         error={scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue))}
         helperText={scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue)) ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
-        InputProps={{ endAdornment: <InputAdornment position="end">pts</InputAdornment> }}
+        slotProps={{
+          htmlInput: { min: 0, max: answer.points, step: 0.1 },
+          input: { endAdornment: <InputAdornment position="end">pts</InputAdornment> },
+        }}
         sx={{ width: 140 }}
       />
       <TextField

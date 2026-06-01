@@ -36,7 +36,7 @@ const Sidebar = ({ user }) => {
 
   const isActive = (path) => {
     if (path === '/docente') {
-      return location.pathname === '/docente' || location.pathname === '/docente/';
+      return location.pathname === '/docente' || location.pathname === '/docente/' || location.pathname.startsWith('/docente/cursos');
     }
     return location.pathname.startsWith(path);
   };

@@ -292,7 +292,7 @@ const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
             const colSize = Math.max(3, Math.floor(12 / groups.length));
 
             return (
-              <Grid item xs={12} sm={colSize} key={group.topic}>
+              <Grid size={{ xs: 12, sm: colSize }} key={group.topic}>
                 <Paper
                   elevation={0}
                   onClick={() => onSelectTopic(idx)}
@@ -547,11 +547,11 @@ const RealizarExamenContent = ({ examId }) => {
   const topicTotal = selectedGroup ? selectedGroup.questions.length : 0;
 
   const handleSubmit = async () => {
-    setConfirmOpen(false);
     setSubmitting(true);
     try {
       const answersList = (selectedGroup?.questions ?? []).map((q) => answers[q.id] ?? emptyAnswer(q));
       await SubmissionService.submitExam(examId, answersList);
+      setConfirmOpen(false);
       setSnackbar({ open: true, message: '¡Examen entregado exitosamente!', severity: 'success' });
       setTimeout(() => navigate('/alumno'), 1800);
     } catch (err) {
