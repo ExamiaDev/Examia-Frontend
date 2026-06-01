@@ -19,6 +19,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SubmissionService from '../../../../../application/services/SubmissionService';
+import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
+import { getDecisionTree } from '../../../../components/decisionTreeUtils';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -186,7 +188,19 @@ const QuestionCard = ({ answer, index }) => {
       {(answer.questionType === 'LONG_ANSWER' || answer.questionType === 'SHORT_ANSWER' || answer.questionType === 'FILL_IN_THE_BLANK') && (
         <TextAnswer answer={answer} />
       )}
-      {(answer.questionType === 'ORDERING' || answer.questionType === 'DECISION_TREE') && <OrderingAnswer answer={answer} />}
+      {(answer.questionType === 'ORDERING') && <OrderingAnswer answer={answer} />}
+      {answer.questionType === 'DECISION_TREE' && (
+        getDecisionTree(answer)
+          ? (
+            <DecisionTreeAnswer
+              question={answer}
+              answer={answer}
+              readOnly
+              showCorrectPath
+            />
+          )
+          : <OrderingAnswer answer={answer} />
+      )}
       {(answer.questionType === 'MATCHING' || answer.questionType === 'MATRIX') && <MatchingAnswer answer={answer} />}
 
       {answer.teacherFeedback && (
@@ -208,6 +222,11 @@ const AnswerShape = PropTypes.shape({
   questionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   questionType: PropTypes.string,
   orderAnswer: PropTypes.arrayOf(PropTypes.string),
+  correctOrder: PropTypes.arrayOf(PropTypes.string),
+  decisionTree: PropTypes.shape({
+    rootId: PropTypes.string,
+    nodes: PropTypes.object,
+  }),
   matchingPairs: PropTypes.objectOf(PropTypes.string),
   matchingAnswer: PropTypes.objectOf(PropTypes.string),
   earnedScore: PropTypes.number,

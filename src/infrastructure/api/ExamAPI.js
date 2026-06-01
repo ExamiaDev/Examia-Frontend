@@ -1,6 +1,22 @@
 import httpClient from '../http/httpClient';
 import { AppError } from '../../domain/errors/AppErrors';
 
+const formatApiError = (error, fallback) => {
+  if (!error.response) {
+    return 'No se pudo conectar con el servidor. Verificá que el backend esté corriendo en http://localhost:8080';
+  }
+
+  const data = error.response.data;
+  if (data?.errors && typeof data.errors === 'object') {
+    const details = Object.entries(data.errors)
+      .map(([field, msg]) => `${field}: ${msg}`)
+      .join(' · ');
+    return details || data.message || fallback;
+  }
+
+  return data?.message || fallback;
+};
+
 export const ExamAPI = {
   // Crear un nuevo examen
   createExam: async (examData) => {
@@ -8,10 +24,7 @@ export const ExamAPI = {
       const response = await httpClient.post('/exams', examData);
       return response.data;
     } catch (error) {
-      if (error.response?.data?.message) {
-        throw new AppError(error.response.data.message);
-      }
-      throw new AppError('Error al crear el examen. Intentá de nuevo.');
+      throw new AppError(formatApiError(error, 'Error al crear el examen. Intentá de nuevo.'));
     }
   },
 
@@ -53,10 +66,7 @@ export const ExamAPI = {
       if (error.response?.status === 404) {
         throw new AppError('El examen no fue encontrado.');
       }
-      if (error.response?.data?.message) {
-        throw new AppError(error.response.data.message);
-      }
-      throw new AppError('Error al actualizar el examen.');
+      throw new AppError(formatApiError(error, 'Error al actualizar el examen.'));
     }
   },
 
