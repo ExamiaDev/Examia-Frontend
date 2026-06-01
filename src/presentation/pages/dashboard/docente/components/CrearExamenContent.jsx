@@ -23,7 +23,6 @@ import ExamService from '../../../../../application/services/ExamService';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -77,6 +76,11 @@ const questionTypes = [
 
 const puntajeOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
+const TOPIC_COLORS = [
+  '#1565c0', '#2e7d32', '#6a1b9a', '#c62828',
+  '#e65100', '#00838f', '#4527a0', '#558b2f',
+];
+
 // Question Card Component
 function QuestionCard({ question, index, onUpdate, onDelete }) {
   const [expanded, setExpanded] = useState(true);
@@ -118,37 +122,17 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
         );
       
       case 'tabla': {
-        const columns = question.columnas || ['Columna 1', 'Columna 2', 'Columna 3'];
-        const rows = question.filas || 3;
-        
-        const handleAddColumn = () => {
-          const newColumns = [...columns, `Columna ${columns.length + 1}`];
-          onUpdate({ ...question, columnas: newColumns });
+        const pares = question.pares || [{ izquierda: '', derecha: '' }];
+
+        const handleUpdatePar = (idx, side, value) => {
+          const next = pares.map((p, i) => i === idx ? { ...p, [side]: value } : p);
+          onUpdate({ ...question, pares: next });
         };
-        
-        const handleAddRow = () => {
-          onUpdate({ ...question, filas: rows + 1 });
+        const handleAddPar = () => onUpdate({ ...question, pares: [...pares, { izquierda: '', derecha: '' }] });
+        const handleRemovePar = (idx) => {
+          if (pares.length > 1) onUpdate({ ...question, pares: pares.filter((_, i) => i !== idx) });
         };
-        
-        const handleUpdateColumn = (colIndex, value) => {
-          const newColumns = [...columns];
-          newColumns[colIndex] = value;
-          onUpdate({ ...question, columnas: newColumns });
-        };
-        
-        const handleRemoveColumn = (colIndex) => {
-          if (columns.length > 2) {
-            const newColumns = columns.filter((_, i) => i !== colIndex);
-            onUpdate({ ...question, columnas: newColumns });
-          }
-        };
-        
-        const handleRemoveRow = () => {
-          if (rows > 1) {
-            onUpdate({ ...question, filas: rows - 1 });
-          }
-        };
-        
+
         return (
           <Box>
             <TextField
@@ -158,193 +142,105 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
               placeholder="Enunciado de la pregunta..."
               value={question.enunciado || ''}
               onChange={handleEnunciadoChange}
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                },
-              }}
+              sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
-            <Box
-              sx={{
-                border: '1px solid #e0e0e0',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${columns.length}, 1fr) auto`,
-                  bgcolor: '#f5f7fa',
-                  borderBottom: '1px solid #e0e0e0',
-                }}
-              >
-                {columns.map((col, i) => (
-                  <Box
-                    key={i}
-                    sx={{
-                      p: 1.5,
-                      borderRight: '1px solid #e0e0e0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                    }}
-                  >
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder={`Columna ${i + 1}`}
-                      value={col}
-                      onChange={(e) => handleUpdateColumn(i, e.target.value)}
-                      variant="standard"
-                      InputProps={{ disableUnderline: true }}
-                      sx={{ '& input': { fontWeight: 500, fontSize: '0.875rem' } }}
-                    />
-                    {columns.length > 2 && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveColumn(i)}
-                        sx={{ p: 0.25, color: '#999', '&:hover': { color: '#d32f2f' } }}
-                      >
-                        <CloseIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    )}
-                  </Box>
-                ))}
-                <Box
-                  sx={{
-                    p: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <IconButton
-                    size="small"
-                    onClick={handleAddColumn}
-                    sx={{ color: '#001f56' }}
-                  >
-                    <AddIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Box>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <Typography variant="caption" sx={{ flex: 1, fontWeight: 600, color: '#555', px: 1 }}>Columna izquierda</Typography>
+              <Typography variant="caption" sx={{ flex: 1, fontWeight: 600, color: '#555', px: 1 }}>Columna derecha (respuesta correcta)</Typography>
+              <Box sx={{ width: 32 }} />
+            </Box>
+            {pares.map((par, idx) => (
+              <Box key={idx} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  placeholder={`Elemento ${idx + 1}`}
+                  value={par.izquierda}
+                  onChange={(e) => handleUpdatePar(idx, 'izquierda', e.target.value)}
+                />
+                <TextField
+                  size="small"
+                  fullWidth
+                  placeholder={`Corresponde a...`}
+                  value={par.derecha}
+                  onChange={(e) => handleUpdatePar(idx, 'derecha', e.target.value)}
+                />
+                <IconButton size="small" onClick={() => handleRemovePar(idx)} disabled={pares.length === 1} sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}>
+                  <CloseIcon sx={{ fontSize: 16 }} />
+                </IconButton>
               </Box>
-              {Array.from({ length: rows }).map((_, rowIndex) => (
-                <Box
-                  key={rowIndex}
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${columns.length}, 1fr) auto`,
-                    borderBottom: rowIndex < rows - 1 ? '1px solid #e0e0e0' : 'none',
-                  }}
-                >
-                  {columns.map((_, colIndex) => (
-                    <Box
-                      key={colIndex}
-                      sx={{
-                        p: 1.5,
-                        borderRight: '1px solid #e0e0e0',
-                      }}
-                    >
-                      <TextField
-                        fullWidth
-                        size="small"
-                        placeholder="..."
-                        variant="standard"
-                        InputProps={{ disableUnderline: true }}
-                        sx={{ '& input': { fontSize: '0.875rem' } }}
-                      />
-                    </Box>
-                  ))}
-                  <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
-                    {rowIndex === rows - 1 && rows > 1 && (
-                      <IconButton
-                        size="small"
-                        onClick={handleRemoveRow}
-                        sx={{ p: 0.25, color: '#999', '&:hover': { color: '#d32f2f' } }}
-                      >
-                        <CloseIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    )}
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2, mt: 1.5 }}>
-              <Button
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={handleAddRow}
-                sx={{ textTransform: 'none', color: '#001f56' }}
-              >
-                Agregar fila
-              </Button>
-            </Box>
+            ))}
+            <Button size="small" startIcon={<AddIcon />} onClick={handleAddPar} sx={{ textTransform: 'none', color: '#001f56', mt: 0.5 }}>
+              Agregar par
+            </Button>
             <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
-              El alumno completará la matriz de casos.
+              El alumno relacionará cada elemento de la izquierda con su correspondiente de la derecha.
             </Typography>
           </Box>
         );
       }
       
-      case 'arbol-decision':
+      case 'arbol-decision': {
+        const items = question.items || ['', ''];
+        const handleUpdateItem = (idx, value) => {
+          const next = items.map((it, i) => i === idx ? value : it);
+          onUpdate({ ...question, items: next });
+        };
+        const handleAddItem = () => onUpdate({ ...question, items: [...items, ''] });
+        const handleRemoveItem = (idx) => {
+          if (items.length > 2) onUpdate({ ...question, items: items.filter((_, i) => i !== idx) });
+        };
         return (
           <Box>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              placeholder="Enunciado de la pregunta..."
-              value={question.enunciado || ''}
-              onChange={handleEnunciadoChange}
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                },
-              }}
-            />
-            <Box
-              sx={{
-                border: '1px dashed #ccc',
-                borderRadius: 2,
-                p: 4,
-                textAlign: 'center',
-                bgcolor: '#fafafa',
-              }}
-            >
-              <AccountTreeOutlinedIcon sx={{ fontSize: 48, color: '#999', mb: 1 }} />
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                Editor de árbol de decisión
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#999' }}>
-                El alumno construirá un diagrama lógico
-              </Typography>
-            </Box>
+            <TextField fullWidth multiline rows={2} placeholder="Enunciado de la pregunta..." value={question.enunciado || ''} onChange={handleEnunciadoChange} sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+            <Typography variant="caption" sx={{ color: '#555', fontWeight: 600, mb: 1, display: 'block' }}>
+              Ítems en el orden correcto (el alumno deberá reordenarlos)
+            </Typography>
+            {items.map((item, idx) => (
+              <Box key={idx} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                <Typography sx={{ color: '#999', fontWeight: 600, minWidth: 24, fontSize: '0.85rem' }}>{idx + 1}.</Typography>
+                <TextField size="small" fullWidth placeholder={`Ítem ${idx + 1}`} value={item} onChange={(e) => handleUpdateItem(idx, e.target.value)} />
+                <IconButton size="small" onClick={() => handleRemoveItem(idx)} disabled={items.length === 2} sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}>
+                  <CloseIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Box>
+            ))}
+            <Button size="small" startIcon={<AddIcon />} onClick={handleAddItem} sx={{ textTransform: 'none', color: '#001f56', mt: 0.5 }}>
+              Agregar ítem
+            </Button>
+            <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
+              El alumno recibirá los ítems en orden aleatorio y deberá reordenarlos correctamente.
+            </Typography>
           </Box>
         );
+      }
       
       case 'multiple-choice': {
         const opciones = question.opciones || ['', '', '', ''];
-        
+        const correcta = question.correcta ?? null;
+
         const handleAddOption = () => {
-          const newOpciones = [...opciones, ''];
-          onUpdate({ ...question, opciones: newOpciones });
+          onUpdate({ ...question, opciones: [...opciones, ''] });
         };
-        
+
         const handleRemoveOption = (optIndex) => {
           if (opciones.length > 2) {
             const newOpciones = opciones.filter((_, i) => i !== optIndex);
-            onUpdate({ ...question, opciones: newOpciones });
+            const newCorrecta = correcta === optIndex ? null : correcta > optIndex ? correcta - 1 : correcta;
+            onUpdate({ ...question, opciones: newOpciones, correcta: newCorrecta });
           }
         };
-        
+
         const handleUpdateOption = (optIndex, value) => {
           const newOpciones = [...opciones];
           newOpciones[optIndex] = value;
           onUpdate({ ...question, opciones: newOpciones });
         };
-        
+
+        const handleSetCorrecta = (optIndex) => {
+          onUpdate({ ...question, correcta: correcta === optIndex ? null : optIndex });
+        };
+
         return (
           <Box>
             <TextField
@@ -354,56 +250,68 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
               placeholder="Enunciado de la pregunta..."
               value={question.enunciado || ''}
               onChange={handleEnunciadoChange}
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                },
-              }}
+              sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {opciones.map((opcion, i) => (
-                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      border: '2px solid #001f56',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      color: '#001f56',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {String.fromCharCode(65 + i)}
-                  </Box>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder={`Opción ${String.fromCharCode(65 + i)}`}
-                    value={opcion}
-                    onChange={(e) => handleUpdateOption(i, e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      },
-                    }}
-                  />
-                  {opciones.length > 2 && (
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRemoveOption(i)}
-                      sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}
+              {opciones.map((opcion, i) => {
+                const isCorrect = correcta === i;
+                return (
+                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box
+                      onClick={() => handleSetCorrecta(i)}
+                      title={isCorrect ? 'Desmarcar como correcta' : 'Marcar como correcta'}
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        border: isCorrect ? '2px solid #2e7d32' : '2px solid #bbb',
+                        bgcolor: isCorrect ? '#2e7d32' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        color: isCorrect ? '#fff' : '#888',
+                        flexShrink: 0,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        '&:hover': {
+                          borderColor: '#2e7d32',
+                          bgcolor: isCorrect ? '#1b5e20' : 'rgba(46,125,50,0.08)',
+                          color: isCorrect ? '#fff' : '#2e7d32',
+                        },
+                      }}
                     >
-                      <CloseIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  )}
-                </Box>
-              ))}
+                      {String.fromCharCode(65 + i)}
+                    </Box>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder={`Opción ${String.fromCharCode(65 + i)}`}
+                      value={opcion}
+                      onChange={(e) => handleUpdateOption(i, e.target.value)}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          borderColor: isCorrect ? '#2e7d32' : undefined,
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: isCorrect ? '#a5d6a7 !important' : undefined,
+                        },
+                      }}
+                    />
+                    {opciones.length > 2 && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveOption(i)}
+                        sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}
+                      >
+                        <CloseIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    )}
+                  </Box>
+                );
+              })}
             </Box>
             <Button
               size="small"
@@ -413,8 +321,10 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
             >
               Agregar opción
             </Button>
-            <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
-              El alumno seleccionará una opción correcta.
+            <Typography variant="caption" sx={{ color: correcta === null ? '#e65100' : '#2e7d32', mt: 1, display: 'block', fontWeight: correcta === null ? 500 : 400 }}>
+              {correcta === null
+                ? 'Hacé clic en la letra de una opción para marcarla como correcta.'
+                : `Opción ${String.fromCharCode(65 + correcta)} marcada como correcta.`}
             </Typography>
           </Box>
         );
@@ -528,8 +438,7 @@ export default function CrearExamenContent() {
     turno: '',
     periodo: '2026 - 1°c',
   });
-  const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', preguntas: [] }]);
-  const [showQuestionSelector, setShowQuestionSelector] = useState(false);
+  const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', color: TOPIC_COLORS[0], preguntas: [] }]);
   const [examId, setExamId] = useState(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [continuing, setContinuing] = useState(false);
@@ -550,23 +459,40 @@ export default function CrearExamenContent() {
   // Mapea el estado UI al payload que espera el backend (campos en inglés)
   const buildExamPayload = (status) => {
     const questions = temas.flatMap((tema) =>
-      tema.preguntas.map((q) => ({
-        type: QUESTION_TYPE_MAP[q.type] || 'LONG_ANSWER',
-        text: q.enunciado || '',
-        points: q.puntaje || 0,
-        topic: tema.nombre,
-        ...(q.opciones && { options: q.opciones }),
-        ...(q.columnas && { columns: q.columnas }),
-        ...(q.filas && { rows: q.filas }),
-      }))
+      tema.preguntas.map((q) => {
+        const base = {
+          type: QUESTION_TYPE_MAP[q.type] || 'LONG_ANSWER',
+          text: q.enunciado || '',
+          points: q.puntaje || 0,
+          topic: tema.nombre,
+          topicColor: tema.color || TOPIC_COLORS[0],
+        };
+        if (q.type === 'multiple-choice' && q.opciones) {
+          base.options = q.opciones;
+          if (q.correcta != null) {
+            base.correctAnswers = [q.correcta];
+          }
+        }
+        if (q.type === 'arbol-decision' && q.items) {
+          base.correctOrder = q.items.filter(Boolean);
+        }
+        if (q.type === 'tabla' && q.pares) {
+          base.matchingPairs = Object.fromEntries(
+            q.pares.filter((p) => p.izquierda).map((p) => [p.izquierda, p.derecha || ''])
+          );
+        }
+        return base;
+      })
     );
+
+    const totalPoints = temas.length * 10;
 
     return {
       title: formData.nombre,
       subjectId: formData.curso ? String(formData.curso) : '',
       shift: formData.turno ? String(formData.turno) : '',
       period: formData.periodo,
-      totalPoints: 10,
+      totalPoints,
       questions,
       status,
     };
@@ -596,8 +522,6 @@ export default function CrearExamenContent() {
     setSavingDraft(true);
     try {
       const payload = buildExamPayload('borrador');
-      // Para borrador permitimos puntaje incompleto: lo recalculamos al actual
-      payload.totalPoints = payload.questions.reduce((sum, q) => sum + (q.points || 0), 0) || 10;
       console.log('[ExamRequest] Guardar borrador payload:', JSON.stringify(payload, null, 2));
 
       let result;
@@ -624,12 +548,12 @@ export default function CrearExamenContent() {
       return;
     }
 
-    const sumaPuntajes = temas.reduce(
-      (acc, t) => acc + t.preguntas.reduce((s, q) => s + (q.puntaje || 0), 0),
-      0
+    const temasInvalidos = temas.filter(
+      (t) => t.preguntas.reduce((s, q) => s + (q.puntaje || 0), 0) !== 10
     );
-    if (sumaPuntajes !== 10) {
-      showMessage('error', `La suma de puntajes debe ser exactamente 10 (actual: ${sumaPuntajes})`);
+    if (temasInvalidos.length > 0) {
+      const nombres = temasInvalidos.map((t) => t.nombre).join(', ');
+      showMessage('error', `El puntaje de ${nombres} debe sumar exactamente 10`);
       return;
     }
 
@@ -676,16 +600,13 @@ export default function CrearExamenContent() {
 
   const handleAddTema = () => {
     const newId = temas.length + 1;
-    setTemas([...temas, { id: newId, nombre: `Tema ${newId}`, preguntas: [] }]);
+    const color = TOPIC_COLORS[(temas.length) % TOPIC_COLORS.length];
+    setTemas([...temas, { id: newId, nombre: `Tema ${newId}`, color, preguntas: [] }]);
     setSelectedTab(temas.length);
   };
 
-  const handleOpenQuestionSelector = () => {
-    setShowQuestionSelector(true);
-  };
-
-  const handleCloseQuestionSelector = () => {
-    setShowQuestionSelector(false);
+  const handleUpdateTemaColor = (color) => {
+    setTemas((prev) => prev.map((t, i) => i === selectedTab ? { ...t, color } : t));
   };
 
   const handleSelectQuestionType = (typeId) => {
@@ -694,7 +615,8 @@ export default function CrearExamenContent() {
       type: typeId,
       enunciado: '',
       puntaje: 1,
-      ...(typeId === 'multiple-choice' && { opciones: ['', '', '', ''] }),
+      ...(typeId === 'multiple-choice' && { opciones: ['', '', '', ''], correcta: null }),
+      ...(typeId === 'arbol-decision' && { items: ['', ''] }),
     };
     
     const updatedTemas = temas.map((tema, index) => {
@@ -739,13 +661,8 @@ export default function CrearExamenContent() {
     setTemas(updatedTemas);
   };
 
-  // Calculate total points
-  const puntajeTotal = temas.reduce((total, tema) => {
-    return total + tema.preguntas.reduce((sum, q) => sum + (q.puntaje || 0), 0);
-  }, 0);
-  const puntajeMax = 10;
-
   const currentTema = temas[selectedTab];
+  const currentTemaPts = currentTema?.preguntas.reduce((s, q) => s + (q.puntaje || 0), 0) ?? 0;
 
   return (
     <Box
@@ -969,109 +886,99 @@ export default function CrearExamenContent() {
             </Box>
           </Box>
 
-          {/* Puntaje Total */}
+          {/* Puntaje por tema */}
           <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 1,
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 500, color: '#333' }}
-              >
-                Puntaje total
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
+                Puntaje — {currentTema?.nombre}
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 600, color: '#001f56' }}
-              >
-                {puntajeTotal} / {puntajeMax} puntos
+              <Typography variant="body2" sx={{ fontWeight: 600, color: currentTemaPts > 10 ? '#d32f2f' : currentTemaPts === 10 ? '#2e7d32' : '#001f56' }}>
+                {currentTemaPts} / 10 puntos
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
-              value={Math.min((puntajeTotal / puntajeMax) * 100, 100)}
+              value={Math.min((currentTemaPts / 10) * 100, 100)}
               sx={{
-                height: 8,
-                borderRadius: 4,
-                bgcolor: '#e0e0e0',
+                height: 8, borderRadius: 4, bgcolor: '#e0e0e0', mb: 1.5,
                 '& .MuiLinearProgress-bar': {
-                  bgcolor: puntajeTotal > puntajeMax ? '#d32f2f' : '#001f56',
+                  bgcolor: currentTemaPts > 10 ? '#d32f2f' : currentTemaPts === 10 ? '#2e7d32' : (currentTema?.color || '#001f56'),
                   borderRadius: 4,
                 },
               }}
             />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
-              <InfoOutlinedIcon sx={{ fontSize: 16, color: '#666' }} />
-              <Typography variant="caption" sx={{ color: '#666' }}>
-                La sumatoria debe ser exactamente 10 para continuar.
-              </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {temas.map((tema) => {
+                const pts = tema.preguntas.reduce((s, q) => s + (q.puntaje || 0), 0);
+                return (
+                  <Chip
+                    key={tema.id}
+                    label={`${tema.nombre}: ${pts}/10 pts`}
+                    size="small"
+                    sx={{ bgcolor: pts === 10 ? tema.color || TOPIC_COLORS[0] : '#e0e0e0', color: pts === 10 ? '#fff' : '#555', fontWeight: 600, fontSize: '0.75rem' }}
+                  />
+                );
+              })}
             </Box>
           </Box>
 
           {/* Temas Tabs */}
           <Box sx={{ px: 3, pt: 2, borderBottom: '1px solid #e0e0e0' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pb: 2 }}>
-              {temas.map((tema, index) => (
-                <Box
-                  key={tema.id}
-                  onClick={() => setSelectedTab(index)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    px: 2,
-                    py: 1,
-                    borderRadius: 2,
-                    cursor: 'pointer',
-                    bgcolor: selectedTab === index ? '#001f56' : 'transparent',
-                    color: selectedTab === index ? '#fff' : '#333',
-                    fontWeight: 500,
-                    fontSize: '0.875rem',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      bgcolor: selectedTab === index ? '#001f56' : 'rgba(0, 31, 86, 0.08)',
-                    },
-                  }}
-                >
-                  <span>{tema.nombre} ({tema.preguntas.length})</span>
-                  {temas.length > 1 && (
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleDeleteTema(tema.id, e)}
-                      sx={{
-                        p: 0.25,
-                        ml: 0.5,
-                        color: selectedTab === index ? 'rgba(255,255,255,0.7)' : '#666',
-                        '&:hover': {
-                          color: selectedTab === index ? '#fff' : '#001f56',
-                          bgcolor: 'transparent',
-                        },
-                      }}
-                    >
-                      <CloseIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  )}
-                </Box>
-              ))}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pb: 1.5 }}>
+              {temas.map((tema, index) => {
+                const active = selectedTab === index;
+                return (
+                  <Box
+                    key={tema.id}
+                    onClick={() => setSelectedTab(index)}
+                    sx={{
+                      display: 'flex', alignItems: 'center', gap: 0.75,
+                      px: 2, py: 1, borderRadius: 2, cursor: 'pointer',
+                      bgcolor: active ? (tema.color || '#001f56') : 'transparent',
+                      color: active ? '#fff' : '#333',
+                      fontWeight: 500, fontSize: '0.875rem', transition: 'all 0.2s',
+                      border: active ? 'none' : `2px solid ${tema.color || '#001f56'}`,
+                      '&:hover': { opacity: 0.85 },
+                    }}
+                  >
+                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: active ? 'rgba(255,255,255,0.7)' : (tema.color || '#001f56'), flexShrink: 0 }} />
+                    <span>{tema.nombre} ({tema.preguntas.length})</span>
+                    {temas.length > 1 && (
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleDeleteTema(tema.id, e)}
+                        sx={{ p: 0.25, ml: 0.25, color: active ? 'rgba(255,255,255,0.7)' : '#666', '&:hover': { color: active ? '#fff' : '#d32f2f', bgcolor: 'transparent' } }}
+                      >
+                        <CloseIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                  </Box>
+                );
+              })}
               <Button
                 startIcon={<AddIcon sx={{ fontSize: 18 }} />}
                 onClick={handleAddTema}
-                sx={{
-                  textTransform: 'none',
-                  color: '#001f56',
-                  fontWeight: 500,
-                  '&:hover': {
-                    bgcolor: 'rgba(0, 31, 86, 0.08)',
-                  },
-                }}
+                sx={{ textTransform: 'none', color: '#001f56', fontWeight: 500, '&:hover': { bgcolor: 'rgba(0, 31, 86, 0.08)' } }}
               >
                 Agregar tema
               </Button>
+            </Box>
+            {/* Color picker para el tema activo */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1.5 }}>
+              <Typography variant="caption" sx={{ color: '#666', flexShrink: 0 }}>Color del tema:</Typography>
+              {TOPIC_COLORS.map((c) => (
+                <Box
+                  key={c}
+                  onClick={() => handleUpdateTemaColor(c)}
+                  sx={{
+                    width: 20, height: 20, borderRadius: '50%', bgcolor: c, cursor: 'pointer',
+                    border: (currentTema?.color || TOPIC_COLORS[0]) === c ? '3px solid #333' : '2px solid transparent',
+                    boxShadow: (currentTema?.color || TOPIC_COLORS[0]) === c ? '0 0 0 1px #fff inset' : 'none',
+                    transition: 'transform 0.15s',
+                    '&:hover': { transform: 'scale(1.25)' },
+                  }}
+                />
+              ))}
             </Box>
           </Box>
 
@@ -1087,114 +994,43 @@ export default function CrearExamenContent() {
               />
             ))}
 
-            {/* Question Type Selector */}
-            {showQuestionSelector ? (
-              <Paper
-                elevation={0}
-                sx={{
-                  border: '1px dashed #ccc',
-                  borderRadius: 2,
-                  p: 3,
-                }}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 3,
-                  }}
-                >
-                  <Typography
-                    variant="body1"
-                    sx={{ fontWeight: 500, color: '#333' }}
-                  >
-                    Elegí el tipo de pregunta
-                  </Typography>
-                  <Button
-                    onClick={handleCloseQuestionSelector}
-                    sx={{
-                      textTransform: 'none',
-                      color: '#001f56',
-                      fontWeight: 500,
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                </Box>
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: 2,
-                  }}
-                >
-                  {questionTypes.map((type) => {
-                    const Icon = type.icon;
-                    return (
-                      <Paper
-                        key={type.id}
-                        onClick={() => handleSelectQuestionType(type.id)}
-                        elevation={0}
-                        sx={{
-                          p: 3,
-                          border: '1px solid #e0e0e0',
-                          borderRadius: 2,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          '&:hover': {
-                            borderColor: '#001f56',
-                            bgcolor: 'rgba(0, 31, 86, 0.02)',
-                          },
-                        }}
-                      >
-                        <Icon sx={{ fontSize: 28, color: '#001f56', mb: 1.5 }} />
-                        <Typography
-                          variant="body1"
-                          sx={{ fontWeight: 600, color: '#333', mb: 0.5 }}
-                        >
-                          {type.title}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ color: '#666', fontSize: '0.8rem' }}
-                        >
-                          {type.description}
-                        </Typography>
-                      </Paper>
-                    );
-                  })}
-                </Box>
-              </Paper>
-            ) : (
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  py: currentTema?.preguntas.length > 0 ? 4 : 8,
-                }}
-              >
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={handleOpenQuestionSelector}
-                  sx={{
-                    bgcolor: '#001f56',
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    px: 4,
-                    py: 1.5,
-                    borderRadius: 2,
-                    '&:hover': {
-                      bgcolor: '#002a75',
-                    },
-                  }}
-                >
-                  Agregar pregunta
-                </Button>
+            {/* Question Type Selector — siempre visible */}
+            <Paper
+              elevation={0}
+              sx={{ border: '1px dashed #ccc', borderRadius: 2, p: 3, mt: currentTema?.preguntas.length > 0 ? 2 : 0 }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#555', mb: 2 }}>
+                Agregar pregunta
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
+                {questionTypes.map((type) => {
+                  const Icon = type.icon;
+                  return (
+                    <Paper
+                      key={type.id}
+                      onClick={() => handleSelectQuestionType(type.id)}
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 2,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': { borderColor: '#001f56', bgcolor: 'rgba(0, 31, 86, 0.02)' },
+                      }}
+                    >
+                      <Icon sx={{ fontSize: 26, color: '#001f56', mb: 1 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#333', mb: 0.25 }}>
+                        {type.title}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        {type.description}
+                      </Typography>
+                    </Paper>
+                  );
+                })}
               </Box>
-            )}
+            </Paper>
           </Box>
         </Paper>
       </Box>

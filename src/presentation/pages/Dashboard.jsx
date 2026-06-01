@@ -27,9 +27,10 @@ const Dashboard = () => {
       navigate('/login');
       return;
     }
-    // Redirigir docentes a su dashboard especifico
     if (user.role === RoleEnum.DOCENTE) {
       navigate('/docente');
+    } else if (user.role === RoleEnum.ALUMNO) {
+      navigate('/alumno');
     }
   }, [navigate, user]);
 
