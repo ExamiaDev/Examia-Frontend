@@ -57,11 +57,6 @@ StatusChip.propTypes = {
   score: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
-ExamsView.propTypes = {
-  onSelectExam: PropTypes.func.isRequired,
-  initialExamId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-};
-
 // ─── Vista: lista de exámenes con conteo de entregas ──────────────────────────
 
 const ExamsView = ({ onSelectExam, initialExamId }) => {
@@ -218,6 +213,11 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
       </Box>
     </>
   );
+};
+
+ExamsView.propTypes = {
+  onSelectExam: PropTypes.func.isRequired,
+  initialExamId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 // ─── Vista: entregas de un examen ─────────────────────────────────────────────

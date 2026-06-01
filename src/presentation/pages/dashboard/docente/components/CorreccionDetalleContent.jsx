@@ -293,16 +293,6 @@ QuestionFooter.propTypes = {
   onFeedbackChange: PropTypes.func.isRequired,
 };
 
-QuestionCard.propTypes = {
-  answer: AnswerShape.isRequired,
-  index: PropTypes.number.isRequired,
-  scoreValue: PropTypes.string,
-  feedbackValue: PropTypes.string,
-  onScoreChange: PropTypes.func.isRequired,
-  onFeedbackChange: PropTypes.func.isRequired,
-  readOnly: PropTypes.bool.isRequired,
-};
-
 const QuestionCard = ({ answer, index, scoreValue, feedbackValue, onScoreChange, onFeedbackChange, readOnly }) => {
   const isAuto = isAutoGradable(answer.questionType);
   const scoreNum = readOnly ? answer.earnedScore : Number.parseFloat(scoreValue);
@@ -331,6 +321,16 @@ const QuestionCard = ({ answer, index, scoreValue, feedbackValue, onScoreChange,
       />
     </Paper>
   );
+};
+
+QuestionCard.propTypes = {
+  answer: AnswerShape.isRequired,
+  index: PropTypes.number.isRequired,
+  scoreValue: PropTypes.string,
+  feedbackValue: PropTypes.string,
+  onScoreChange: PropTypes.func.isRequired,
+  onFeedbackChange: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool.isRequired,
 };
 
 const LoadingView = () => (

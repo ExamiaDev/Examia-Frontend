@@ -221,10 +221,6 @@ QuestionCard.propTypes = {
   index: PropTypes.number.isRequired,
 };
 
-ResultadoDetalleContent.propTypes = {
-  submissionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-};
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 const ResultadoDetalleContent = ({ submissionId }) => {
@@ -373,6 +369,10 @@ const ResultadoDetalleContent = ({ submissionId }) => {
       </Box>
     </Box>
   );
+};
+
+ResultadoDetalleContent.propTypes = {
+  submissionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
 export default ResultadoDetalleContent;
