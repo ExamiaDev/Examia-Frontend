@@ -36,6 +36,8 @@ import SendIcon from '@mui/icons-material/Send';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
+import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
+import { getDecisionTree, isDecisionTreeComplete } from '../../../../components/decisionTreeUtils';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +63,11 @@ const QuestionShape = PropTypes.shape({
   topic: PropTypes.string,
   topicColor: PropTypes.string,
   matchingPairs: PropTypes.objectOf(PropTypes.string),
+  decisionTree: PropTypes.shape({
+    rootId: PropTypes.string,
+    nodes: PropTypes.object,
+  }),
+  correctOrder: PropTypes.arrayOf(PropTypes.string),
 });
 
 const AnswerShape = PropTypes.shape({
@@ -88,11 +95,12 @@ const emptyAnswer = (question) => {
     case 'SHORT_ANSWER':
     case 'FILL_IN_THE_BLANK':
       return { ...base, textAnswer: '' };
-    case 'ORDERING':
-    case 'DECISION_TREE': {
+    case 'ORDERING': {
       const src = question.correctOrder?.length ? question.correctOrder : (question.options ?? []);
       return { ...base, orderAnswer: [...src].sort(() => Math.random() - 0.5) };
     }
+    case 'DECISION_TREE':
+      return { ...base, orderAnswer: [] };
     case 'MATCHING':
     case 'MATRIX':
       return { ...base, matchingAnswer: {} };
@@ -101,11 +109,15 @@ const emptyAnswer = (question) => {
   }
 };
 
-const isAnswered = (a) => {
-  if (a?.selectedOptions !== undefined) return a.selectedOptions.length > 0;
-  if (a?.textAnswer !== undefined) return a.textAnswer.trim().length > 0;
-  if (a?.orderAnswer !== undefined) return a.orderAnswer.length > 0;
-  if (a?.matchingAnswer !== undefined) return Object.keys(a.matchingAnswer).length > 0;
+const isAnswered = (question, answer) => {
+  if (!answer) return false;
+  if (question?.type === 'DECISION_TREE' && getDecisionTree(question)) {
+    return isDecisionTreeComplete(getDecisionTree(question), answer.orderAnswer ?? []);
+  }
+  if (answer.selectedOptions !== undefined) return answer.selectedOptions.length > 0;
+  if (answer.textAnswer !== undefined) return answer.textAnswer.trim().length > 0;
+  if (answer.orderAnswer !== undefined) return answer.orderAnswer.length > 0;
+  if (answer.matchingAnswer !== undefined) return Object.keys(answer.matchingAnswer).length > 0;
   return false;
 };
 
@@ -237,7 +249,20 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
       case 'SHORT_ANSWER':
       case 'FILL_IN_THE_BLANK': return <TextAnswer answer={answer} onChange={onChange} />;
       case 'ORDERING':
-      case 'DECISION_TREE': return <OrderingAnswer answer={answer} onChange={onChange} />;
+        return <OrderingAnswer answer={answer} onChange={onChange} />;
+      case 'DECISION_TREE': {
+        const tree = getDecisionTree(question);
+        if (tree) {
+          return (
+            <DecisionTreeAnswer
+              question={question}
+              answer={answer}
+              onChange={onChange}
+            />
+          );
+        }
+        return <OrderingAnswer answer={answer} onChange={onChange} />;
+      }
       case 'MATCHING':
       case 'MATRIX': return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
       default: return <Typography color="text.secondary">Tipo no soportado: {question.type}</Typography>;
@@ -264,7 +289,7 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
 
 const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
   const totalQuestions = groups.reduce((s, g) => s + g.questions.length, 0);
-  const totalAnswered = groups.reduce((s, g) => s + g.questions.filter((q) => isAnswered(answers[q.id])).length, 0);
+  const totalAnswered = groups.reduce((s, g) => s + g.questions.filter((q) => isAnswered(q, answers[q.id])).length, 0);
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa', minHeight: '100vh' }}>
@@ -285,7 +310,7 @@ const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
       <Box sx={{ px: 4, pb: 4 }}>
         <Grid container spacing={2.5}>
           {groups.map((group, idx) => {
-            const topicAnswered = group.questions.filter((q) => isAnswered(answers[q.id])).length;
+            const topicAnswered = group.questions.filter((q) => isAnswered(q, answers[q.id])).length;
             const topicTotal = group.questions.length;
             const allDone = topicAnswered === topicTotal;
             const color = group.color || '#001f56';
@@ -343,7 +368,7 @@ const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
 
 const TopicQuestionsView = ({ group, topicIdx, answers, onAnswerChange, onBack, onFinish }) => {
   const color = group.color || '#001f56';
-  const answered = group.questions.filter((q) => isAnswered(answers[q.id])).length;
+  const answered = group.questions.filter((q) => isAnswered(q, answers[q.id])).length;
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa', minHeight: '100vh' }}>
@@ -543,7 +568,7 @@ const RealizarExamenContent = ({ examId }) => {
   const handleBackToTopics = () => setView('topics');
 
   const selectedGroup = groups[selectedTopicIdx];
-  const topicAnswered = selectedGroup ? selectedGroup.questions.filter((q) => isAnswered(answers[q.id])).length : 0;
+  const topicAnswered = selectedGroup ? selectedGroup.questions.filter((q) => isAnswered(q, answers[q.id])).length : 0;
   const topicTotal = selectedGroup ? selectedGroup.questions.length : 0;
 
   const handleSubmit = async () => {

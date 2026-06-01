@@ -28,10 +28,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
+import { createDefaultDecisionTree } from '../../../../components/decisionTreeUtils';
 import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 
 const steps = ['Crear examen', 'Cargar respuestas', 'Generar acceso'];
 
@@ -81,18 +83,39 @@ const TOPIC_COLORS = [
   '#e65100', '#00838f', '#4527a0', '#558b2f',
 ];
 
+const QUESTION_TYPE_MAP = {
+  'texto-libre': 'LONG_ANSWER',
+  'tabla': 'MATRIX',
+  'arbol-decision': 'DECISION_TREE',
+  'multiple-choice': 'MULTIPLE_CHOICE',
+};
+
+const buildMatchingPairs = (pares) =>
+  Object.fromEntries((pares || []).filter((p) => p.izquierda).map((p) => [p.izquierda, p.derecha || '']));
+
+const STEP_ICON_SLOT_PROPS = {
+  stepIcon: {
+    sx: {
+      '&.Mui-active': { color: '#001f56' },
+      '&.Mui-completed': { color: '#001f56' },
+    },
+  },
+};
+
 // Question Card Component
-function QuestionCard({ question, index, onUpdate, onDelete }) {
+const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onDelete }) {
   const [expanded, setExpanded] = useState(true);
+
+  const saveQuestion = (updated) => onUpdate(question.id, updated);
   
   const typeLabel = questionTypes.find(t => t.id === question.type)?.title || question.type;
   
   const handleEnunciadoChange = (e) => {
-    onUpdate({ ...question, enunciado: e.target.value });
+    saveQuestion({ ...question, enunciado: e.target.value });
   };
   
   const handlePuntajeChange = (e) => {
-    onUpdate({ ...question, puntaje: e.target.value });
+    saveQuestion({ ...question, puntaje: Number(e.target.value) });
   };
 
   // Render content based on question type
@@ -126,11 +149,11 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
 
         const handleUpdatePar = (idx, side, value) => {
           const next = pares.map((p, i) => i === idx ? { ...p, [side]: value } : p);
-          onUpdate({ ...question, pares: next });
+          saveQuestion({ ...question, pares: next });
         };
-        const handleAddPar = () => onUpdate({ ...question, pares: [...pares, { izquierda: '', derecha: '' }] });
+        const handleAddPar = () => saveQuestion({ ...question, pares: [...pares, { izquierda: '', derecha: '' }] });
         const handleRemovePar = (idx) => {
-          if (pares.length > 1) onUpdate({ ...question, pares: pares.filter((_, i) => i !== idx) });
+          if (pares.length > 1) saveQuestion({ ...question, pares: pares.filter((_, i) => i !== idx) });
         };
 
         return (
@@ -181,36 +204,28 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
       }
       
       case 'arbol-decision': {
-        const items = question.items || ['', ''];
-        const handleUpdateItem = (idx, value) => {
-          const next = items.map((it, i) => i === idx ? value : it);
-          onUpdate({ ...question, items: next });
-        };
-        const handleAddItem = () => onUpdate({ ...question, items: [...items, ''] });
-        const handleRemoveItem = (idx) => {
-          if (items.length > 2) onUpdate({ ...question, items: items.filter((_, i) => i !== idx) });
-        };
+        const tree = question.decisionTree ?? createDefaultDecisionTree();
+        const correctPath = question.correctPath ?? [];
         return (
           <Box>
-            <TextField fullWidth multiline rows={2} placeholder="Enunciado de la pregunta..." value={question.enunciado || ''} onChange={handleEnunciadoChange} sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
-            <Typography variant="caption" sx={{ color: '#555', fontWeight: 600, mb: 1, display: 'block' }}>
-              Ítems en el orden correcto (el alumno deberá reordenarlos)
-            </Typography>
-            {items.map((item, idx) => (
-              <Box key={idx} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-                <Typography sx={{ color: '#999', fontWeight: 600, minWidth: 24, fontSize: '0.85rem' }}>{idx + 1}.</Typography>
-                <TextField size="small" fullWidth placeholder={`Ítem ${idx + 1}`} value={item} onChange={(e) => handleUpdateItem(idx, e.target.value)} />
-                <IconButton size="small" onClick={() => handleRemoveItem(idx)} disabled={items.length === 2} sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}>
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Box>
-            ))}
-            <Button size="small" startIcon={<AddIcon />} onClick={handleAddItem} sx={{ textTransform: 'none', color: '#001f56', mt: 0.5 }}>
-              Agregar ítem
-            </Button>
-            <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
-              El alumno recibirá los ítems en orden aleatorio y deberá reordenarlos correctamente.
-            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Enunciado de la pregunta..."
+              value={question.enunciado || ''}
+              onChange={handleEnunciadoChange}
+              sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+            <DecisionTreeEditor
+              tree={tree}
+              correctPath={correctPath}
+              onChange={(nextTree, nextPath) => saveQuestion({
+                ...question,
+                decisionTree: nextTree,
+                correctPath: nextPath,
+              })}
+            />
           </Box>
         );
       }
@@ -220,25 +235,25 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
         const correcta = question.correcta ?? null;
 
         const handleAddOption = () => {
-          onUpdate({ ...question, opciones: [...opciones, ''] });
+          saveQuestion({ ...question, opciones: [...opciones, ''] });
         };
 
         const handleRemoveOption = (optIndex) => {
           if (opciones.length > 2) {
             const newOpciones = opciones.filter((_, i) => i !== optIndex);
             const newCorrecta = correcta === optIndex ? null : correcta > optIndex ? correcta - 1 : correcta;
-            onUpdate({ ...question, opciones: newOpciones, correcta: newCorrecta });
+            saveQuestion({ ...question, opciones: newOpciones, correcta: newCorrecta });
           }
         };
 
         const handleUpdateOption = (optIndex, value) => {
           const newOpciones = [...opciones];
           newOpciones[optIndex] = value;
-          onUpdate({ ...question, opciones: newOpciones });
+          saveQuestion({ ...question, opciones: newOpciones });
         };
 
         const handleSetCorrecta = (optIndex) => {
-          onUpdate({ ...question, correcta: correcta === optIndex ? null : optIndex });
+          saveQuestion({ ...question, correcta: correcta === optIndex ? null : optIndex });
         };
 
         return (
@@ -410,7 +425,7 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
           </Box>
           <IconButton
             size="small"
-            onClick={onDelete}
+            onClick={() => onDelete(question.id)}
             sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}
           >
             <DeleteIcon />
@@ -426,7 +441,171 @@ function QuestionCard({ question, index, onUpdate, onDelete }) {
       </Collapse>
     </Paper>
   );
-}
+});
+
+const ExamQuestionsPanel = memo(function ExamQuestionsPanel({
+  temas,
+  selectedTab,
+  onSelectTab,
+  onAddTema,
+  onDeleteTema,
+  onUpdateTemaColor,
+  onSelectQuestionType,
+  onUpdateQuestion,
+  onDeleteQuestion,
+}) {
+  const currentTema = temas[selectedTab];
+  const currentTemaPts = currentTema?.preguntas.reduce((s, q) => s + Number(q.puntaje || 0), 0) ?? 0;
+
+  return (
+    <>
+      {/* Puntaje por tema */}
+      <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+          <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
+            Puntaje — {currentTema?.nombre}
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: currentTemaPts > 10 ? '#d32f2f' : currentTemaPts === 10 ? '#2e7d32' : '#001f56' }}>
+            {currentTemaPts} / 10 puntos
+          </Typography>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={Math.min((currentTemaPts / 10) * 100, 100)}
+          sx={{
+            height: 8, borderRadius: 4, bgcolor: '#e0e0e0', mb: 1.5,
+            '& .MuiLinearProgress-bar': {
+              bgcolor: currentTemaPts > 10 ? '#d32f2f' : currentTemaPts === 10 ? '#2e7d32' : (currentTema?.color || '#001f56'),
+              borderRadius: 4,
+            },
+          }}
+        />
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {temas.map((tema) => {
+            const pts = tema.preguntas.reduce((s, q) => s + Number(q.puntaje || 0), 0);
+            return (
+              <Chip
+                key={tema.id}
+                label={`${tema.nombre}: ${pts}/10 pts`}
+                size="small"
+                sx={{ bgcolor: pts === 10 ? tema.color || TOPIC_COLORS[0] : '#e0e0e0', color: pts === 10 ? '#fff' : '#555', fontWeight: 600, fontSize: '0.75rem' }}
+              />
+            );
+          })}
+        </Box>
+      </Box>
+
+      {/* Temas Tabs */}
+      <Box sx={{ px: 3, pt: 2, borderBottom: '1px solid #e0e0e0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pb: 1.5 }}>
+          {temas.map((tema, index) => {
+            const active = selectedTab === index;
+            return (
+              <Box
+                key={tema.id}
+                onClick={() => onSelectTab(index)}
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 0.75,
+                  px: 2, py: 1, borderRadius: 2, cursor: 'pointer',
+                  bgcolor: active ? (tema.color || '#001f56') : 'transparent',
+                  color: active ? '#fff' : '#333',
+                  fontWeight: 500, fontSize: '0.875rem', transition: 'all 0.2s',
+                  border: active ? 'none' : `2px solid ${tema.color || '#001f56'}`,
+                  '&:hover': { opacity: 0.85 },
+                }}
+              >
+                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: active ? 'rgba(255,255,255,0.7)' : (tema.color || '#001f56'), flexShrink: 0 }} />
+                <span>{tema.nombre} ({tema.preguntas.length})</span>
+                {temas.length > 1 && (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => onDeleteTema(tema.id, e)}
+                    sx={{ p: 0.25, ml: 0.25, color: active ? 'rgba(255,255,255,0.7)' : '#666', '&:hover': { color: active ? '#fff' : '#d32f2f', bgcolor: 'transparent' } }}
+                  >
+                    <CloseIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                )}
+              </Box>
+            );
+          })}
+          <Button
+            startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+            onClick={onAddTema}
+            sx={{ textTransform: 'none', color: '#001f56', fontWeight: 500, '&:hover': { bgcolor: 'rgba(0, 31, 86, 0.08)' } }}
+          >
+            Agregar tema
+          </Button>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1.5 }}>
+          <Typography variant="caption" sx={{ color: '#666', flexShrink: 0 }}>Color del tema:</Typography>
+          {TOPIC_COLORS.map((c) => (
+            <Box
+              key={c}
+              onClick={() => onUpdateTemaColor(c)}
+              sx={{
+                width: 20, height: 20, borderRadius: '50%', bgcolor: c, cursor: 'pointer',
+                border: (currentTema?.color || TOPIC_COLORS[0]) === c ? '3px solid #333' : '2px solid transparent',
+                boxShadow: (currentTema?.color || TOPIC_COLORS[0]) === c ? '0 0 0 1px #fff inset' : 'none',
+                transition: 'transform 0.15s',
+                '&:hover': { transform: 'scale(1.25)' },
+              }}
+            />
+          ))}
+        </Box>
+      </Box>
+
+      {/* Questions List */}
+      <Box sx={{ p: 3 }}>
+        {currentTema?.preguntas.map((question, index) => (
+          <QuestionCard
+            key={question.id}
+            question={question}
+            index={index}
+            onUpdate={onUpdateQuestion}
+            onDelete={onDeleteQuestion}
+          />
+        ))}
+
+        <Paper
+          elevation={0}
+          sx={{ border: '1px dashed #ccc', borderRadius: 2, p: 3, mt: currentTema?.preguntas.length > 0 ? 2 : 0 }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600, color: '#555', mb: 2 }}>
+            Agregar pregunta
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
+            {questionTypes.map((type) => {
+              const Icon = type.icon;
+              return (
+                <Paper
+                  key={type.id}
+                  onClick={() => onSelectQuestionType(type.id)}
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    border: '1px solid #e0e0e0',
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    '&:hover': { borderColor: '#001f56', bgcolor: 'rgba(0, 31, 86, 0.02)' },
+                  }}
+                >
+                  <Icon sx={{ fontSize: 26, color: '#001f56', mb: 1 }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#333', mb: 0.25 }}>
+                    {type.title}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#666' }}>
+                    {type.description}
+                  </Typography>
+                </Paper>
+              );
+            })}
+          </Box>
+        </Paper>
+      </Box>
+    </>
+  );
+});
 
 export default function CrearExamenContent() {
   const navigate = useNavigate();
@@ -448,22 +627,14 @@ export default function CrearExamenContent() {
 
   const showMessage = (severity, message) => setSnackbar({ open: true, severity, message });
 
-  // Mapea los tipos de pregunta de la UI a los enums que espera el backend
-  const QUESTION_TYPE_MAP = {
-    'texto-libre': 'LONG_ANSWER',
-    'tabla': 'MATRIX',
-    'arbol-decision': 'DECISION_TREE',
-    'multiple-choice': 'MULTIPLE_CHOICE',
-  };
-
-  const buildMatchingPairs = (pares) =>
-    Object.fromEntries((pares || []).filter((p) => p.izquierda).map((p) => [p.izquierda, p.derecha || '']));
+  const sumQuestionPoints = (preguntas = []) =>
+    preguntas.reduce((sum, q) => sum + Number(q.puntaje || 0), 0);
 
   const buildQuestionPayload = (tema, q) => {
     const base = {
       type: QUESTION_TYPE_MAP[q.type] || 'LONG_ANSWER',
-      text: q.enunciado || '',
-      points: q.puntaje || 0,
+      text: (q.enunciado || '').trim(),
+      points: Number(q.puntaje) || 1,
       topic: tema.nombre,
       topicColor: tema.color || TOPIC_COLORS[0],
     };
@@ -474,8 +645,9 @@ export default function CrearExamenContent() {
         base.correctAnswers = [q.correcta];
       }
     }
-    if (q.type === 'arbol-decision' && q.items) {
-      base.correctOrder = q.items.filter(Boolean);
+    if (q.type === 'arbol-decision' && q.decisionTree) {
+      base.decisionTree = q.decisionTree;
+      base.correctOrder = (q.correctPath ?? []).filter(Boolean);
     }
     if (q.type === 'tabla' && q.pares) {
       base.matchingPairs = buildMatchingPairs(q.pares);
@@ -500,7 +672,7 @@ export default function CrearExamenContent() {
     };
   };
 
-  const validateRequiredFields = () => {
+  const validateExamBeforeSave = ({ requireQuestions = false, requireScore = false } = {}) => {
     if (!formData.nombre.trim()) {
       showMessage('error', 'El nombre del examen es obligatorio');
       return false;
@@ -513,14 +685,39 @@ export default function CrearExamenContent() {
       showMessage('error', 'Tenés que seleccionar un turno');
       return false;
     }
+
+    const totalPreguntas = temas.reduce((acc, t) => acc + t.preguntas.length, 0);
+    if (requireQuestions && totalPreguntas === 0) {
+      showMessage('error', 'Agregá al menos una pregunta antes de guardar');
+      return false;
+    }
+
+    const preguntasSinEnunciado = temas.flatMap((t) =>
+      t.preguntas
+        .filter((q) => !(q.enunciado || '').trim())
+        .map((q) => `${t.nombre} (${questionTypes.find((qt) => qt.id === q.type)?.title || q.type})`)
+    );
+    if (preguntasSinEnunciado.length > 0) {
+      showMessage('error', `Completá el enunciado de: ${preguntasSinEnunciado.join(', ')}`);
+      return false;
+    }
+
+    if (requireScore) {
+      const temasInvalidos = temas.filter((t) => sumQuestionPoints(t.preguntas) !== 10);
+      if (temasInvalidos.length > 0) {
+        const nombres = temasInvalidos.map((t) => t.nombre).join(', ');
+        showMessage('error', `El puntaje de ${nombres} debe sumar exactamente 10`);
+        return false;
+      }
+    }
+
     return true;
   };
 
+  const validateRequiredFields = () => validateExamBeforeSave({ requireQuestions: true, requireScore: true });
+
   const handleGuardarBorrador = async () => {
-    if (!formData.nombre.trim()) {
-      showMessage('error', 'Ingresá al menos un nombre para guardar el borrador');
-      return;
-    }
+    if (!validateExamBeforeSave({ requireQuestions: true })) return;
     setSavingDraft(true);
     try {
       const payload = buildExamPayload('borrador');
@@ -543,21 +740,6 @@ export default function CrearExamenContent() {
 
   const handleContinuar = async () => {
     if (!validateRequiredFields()) return;
-
-    const totalPreguntas = temas.reduce((acc, t) => acc + t.preguntas.length, 0);
-    if (totalPreguntas === 0) {
-      showMessage('error', 'Agregá al menos una pregunta antes de continuar');
-      return;
-    }
-
-    const temasInvalidos = temas.filter(
-      (t) => t.preguntas.reduce((s, q) => s + (q.puntaje || 0), 0) !== 10
-    );
-    if (temasInvalidos.length > 0) {
-      const nombres = temasInvalidos.map((t) => t.nombre).join(', ');
-      showMessage('error', `El puntaje de ${nombres} debe sumar exactamente 10`);
-      return;
-    }
 
     setContinuing(true);
     try {
@@ -584,87 +766,74 @@ export default function CrearExamenContent() {
     }
   };
 
-  const handleDeleteTema = (temaId, event) => {
+  const handleDeleteTema = useCallback((temaId, event) => {
     event.stopPropagation();
-    if (temas.length > 1) {
-      const newTemas = temas.filter(t => t.id !== temaId);
+    setTemas((prev) => {
+      if (prev.length <= 1) return prev;
+      const newTemas = prev.filter((t) => t.id !== temaId);
       const renumberedTemas = newTemas.map((tema, index) => ({
         ...tema,
         id: index + 1,
         nombre: `Tema ${index + 1}`,
       }));
-      setTemas(renumberedTemas);
-      if (selectedTab >= renumberedTemas.length) {
-        setSelectedTab(renumberedTemas.length - 1);
-      }
-    }
-  };
+      setSelectedTab((tab) => (tab >= renumberedTemas.length ? renumberedTemas.length - 1 : tab));
+      return renumberedTemas;
+    });
+  }, []);
 
-  const handleAddTema = () => {
-    const newId = temas.length + 1;
-    const color = TOPIC_COLORS[(temas.length) % TOPIC_COLORS.length];
-    setTemas([...temas, { id: newId, nombre: `Tema ${newId}`, color, preguntas: [] }]);
-    setSelectedTab(temas.length);
-  };
+  const handleAddTema = useCallback(() => {
+    setTemas((prev) => {
+      const newId = prev.length + 1;
+      const color = TOPIC_COLORS[prev.length % TOPIC_COLORS.length];
+      setSelectedTab(prev.length);
+      return [...prev, { id: newId, nombre: `Tema ${newId}`, color, preguntas: [] }];
+    });
+  }, []);
 
-  const handleUpdateTemaColor = (color) => {
-    setTemas((prev) => prev.map((t, i) => i === selectedTab ? { ...t, color } : t));
-  };
+  const handleUpdateTemaColor = useCallback((color) => {
+    setTemas((prev) => prev.map((t, i) => (i === selectedTab ? { ...t, color } : t)));
+  }, [selectedTab]);
 
-  const handleSelectQuestionType = (typeId) => {
+  const handleSelectQuestionType = useCallback((typeId) => {
     const newQuestion = {
       id: Date.now(),
       type: typeId,
       enunciado: '',
       puntaje: 1,
       ...(typeId === 'multiple-choice' && { opciones: ['', '', '', ''], correcta: null }),
-      ...(typeId === 'arbol-decision' && { items: ['', ''] }),
+      ...(typeId === 'arbol-decision' && {
+        decisionTree: createDefaultDecisionTree(),
+        correctPath: ['Sí'],
+      }),
     };
-    
-    const updatedTemas = temas.map((tema, index) => {
-      if (index === selectedTab) {
-        return {
-          ...tema,
-          preguntas: [...tema.preguntas, newQuestion],
-        };
-      }
-      return tema;
-    });
-    
-    setTemas(updatedTemas);
-    // Keep the selector open to allow adding more questions
-  };
 
-  const handleUpdateQuestion = (questionId, updatedQuestion) => {
-    const updatedTemas = temas.map((tema, index) => {
-      if (index === selectedTab) {
-        return {
-          ...tema,
-          preguntas: tema.preguntas.map(q => 
-            q.id === questionId ? updatedQuestion : q
-          ),
-        };
-      }
-      return tema;
-    });
-    setTemas(updatedTemas);
-  };
+    setTemas((prev) => prev.map((tema, index) => (
+      index === selectedTab
+        ? { ...tema, preguntas: [...tema.preguntas, newQuestion] }
+        : tema
+    )));
+  }, [selectedTab]);
 
-  const handleDeleteQuestion = (questionId) => {
-    const updatedTemas = temas.map((tema, index) => {
-      if (index === selectedTab) {
-        return {
-          ...tema,
-          preguntas: tema.preguntas.filter(q => q.id !== questionId),
-        };
-      }
-      return tema;
-    });
-    setTemas(updatedTemas);
-  };
+  const handleUpdateQuestion = useCallback((questionId, updatedQuestion) => {
+    setTemas((prev) => prev.map((tema, index) => (
+      index === selectedTab
+        ? {
+            ...tema,
+            preguntas: tema.preguntas.map((q) => (q.id === questionId ? updatedQuestion : q)),
+          }
+        : tema
+    )));
+  }, [selectedTab]);
 
-  const currentTema = temas[selectedTab];
-  const currentTemaPts = currentTema?.preguntas.reduce((s, q) => s + (q.puntaje || 0), 0) ?? 0;
+  const handleDeleteQuestion = useCallback((questionId) => {
+    setTemas((prev) => prev.map((tema, index) => (
+      index === selectedTab
+        ? { ...tema, preguntas: tema.preguntas.filter((q) => q.id !== questionId) }
+        : tema
+    )));
+  }, [selectedTab]);
+
+  const handleSelectTab = useCallback((index) => setSelectedTab(index), []);
 
   return (
     <Box
@@ -759,18 +928,7 @@ export default function CrearExamenContent() {
             <Stepper activeStep={activeStep} alternativeLabel>
               {steps.map((label, index) => (
                 <Step key={label}>
-                  <StepLabel
-                    StepIconProps={{
-                      sx: {
-                        '&.Mui-active': {
-                          color: '#001f56',
-                        },
-                        '&.Mui-completed': {
-                          color: '#001f56',
-                        },
-                      },
-                    }}
-                  >
+                  <StepLabel slotProps={STEP_ICON_SLOT_PROPS}>
                     <Typography
                       sx={{
                         color: index === activeStep ? '#001f56' : '#666',
@@ -806,7 +964,7 @@ export default function CrearExamenContent() {
                   fullWidth
                   placeholder="Parcial 1"
                   value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, nombre: e.target.value }))}
                   size="small"
                   sx={{
                     '& .MuiOutlinedInput-root': {
@@ -825,7 +983,7 @@ export default function CrearExamenContent() {
                 <FormControl fullWidth size="small">
                   <Select
                     value={formData.curso}
-                    onChange={(e) => setFormData({ ...formData, curso: e.target.value })}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, curso: e.target.value }))}
                     displayEmpty
                     sx={{ borderRadius: 2 }}
                   >
@@ -850,7 +1008,7 @@ export default function CrearExamenContent() {
                 <FormControl fullWidth size="small">
                   <Select
                     value={formData.turno}
-                    onChange={(e) => setFormData({ ...formData, turno: e.target.value })}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, turno: e.target.value }))}
                     displayEmpty
                     sx={{ borderRadius: 2 }}
                   >
@@ -888,152 +1046,17 @@ export default function CrearExamenContent() {
             </Box>
           </Box>
 
-          {/* Puntaje por tema */}
-          <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
-                Puntaje — {currentTema?.nombre}
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: currentTemaPts > 10 ? '#d32f2f' : currentTemaPts === 10 ? '#2e7d32' : '#001f56' }}>
-                {currentTemaPts} / 10 puntos
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={Math.min((currentTemaPts / 10) * 100, 100)}
-              sx={{
-                height: 8, borderRadius: 4, bgcolor: '#e0e0e0', mb: 1.5,
-                '& .MuiLinearProgress-bar': {
-                  bgcolor: currentTemaPts > 10 ? '#d32f2f' : currentTemaPts === 10 ? '#2e7d32' : (currentTema?.color || '#001f56'),
-                  borderRadius: 4,
-                },
-              }}
-            />
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {temas.map((tema) => {
-                const pts = tema.preguntas.reduce((s, q) => s + (q.puntaje || 0), 0);
-                return (
-                  <Chip
-                    key={tema.id}
-                    label={`${tema.nombre}: ${pts}/10 pts`}
-                    size="small"
-                    sx={{ bgcolor: pts === 10 ? tema.color || TOPIC_COLORS[0] : '#e0e0e0', color: pts === 10 ? '#fff' : '#555', fontWeight: 600, fontSize: '0.75rem' }}
-                  />
-                );
-              })}
-            </Box>
-          </Box>
-
-          {/* Temas Tabs */}
-          <Box sx={{ px: 3, pt: 2, borderBottom: '1px solid #e0e0e0' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pb: 1.5 }}>
-              {temas.map((tema, index) => {
-                const active = selectedTab === index;
-                return (
-                  <Box
-                    key={tema.id}
-                    onClick={() => setSelectedTab(index)}
-                    sx={{
-                      display: 'flex', alignItems: 'center', gap: 0.75,
-                      px: 2, py: 1, borderRadius: 2, cursor: 'pointer',
-                      bgcolor: active ? (tema.color || '#001f56') : 'transparent',
-                      color: active ? '#fff' : '#333',
-                      fontWeight: 500, fontSize: '0.875rem', transition: 'all 0.2s',
-                      border: active ? 'none' : `2px solid ${tema.color || '#001f56'}`,
-                      '&:hover': { opacity: 0.85 },
-                    }}
-                  >
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: active ? 'rgba(255,255,255,0.7)' : (tema.color || '#001f56'), flexShrink: 0 }} />
-                    <span>{tema.nombre} ({tema.preguntas.length})</span>
-                    {temas.length > 1 && (
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleDeleteTema(tema.id, e)}
-                        sx={{ p: 0.25, ml: 0.25, color: active ? 'rgba(255,255,255,0.7)' : '#666', '&:hover': { color: active ? '#fff' : '#d32f2f', bgcolor: 'transparent' } }}
-                      >
-                        <CloseIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    )}
-                  </Box>
-                );
-              })}
-              <Button
-                startIcon={<AddIcon sx={{ fontSize: 18 }} />}
-                onClick={handleAddTema}
-                sx={{ textTransform: 'none', color: '#001f56', fontWeight: 500, '&:hover': { bgcolor: 'rgba(0, 31, 86, 0.08)' } }}
-              >
-                Agregar tema
-              </Button>
-            </Box>
-            {/* Color picker para el tema activo */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1.5 }}>
-              <Typography variant="caption" sx={{ color: '#666', flexShrink: 0 }}>Color del tema:</Typography>
-              {TOPIC_COLORS.map((c) => (
-                <Box
-                  key={c}
-                  onClick={() => handleUpdateTemaColor(c)}
-                  sx={{
-                    width: 20, height: 20, borderRadius: '50%', bgcolor: c, cursor: 'pointer',
-                    border: (currentTema?.color || TOPIC_COLORS[0]) === c ? '3px solid #333' : '2px solid transparent',
-                    boxShadow: (currentTema?.color || TOPIC_COLORS[0]) === c ? '0 0 0 1px #fff inset' : 'none',
-                    transition: 'transform 0.15s',
-                    '&:hover': { transform: 'scale(1.25)' },
-                  }}
-                />
-              ))}
-            </Box>
-          </Box>
-
-          {/* Questions List */}
-          <Box sx={{ p: 3 }}>
-            {currentTema?.preguntas.map((question, index) => (
-              <QuestionCard
-                key={question.id}
-                question={question}
-                index={index}
-                onUpdate={(updated) => handleUpdateQuestion(question.id, updated)}
-                onDelete={() => handleDeleteQuestion(question.id)}
-              />
-            ))}
-
-            {/* Question Type Selector — siempre visible */}
-            <Paper
-              elevation={0}
-              sx={{ border: '1px dashed #ccc', borderRadius: 2, p: 3, mt: currentTema?.preguntas.length > 0 ? 2 : 0 }}
-            >
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#555', mb: 2 }}>
-                Agregar pregunta
-              </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
-                {questionTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <Paper
-                      key={type.id}
-                      onClick={() => handleSelectQuestionType(type.id)}
-                      elevation={0}
-                      sx={{
-                        p: 2.5,
-                        border: '1px solid #e0e0e0',
-                        borderRadius: 2,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': { borderColor: '#001f56', bgcolor: 'rgba(0, 31, 86, 0.02)' },
-                      }}
-                    >
-                      <Icon sx={{ fontSize: 26, color: '#001f56', mb: 1 }} />
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#333', mb: 0.25 }}>
-                        {type.title}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#666' }}>
-                        {type.description}
-                      </Typography>
-                    </Paper>
-                  );
-                })}
-              </Box>
-            </Paper>
-          </Box>
+          <ExamQuestionsPanel
+            temas={temas}
+            selectedTab={selectedTab}
+            onSelectTab={handleSelectTab}
+            onAddTema={handleAddTema}
+            onDeleteTema={handleDeleteTema}
+            onUpdateTemaColor={handleUpdateTemaColor}
+            onSelectQuestionType={handleSelectQuestionType}
+            onUpdateQuestion={handleUpdateQuestion}
+            onDeleteQuestion={handleDeleteQuestion}
+          />
         </Paper>
       </Box>
 

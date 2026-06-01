@@ -1,6 +1,9 @@
 import ExamAPI from '../../infrastructure/api/ExamAPI';
 import { AppError } from '../../domain/errors/AppErrors';
 
+const sumQuestionPoints = (questions = []) =>
+  questions.reduce((sum, q) => sum + Number(q.points || 0), 0);
+
 /**
  * ExamService - Capa de aplicación para gestión de exámenes
  *
@@ -32,22 +35,19 @@ export class ExamService {
       if (!examData.subjectId || examData.subjectId.trim() === '') {
         throw new AppError('El curso/materia es obligatorio');
       }
-      if (!examData.totalPoints || examData.totalPoints <= 0) {
-        throw new AppError('El puntaje total debe ser mayor a 0');
-      }
       if (!Array.isArray(examData.questions) || examData.questions.length === 0) {
         throw new AppError('El examen debe tener al menos una pregunta');
       }
 
-      // Validar puntajes de preguntas
-      const sumaPuntajes = examData.questions.reduce((sum, q) => sum + (q.points || 0), 0);
-      if (sumaPuntajes !== examData.totalPoints) {
-        throw new AppError(
-          `La suma de puntajes (${sumaPuntajes}) debe coincidir con el puntaje total (${examData.totalPoints})`
-        );
+      const totalPoints = sumQuestionPoints(examData.questions);
+      if (totalPoints <= 0) {
+        throw new AppError('El puntaje total debe ser mayor a 0');
       }
 
-      const exam = await ExamAPI.createExam(examData);
+      const exam = await ExamAPI.createExam({
+        ...examData,
+        totalPoints,
+      });
       return exam;
     } catch (error) {
       if (error instanceof AppError) {
@@ -108,18 +108,12 @@ export class ExamService {
         throw new AppError('El ID del examen es obligatorio');
       }
 
-      // Validar puntajes si se actualizan preguntas
-      if (examData.questions && Array.isArray(examData.questions)) {
-        const sumaPuntajes = examData.questions.reduce((sum, q) => sum + (q.points || 0), 0);
-        const totalPoints = examData.totalPoints || 10;
-        if (sumaPuntajes !== totalPoints) {
-          throw new AppError(
-            `La suma de puntajes (${sumaPuntajes}) debe coincidir con el puntaje total (${totalPoints})`
-          );
-        }
-      }
-
-      const exam = await ExamAPI.updateExam(examId, examData);
+      const exam = await ExamAPI.updateExam(examId, {
+        ...examData,
+        ...(examData.questions && {
+          totalPoints: sumQuestionPoints(examData.questions),
+        }),
+      });
       return exam;
     } catch (error) {
       if (error instanceof AppError) {
