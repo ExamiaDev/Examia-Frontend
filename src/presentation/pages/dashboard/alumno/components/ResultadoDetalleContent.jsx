@@ -29,7 +29,9 @@ const QUESTION_TYPE_LABELS = {
   LONG_ANSWER: 'Respuesta extensa',
   FILL_IN_THE_BLANK: 'Completar',
   ORDERING: 'Ordenar',
+  DECISION_TREE: 'Árbol de decisión',
   MATCHING: 'Emparejar',
+  MATRIX: 'Matriz',
 };
 
 const formatDate = (iso) => {
@@ -183,8 +185,8 @@ const QuestionCard = ({ answer, index }) => {
       {(answer.questionType === 'LONG_ANSWER' || answer.questionType === 'SHORT_ANSWER' || answer.questionType === 'FILL_IN_THE_BLANK') && (
         <TextAnswer answer={answer} />
       )}
-      {answer.questionType === 'ORDERING' && <OrderingAnswer answer={answer} />}
-      {answer.questionType === 'MATCHING' && <MatchingAnswer answer={answer} />}
+      {(answer.questionType === 'ORDERING' || answer.questionType === 'DECISION_TREE') && <OrderingAnswer answer={answer} />}
+      {(answer.questionType === 'MATCHING' || answer.questionType === 'MATRIX') && <MatchingAnswer answer={answer} />}
 
       {answer.teacherFeedback && (
         <>

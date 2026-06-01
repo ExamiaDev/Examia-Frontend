@@ -100,6 +100,13 @@ export class ExamQuestion {
   }
 
   /**
+   * Verificar si es matriz
+   */
+  isMatrix() {
+    return this.tipo === 'tabla';
+  }
+
+  /**
    * Verificar si es árbol de decisión
    */
   isDecisionTree() {

@@ -451,8 +451,8 @@ export default function CrearExamenContent() {
   // Mapea los tipos de pregunta de la UI a los enums que espera el backend
   const QUESTION_TYPE_MAP = {
     'texto-libre': 'LONG_ANSWER',
-    'tabla': 'MATCHING',
-    'arbol-decision': 'ORDERING',
+    'tabla': 'MATRIX',
+    'arbol-decision': 'DECISION_TREE',
     'multiple-choice': 'MULTIPLE_CHOICE',
   };
 

@@ -11,7 +11,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Chip,
   CircularProgress,
   Alert,
   Switch,
@@ -36,38 +35,6 @@ import httpClient from '../../../../../infrastructure/http/httpClient';
 const TURNO_LABELS = { 1: 'Mañana', 2: 'Tarde', 3: 'Noche' };
 
 // Mapea el status del backend a la etiqueta que mostramos
-const STATUS_LABELS = {
-  borrador: 'Borrador',
-  BORRADOR: 'Borrador',
-  DRAFT: 'Borrador',
-  publicado: 'Publicado',
-  PUBLICADO: 'Publicado',
-  PUBLISHED: 'Publicado',
-  activo: 'Activo',
-  ACTIVO: 'Activo',
-  ACTIVE: 'Activo',
-  finalizado: 'Finalizado',
-  FINALIZADO: 'Finalizado',
-  FINISHED: 'Finalizado',
-};
-
-const getEstadoChip = (status) => {
-  const label = STATUS_LABELS[status] || status || '—';
-  return (
-    <Chip
-      label={label}
-      size="small"
-      sx={{
-        backgroundColor: '#fff',
-        color: '#001f56',
-        border: '1px solid #001f56',
-        fontWeight: 500,
-        fontSize: '0.75rem',
-        height: 26,
-      }}
-    />
-  );
-};
 
 export default function ExamenesContent() {
   const navigate = useNavigate();

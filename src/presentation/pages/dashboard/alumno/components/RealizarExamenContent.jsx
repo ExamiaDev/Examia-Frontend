@@ -18,7 +18,6 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
-  Divider,
   Snackbar,
   Dialog,
   DialogTitle,
@@ -33,7 +32,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import SendIcon from '@mui/icons-material/Send';
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
@@ -49,6 +47,8 @@ const TYPE_LABELS = {
   FILL_IN_THE_BLANK: 'Completar el espacio',
   ORDERING: 'Ordenar',
   MATCHING: 'Relacionar',
+  DECISION_TREE: 'Árbol de decisión',
+  MATRIX: 'Matriz',
 };
 
 const emptyAnswer = (question) => {
@@ -62,11 +62,13 @@ const emptyAnswer = (question) => {
     case 'SHORT_ANSWER':
     case 'FILL_IN_THE_BLANK':
       return { ...base, textAnswer: '' };
-    case 'ORDERING': {
+    case 'ORDERING':
+    case 'DECISION_TREE': {
       const src = question.correctOrder?.length ? question.correctOrder : (question.options ?? []);
       return { ...base, orderAnswer: [...src].sort(() => Math.random() - 0.5) };
     }
     case 'MATCHING':
+    case 'MATRIX':
       return { ...base, matchingAnswer: {} };
     default:
       return base;
@@ -208,8 +210,10 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
       case 'LONG_ANSWER': return <TextAnswer answer={answer} onChange={onChange} multiline />;
       case 'SHORT_ANSWER':
       case 'FILL_IN_THE_BLANK': return <TextAnswer answer={answer} onChange={onChange} />;
-      case 'ORDERING': return <OrderingAnswer answer={answer} onChange={onChange} />;
-      case 'MATCHING': return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
+      case 'ORDERING':
+      case 'DECISION_TREE': return <OrderingAnswer answer={answer} onChange={onChange} />;
+      case 'MATCHING':
+      case 'MATRIX': return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
       default: return <Typography color="text.secondary">Tipo no soportado: {question.type}</Typography>;
     }
   };
@@ -243,6 +247,9 @@ const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
         <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
           {exam.subjectName || exam.subjectId}
           {exam.durationMinutes ? ` · ${exam.durationMinutes} min` : ''}
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#888', mb: 1 }}>
+          Progreso: {totalAnswered}/{totalQuestions} preguntas respondidas.
         </Typography>
         <Typography variant="body2" sx={{ color: '#888' }}>
           Elegí el tema que te asignó el profesor. Solo podés entregar uno.

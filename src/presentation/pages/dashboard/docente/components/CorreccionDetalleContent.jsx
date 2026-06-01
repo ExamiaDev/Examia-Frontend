@@ -34,7 +34,9 @@ const QUESTION_TYPE_LABELS = {
   LONG_ANSWER: 'Respuesta extensa',
   FILL_IN_THE_BLANK: 'Completar',
   ORDERING: 'Ordenar',
+  DECISION_TREE: 'Árbol de decisión',
   MATCHING: 'Emparejar',
+  MATRIX: 'Matriz',
 };
 
 const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE'];
@@ -216,8 +218,8 @@ const QuestionCard = ({ answer, index, scoreValue, feedbackValue, onScoreChange,
       {(answer.questionType === 'LONG_ANSWER' || answer.questionType === 'SHORT_ANSWER' || answer.questionType === 'FILL_IN_THE_BLANK') && (
         <TextAnswer answer={answer} />
       )}
-      {answer.questionType === 'ORDERING' && <OrderingAnswer answer={answer} />}
-      {answer.questionType === 'MATCHING' && <MatchingAnswer answer={answer} />}
+      {(answer.questionType === 'ORDERING' || answer.questionType === 'DECISION_TREE') && <OrderingAnswer answer={answer} />}
+      {(answer.questionType === 'MATCHING' || answer.questionType === 'MATRIX') && <MatchingAnswer answer={answer} />}
 
       <Divider sx={{ my: 2.5 }} />
       {readOnly ? (
