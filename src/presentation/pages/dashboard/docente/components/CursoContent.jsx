@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -23,8 +24,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import ExamService from '../../../../../application/services/ExamService';
 import { getCourseById } from './coursesData';
 
-export default function CursoContent() {
-  const { courseId } = useParams();
+export default function CursoContent({ courseId }) {
   const navigate = useNavigate();
   const course = getCourseById(courseId);
 
@@ -209,3 +209,7 @@ export default function CursoContent() {
     </Box>
   );
 }
+
+CursoContent.propTypes = {
+  courseId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+};

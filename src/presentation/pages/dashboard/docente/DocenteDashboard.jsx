@@ -41,7 +41,8 @@ const DocenteDashboard = () => {
     }
 
     if (path.includes('/cursos/')) {
-      return <CursoContent />;
+      const segments = path.split('/').filter(Boolean);
+      return <CursoContent courseId={segments[2]} />;
     }
     
     if (path.includes('/examenes')) {
