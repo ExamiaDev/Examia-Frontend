@@ -101,9 +101,9 @@ const emptyAnswer = (question) => {
     }
     case 'DECISION_TREE':
       return { ...base, orderAnswer: [] };
-    case 'MATCHING':
     case 'MATRIX':
-      return { ...base, matchingAnswer: {} };
+      return { ...base, textAnswer: '' };
+    case 'MATCHING':
     default:
       return base;
   }
@@ -263,8 +263,17 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
         }
         return <OrderingAnswer answer={answer} onChange={onChange} />;
       }
+      case 'MATRIX':
+        return (
+          <Box>
+            <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1.5 }}>
+              Respondé según el enunciado. La tabla de referencia no se muestra en el examen.
+            </Typography>
+            <TextAnswer answer={answer} onChange={onChange} multiline />
+          </Box>
+        );
       case 'MATCHING':
-      case 'MATRIX': return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
+        return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
       default: return <Typography color="text.secondary">Tipo no soportado: {question.type}</Typography>;
     }
   };

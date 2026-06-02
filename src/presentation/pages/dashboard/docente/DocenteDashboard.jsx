@@ -9,6 +9,8 @@ import ExamenesContent from './components/ExamenesContent';
 import CorreccionesContent from './components/CorreccionesContent';
 import CorreccionDetalleContent from './components/CorreccionDetalleContent';
 import CrearExamenContent from './components/CrearExamenContent';
+import CargarRespuestasContent from './components/CargarRespuestasContent';
+import GenerarAccesoContent from './components/GenerarAccesoContent';
 import CursoContent from './components/CursoContent';
 import MetricasContent from './components/MetricasContent';
 
@@ -38,6 +40,16 @@ const DocenteDashboard = () => {
     
     if (path.includes('/examenes/crear')) {
       return <CrearExamenContent />;
+    }
+
+    if (path.match(/\/examenes\/[^/]+\/respuestas$/)) {
+      const segments = path.split('/').filter(Boolean);
+      return <CargarRespuestasContent examId={segments[2]} />;
+    }
+
+    if (path.match(/\/examenes\/[^/]+\/acceso$/)) {
+      const segments = path.split('/').filter(Boolean);
+      return <GenerarAccesoContent examId={segments[2]} />;
     }
 
     if (path.includes('/cursos/')) {

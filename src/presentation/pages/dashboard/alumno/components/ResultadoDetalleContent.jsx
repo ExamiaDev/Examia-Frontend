@@ -20,6 +20,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
+import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
 import { getDecisionTree } from '../../../../components/decisionTreeUtils';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -192,16 +193,25 @@ const QuestionCard = ({ answer, index }) => {
       {answer.questionType === 'DECISION_TREE' && (
         getDecisionTree(answer)
           ? (
-            <DecisionTreeAnswer
-              question={answer}
-              answer={answer}
-              readOnly
-              showCorrectPath
-            />
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
+                  Árbol de referencia
+                </Typography>
+                <DecisionTreeEditor tree={getDecisionTree(answer)} readOnly onChange={() => {}} />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
+                  Tu recorrido
+                </Typography>
+                <DecisionTreeAnswer question={answer} answer={answer} readOnly />
+              </Box>
+            </Stack>
           )
           : <OrderingAnswer answer={answer} />
       )}
-      {(answer.questionType === 'MATCHING' || answer.questionType === 'MATRIX') && <MatchingAnswer answer={answer} />}
+      {answer.questionType === 'MATRIX' && <TextAnswer answer={answer} />}
+      {answer.questionType === 'MATCHING' && <MatchingAnswer answer={answer} />}
 
       {answer.teacherFeedback && (
         <>

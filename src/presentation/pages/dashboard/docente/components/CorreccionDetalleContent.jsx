@@ -25,7 +25,10 @@ import SendIcon from '@mui/icons-material/Send';
 import PersonIcon from '@mui/icons-material/Person';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
-import { getDecisionTree, pathsAreEqual } from '../../../../components/decisionTreeUtils';
+import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
+import MatrixTableEditor from '../../../../components/MatrixTableEditor';
+import { getDecisionTree } from '../../../../components/decisionTreeUtils';
+import { getMatrixFromQuestion } from '../../../../components/matrixTableUtils';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -42,7 +45,7 @@ const QUESTION_TYPE_LABELS = {
   MATRIX: 'Matriz',
 };
 
-const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE', 'ORDERING', 'DECISION_TREE'];
+const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE', 'ORDERING'];
 const isAutoGradable = (type) => AUTO_GRADABLE.includes(type);
 
 const AnswerShape = PropTypes.shape({
@@ -61,7 +64,10 @@ const AnswerShape = PropTypes.shape({
     nodes: PropTypes.object,
   }),
   matchingPairs: PropTypes.objectOf(PropTypes.string),
+  matrixColumnHeaders: PropTypes.arrayOf(PropTypes.string),
+  matrixRows: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
   matchingAnswer: PropTypes.objectOf(PropTypes.string),
+  textAnswer: PropTypes.string,
 });
 
 const autoScore = (answer) => {
@@ -79,17 +85,6 @@ const autoScore = (answer) => {
     return correct.size > 0 ? Number.parseFloat(((net / correct.size) * answer.points).toFixed(2)) : 0;
   }
   if (answer.questionType === 'ORDERING') {
-    const correct = answer.correctOrder || [];
-    const student = answer.orderAnswer || [];
-    const ok = correct.length === student.length && correct.every((item, idx) => item === student[idx]);
-    return ok ? answer.points : 0;
-  }
-  if (answer.questionType === 'DECISION_TREE') {
-    const tree = getDecisionTree(answer);
-    if (tree) {
-      const ok = pathsAreEqual(answer.orderAnswer || [], answer.correctOrder || []);
-      return ok ? answer.points : 0;
-    }
     const correct = answer.correctOrder || [];
     const student = answer.orderAnswer || [];
     const ok = correct.length === student.length && correct.every((item, idx) => item === student[idx]);
@@ -252,17 +247,46 @@ const QuestionBody = ({ answer }) => {
     const tree = getDecisionTree(answer);
     if (tree) {
       return (
-        <DecisionTreeAnswer
-          question={answer}
-          answer={answer}
-          readOnly
-          showCorrectPath
-        />
+        <Stack spacing={2} sx={{ mt: 1.5 }}>
+          <Box>
+            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
+              Árbol de referencia (respuesta del docente)
+            </Typography>
+            <DecisionTreeEditor tree={tree} readOnly onChange={() => {}} />
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
+              Recorrido del alumno
+            </Typography>
+            <DecisionTreeAnswer question={answer} answer={answer} readOnly />
+          </Box>
+        </Stack>
       );
     }
     return <OrderingAnswer answer={answer} />;
   }
-  if (['MATCHING', 'MATRIX'].includes(answer.questionType)) {
+  if (answer.questionType === 'MATRIX') {
+    const matrix = getMatrixFromQuestion(answer);
+    return (
+      <Stack spacing={2} sx={{ mt: 1.5 }}>
+        {matrix && (
+          <Box>
+            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
+              Tabla de referencia (no visible para el alumno)
+            </Typography>
+            <MatrixTableEditor
+              readOnly
+              matrixColumns={matrix.matrixColumns}
+              matrixRows={matrix.matrixRows}
+              onChange={() => {}}
+            />
+          </Box>
+        )}
+        <TextAnswer answer={answer} />
+      </Stack>
+    );
+  }
+  if (answer.questionType === 'MATCHING') {
     return <MatchingAnswer answer={answer} />;
   }
   return null;

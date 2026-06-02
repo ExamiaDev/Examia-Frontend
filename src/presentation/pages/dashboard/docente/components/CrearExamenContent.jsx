@@ -7,47 +7,34 @@ import {
   MenuItem,
   FormControl,
   Paper,
-  Stepper,
-  Step,
-  StepLabel,
   LinearProgress,
   IconButton,
   Collapse,
   Chip,
-  Snackbar,
-  Alert,
-  CircularProgress,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import ExamService from '../../../../../application/services/ExamService';
-import SaveIcon from '@mui/icons-material/Save';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
-import { createDefaultDecisionTree } from '../../../../components/decisionTreeUtils';
 import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import { useState, useCallback, memo } from 'react';
-
-const steps = ['Crear examen', 'Cargar respuestas', 'Generar acceso'];
-
-const cursos = [
-  { id: 1, nombre: 'Testing de Aplicaciones - Mañana' },
-  { id: 2, nombre: 'Testing de Aplicaciones - Tarde' },
-  { id: 3, nombre: 'Testing de Aplicaciones - Noche' },
-];
-
-const turnos = [
-  { id: 1, nombre: 'Mañana' },
-  { id: 2, nombre: 'Tarde' },
-  { id: 3, nombre: 'Noche' },
-];
+import ExamService from '../../../../../application/services/ExamService';
+import ExamWizardShell from './ExamWizardShell';
+import {
+  CURSOS as cursos,
+  TURNOS as turnos,
+  TOPIC_COLORS,
+  PUNTAJE_OPTIONS as puntajeOptions,
+  buildExamPayload,
+  validateExamMetadata,
+  validateStepQuestions,
+  createEmptyQuestion,
+} from './examWizardUtils';
 
 const questionTypes = [
   {
@@ -76,30 +63,11 @@ const questionTypes = [
   },
 ];
 
-const puntajeOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-const TOPIC_COLORS = [
-  '#1565c0', '#2e7d32', '#6a1b9a', '#c62828',
-  '#e65100', '#00838f', '#4527a0', '#558b2f',
-];
-
-const QUESTION_TYPE_MAP = {
-  'texto-libre': 'LONG_ANSWER',
-  'tabla': 'MATRIX',
-  'arbol-decision': 'DECISION_TREE',
-  'multiple-choice': 'MULTIPLE_CHOICE',
-};
-
-const buildMatchingPairs = (pares) =>
-  Object.fromEntries((pares || []).filter((p) => p.izquierda).map((p) => [p.izquierda, p.derecha || '']));
-
-const STEP_ICON_SLOT_PROPS = {
-  stepIcon: {
-    sx: {
-      '&.Mui-active': { color: '#001f56' },
-      '&.Mui-completed': { color: '#001f56' },
-    },
-  },
+const QUESTION_HINTS = {
+  'texto-libre': 'El alumno responderá con texto libre. Las respuestas se cargan en el paso 2.',
+  'tabla': 'Configurarás la tabla de referencia en el paso 2. El alumno no la verá.',
+  'arbol-decision': 'Armá el árbol de decisión en el paso 2. El árbol completo es la respuesta.',
+  'multiple-choice': 'Configurarás las opciones y la respuesta correcta en el paso 2.',
 };
 
 // Question Card Component
@@ -118,236 +86,112 @@ const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onD
     saveQuestion({ ...question, puntaje: Number(e.target.value) });
   };
 
-  // Render content based on question type
+  // Enunciado + opciones (MC) en paso 1; respuestas correctas en paso 2
   const renderQuestionContent = () => {
-    switch (question.type) {
-      case 'texto-libre':
-        return (
-          <Box>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              placeholder="Enunciado de la pregunta..."
-              value={question.enunciado || ''}
-              onChange={handleEnunciadoChange}
-              sx={{
-                mb: 1,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                },
-              }}
-            />
-            <Typography variant="caption" sx={{ color: '#666' }}>
-              El alumno responderá usando el editor de texto libre.
-            </Typography>
-          </Box>
-        );
-      
-      case 'tabla': {
-        const pares = question.pares || [{ izquierda: '', derecha: '' }];
+    if (question.type === 'multiple-choice') {
+      const opciones = question.opciones || ['', '', '', ''];
 
-        const handleUpdatePar = (idx, side, value) => {
-          const next = pares.map((p, i) => i === idx ? { ...p, [side]: value } : p);
-          saveQuestion({ ...question, pares: next });
-        };
-        const handleAddPar = () => saveQuestion({ ...question, pares: [...pares, { izquierda: '', derecha: '' }] });
-        const handleRemovePar = (idx) => {
-          if (pares.length > 1) saveQuestion({ ...question, pares: pares.filter((_, i) => i !== idx) });
-        };
+      const handleAddOption = () => {
+        saveQuestion({ ...question, opciones: [...opciones, ''] });
+      };
 
-        return (
-          <Box>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              placeholder="Enunciado de la pregunta..."
-              value={question.enunciado || ''}
-              onChange={handleEnunciadoChange}
-              sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
-            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-              <Typography variant="caption" sx={{ flex: 1, fontWeight: 600, color: '#555', px: 1 }}>Columna izquierda</Typography>
-              <Typography variant="caption" sx={{ flex: 1, fontWeight: 600, color: '#555', px: 1 }}>Columna derecha (respuesta correcta)</Typography>
-              <Box sx={{ width: 32 }} />
-            </Box>
-            {pares.map((par, idx) => (
-              <Box key={idx} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+      const handleRemoveOption = (optIndex) => {
+        if (opciones.length > 2) {
+          saveQuestion({ ...question, opciones: opciones.filter((_, i) => i !== optIndex) });
+        }
+      };
+
+      const handleUpdateOption = (optIndex, value) => {
+        const next = [...opciones];
+        next[optIndex] = value;
+        saveQuestion({ ...question, opciones: next });
+      };
+
+      return (
+        <Box>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            placeholder="Enunciado de la pregunta..."
+            value={question.enunciado || ''}
+            onChange={handleEnunciadoChange}
+            sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+          />
+          <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1.5 }}>
+            Opciones de respuesta
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {opciones.map((opcion, i) => (
+              <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    border: '2px solid #bbb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#888',
+                    flexShrink: 0,
+                  }}
+                >
+                  {String.fromCharCode(65 + i)}
+                </Box>
                 <TextField
-                  size="small"
                   fullWidth
-                  placeholder={`Elemento ${idx + 1}`}
-                  value={par.izquierda}
-                  onChange={(e) => handleUpdatePar(idx, 'izquierda', e.target.value)}
-                />
-                <TextField
                   size="small"
-                  fullWidth
-                  placeholder={`Corresponde a...`}
-                  value={par.derecha}
-                  onChange={(e) => handleUpdatePar(idx, 'derecha', e.target.value)}
+                  placeholder={`Opción ${String.fromCharCode(65 + i)}`}
+                  value={opcion}
+                  onChange={(e) => handleUpdateOption(i, e.target.value)}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
-                <IconButton size="small" onClick={() => handleRemovePar(idx)} disabled={pares.length === 1} sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}>
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
+                {opciones.length > 2 && (
+                  <IconButton
+                    size="small"
+                    onClick={() => handleRemoveOption(i)}
+                    sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}
+                  >
+                    <CloseIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                )}
               </Box>
             ))}
-            <Button size="small" startIcon={<AddIcon />} onClick={handleAddPar} sx={{ textTransform: 'none', color: '#001f56', mt: 0.5 }}>
-              Agregar par
-            </Button>
-            <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
-              El alumno relacionará cada elemento de la izquierda con su correspondiente de la derecha.
-            </Typography>
           </Box>
-        );
-      }
-      
-      case 'arbol-decision': {
-        const tree = question.decisionTree ?? createDefaultDecisionTree();
-        const correctPath = question.correctPath ?? [];
-        return (
-          <Box>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              placeholder="Enunciado de la pregunta..."
-              value={question.enunciado || ''}
-              onChange={handleEnunciadoChange}
-              sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
-            <DecisionTreeEditor
-              tree={tree}
-              correctPath={correctPath}
-              onChange={(nextTree, nextPath) => saveQuestion({
-                ...question,
-                decisionTree: nextTree,
-                correctPath: nextPath,
-              })}
-            />
-          </Box>
-        );
-      }
-      
-      case 'multiple-choice': {
-        const opciones = question.opciones || ['', '', '', ''];
-        const correcta = question.correcta ?? null;
-
-        const handleAddOption = () => {
-          saveQuestion({ ...question, opciones: [...opciones, ''] });
-        };
-
-        const handleRemoveOption = (optIndex) => {
-          if (opciones.length > 2) {
-            const newOpciones = opciones.filter((_, i) => i !== optIndex);
-            const newCorrecta = correcta === optIndex ? null : correcta > optIndex ? correcta - 1 : correcta;
-            saveQuestion({ ...question, opciones: newOpciones, correcta: newCorrecta });
-          }
-        };
-
-        const handleUpdateOption = (optIndex, value) => {
-          const newOpciones = [...opciones];
-          newOpciones[optIndex] = value;
-          saveQuestion({ ...question, opciones: newOpciones });
-        };
-
-        const handleSetCorrecta = (optIndex) => {
-          saveQuestion({ ...question, correcta: correcta === optIndex ? null : optIndex });
-        };
-
-        return (
-          <Box>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              placeholder="Enunciado de la pregunta..."
-              value={question.enunciado || ''}
-              onChange={handleEnunciadoChange}
-              sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {opciones.map((opcion, i) => {
-                const isCorrect = correcta === i;
-                return (
-                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box
-                      onClick={() => handleSetCorrecta(i)}
-                      title={isCorrect ? 'Desmarcar como correcta' : 'Marcar como correcta'}
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: '50%',
-                        border: isCorrect ? '2px solid #2e7d32' : '2px solid #bbb',
-                        bgcolor: isCorrect ? '#2e7d32' : 'transparent',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        color: isCorrect ? '#fff' : '#888',
-                        flexShrink: 0,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        '&:hover': {
-                          borderColor: '#2e7d32',
-                          bgcolor: isCorrect ? '#1b5e20' : 'rgba(46,125,50,0.08)',
-                          color: isCorrect ? '#fff' : '#2e7d32',
-                        },
-                      }}
-                    >
-                      {String.fromCharCode(65 + i)}
-                    </Box>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder={`Opción ${String.fromCharCode(65 + i)}`}
-                      value={opcion}
-                      onChange={(e) => handleUpdateOption(i, e.target.value)}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          borderColor: isCorrect ? '#2e7d32' : undefined,
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: isCorrect ? '#a5d6a7 !important' : undefined,
-                        },
-                      }}
-                    />
-                    {opciones.length > 2 && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveOption(i)}
-                        sx={{ color: '#999', '&:hover': { color: '#d32f2f' } }}
-                      >
-                        <CloseIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-            <Button
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={handleAddOption}
-              sx={{ textTransform: 'none', color: '#001f56', mt: 1.5 }}
-            >
-              Agregar opción
-            </Button>
-            <Typography variant="caption" sx={{ color: correcta === null ? '#e65100' : '#2e7d32', mt: 1, display: 'block', fontWeight: correcta === null ? 500 : 400 }}>
-              {correcta === null
-                ? 'Hacé clic en la letra de una opción para marcarla como correcta.'
-                : `Opción ${String.fromCharCode(65 + correcta)} marcada como correcta.`}
-            </Typography>
-          </Box>
-        );
-      }
-      
-      default:
-        return null;
+          <Button
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={handleAddOption}
+            sx={{ textTransform: 'none', color: '#001f56', mt: 1.5 }}
+          >
+            Agregar opción
+          </Button>
+          <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
+            {QUESTION_HINTS['multiple-choice']}
+          </Typography>
+        </Box>
+      );
     }
+
+    return (
+      <Box>
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          placeholder="Enunciado de la pregunta..."
+          value={question.enunciado || ''}
+          onChange={handleEnunciadoChange}
+          sx={{ mb: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+        />
+        <Typography variant="caption" sx={{ color: '#666' }}>
+          {QUESTION_HINTS[question.type] || 'Configurá las respuestas en el paso 2.'}
+        </Typography>
+      </Box>
+    );
   };
 
   return (
@@ -609,7 +453,6 @@ const ExamQuestionsPanel = memo(function ExamQuestionsPanel({
 
 export default function CrearExamenContent() {
   const navigate = useNavigate();
-  const [activeStep] = useState(0);
   const [selectedTab, setSelectedTab] = useState(0);
   const [formData, setFormData] = useState({
     nombre: '',
@@ -623,113 +466,38 @@ export default function CrearExamenContent() {
   const [continuing, setContinuing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, severity: 'success', message: '' });
 
-  const handleCloseSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
-
   const showMessage = (severity, message) => setSnackbar({ open: true, severity, message });
 
-  const sumQuestionPoints = (preguntas = []) =>
-    preguntas.reduce((sum, q) => sum + Number(q.puntaje || 0), 0);
-
-  const buildQuestionPayload = (tema, q) => {
-    const base = {
-      type: QUESTION_TYPE_MAP[q.type] || 'LONG_ANSWER',
-      text: (q.enunciado || '').trim(),
-      points: Number(q.puntaje) || 1,
-      topic: tema.nombre,
-      topicColor: tema.color || TOPIC_COLORS[0],
-    };
-
-    if (q.type === 'multiple-choice' && q.opciones) {
-      base.options = q.opciones;
-      if (q.correcta != null) {
-        base.correctAnswers = [q.correcta];
-      }
-    }
-    if (q.type === 'arbol-decision' && q.decisionTree) {
-      base.decisionTree = q.decisionTree;
-      base.correctOrder = (q.correctPath ?? []).filter(Boolean);
-    }
-    if (q.type === 'tabla' && q.pares) {
-      base.matchingPairs = buildMatchingPairs(q.pares);
-    }
-
-    return base;
-  };
-
-  // Mapea el estado UI al payload que espera el backend (campos en inglés)
-  const buildExamPayload = (status) => {
-    const questions = temas.flatMap((tema) => tema.preguntas.map((q) => buildQuestionPayload(tema, q)));
-    const totalPoints = temas.length * 10;
-
-    return {
-      title: formData.nombre,
-      subjectId: formData.curso ? String(formData.curso) : '',
-      shift: formData.turno ? String(formData.turno) : '',
-      period: formData.periodo,
-      totalPoints,
-      questions,
-      status,
-    };
-  };
-
-  const validateExamBeforeSave = ({ requireQuestions = false, requireScore = false } = {}) => {
-    if (!formData.nombre.trim()) {
-      showMessage('error', 'El nombre del examen es obligatorio');
+  const validateDraft = () => {
+    const metaError = validateExamMetadata(formData);
+    if (metaError) {
+      showMessage('error', metaError);
       return false;
     }
-    if (!formData.curso) {
-      showMessage('error', 'Tenés que seleccionar un curso');
-      return false;
-    }
-    if (!formData.turno) {
-      showMessage('error', 'Tenés que seleccionar un turno');
-      return false;
-    }
-
     const totalPreguntas = temas.reduce((acc, t) => acc + t.preguntas.length, 0);
-    if (requireQuestions && totalPreguntas === 0) {
+    if (totalPreguntas === 0) {
       showMessage('error', 'Agregá al menos una pregunta antes de guardar');
       return false;
     }
-
-    const preguntasSinEnunciado = temas.flatMap((t) =>
-      t.preguntas
-        .filter((q) => !(q.enunciado || '').trim())
-        .map((q) => `${t.nombre} (${questionTypes.find((qt) => qt.id === q.type)?.title || q.type})`)
-    );
-    if (preguntasSinEnunciado.length > 0) {
-      showMessage('error', `Completá el enunciado de: ${preguntasSinEnunciado.join(', ')}`);
-      return false;
-    }
-
-    if (requireScore) {
-      const temasInvalidos = temas.filter((t) => sumQuestionPoints(t.preguntas) !== 10);
-      if (temasInvalidos.length > 0) {
-        const nombres = temasInvalidos.map((t) => t.nombre).join(', ');
-        showMessage('error', `El puntaje de ${nombres} debe sumar exactamente 10`);
-        return false;
-      }
-    }
-
     return true;
   };
 
-  const validateRequiredFields = () => validateExamBeforeSave({ requireQuestions: true, requireScore: true });
+  const persistExam = async () => {
+    const payload = buildExamPayload(formData, temas, { includeAnswers: false });
+    if (examId) {
+      return ExamService.updateExam(String(examId), payload);
+    }
+    const created = await ExamService.createExam(payload);
+    const newId = created?.id;
+    if (newId) setExamId(newId);
+    return created;
+  };
 
   const handleGuardarBorrador = async () => {
-    if (!validateExamBeforeSave({ requireQuestions: true })) return;
+    if (!validateDraft()) return;
     setSavingDraft(true);
     try {
-      const payload = buildExamPayload('borrador');
-      console.log('[ExamRequest] Guardar borrador payload:', JSON.stringify(payload, null, 2));
-
-      let result;
-      if (examId) {
-        result = await ExamService.updateExam(examId, payload);
-      } else {
-        result = await ExamService.createExam(payload);
-        if (result?.id) setExamId(result.id);
-      }
+      await persistExam();
       showMessage('success', 'Borrador guardado correctamente');
     } catch (error) {
       showMessage('error', error.message || 'No se pudo guardar el borrador');
@@ -739,26 +507,22 @@ export default function CrearExamenContent() {
   };
 
   const handleContinuar = async () => {
-    if (!validateRequiredFields()) return;
+    const metaError = validateExamMetadata(formData);
+    if (metaError) return showMessage('error', metaError);
+
+    const questionsError = validateStepQuestions(temas);
+    if (questionsError) return showMessage('error', questionsError);
 
     setContinuing(true);
     try {
-      const payload = buildExamPayload('borrador');
-      console.log('[ExamRequest] Continuar payload:', JSON.stringify(payload, null, 2));
-      let saved;
-      if (examId) {
-        saved = await ExamService.updateExam(examId, payload);
-      } else {
-        saved = await ExamService.createExam(payload);
-        if (saved?.id) setExamId(saved.id);
+      const saved = await persistExam();
+      const id = saved?.id || examId;
+      if (!id) {
+        showMessage('error', 'No se obtuvo el ID del examen. Intentá de nuevo.');
+        return;
       }
       showMessage('success', 'Examen guardado, pasando al siguiente paso...');
-      const id = saved?.id || examId;
-      setTimeout(() => {
-        if (id) {
-          navigate(`/docente/examenes/${id}/respuestas`);
-        }
-      }, 800);
+      navigate(`/docente/examenes/${id}/respuestas`);
     } catch (error) {
       showMessage('error', error.message || 'No se pudo continuar');
     } finally {
@@ -795,18 +559,7 @@ export default function CrearExamenContent() {
   }, [selectedTab]);
 
   const handleSelectQuestionType = useCallback((typeId) => {
-    const newQuestion = {
-      id: Date.now(),
-      type: typeId,
-      enunciado: '',
-      puntaje: 1,
-      ...(typeId === 'multiple-choice' && { opciones: ['', '', '', ''], correcta: null }),
-      ...(typeId === 'arbol-decision' && {
-        decisionTree: createDefaultDecisionTree(),
-        correctPath: ['Sí'],
-      }),
-    };
-
+    const newQuestion = createEmptyQuestion(typeId);
     setTemas((prev) => prev.map((tema, index) => (
       index === selectedTab
         ? { ...tema, preguntas: [...tema.preguntas, newQuestion] }
@@ -836,245 +589,102 @@ export default function CrearExamenContent() {
   const handleSelectTab = useCallback((index) => setSelectedTab(index), []);
 
   return (
-    <Box
-      sx={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: '#f5f7fa',
-        minHeight: '100vh',
-      }}
+    <ExamWizardShell
+      activeStep={0}
+      title="Crear examen"
+      subtitle="Diseñá las preguntas y asigná puntajes. Las respuestas se configuran en el paso 2."
+      onSaveDraft={handleGuardarBorrador}
+      onContinue={handleContinuar}
+      savingDraft={savingDraft}
+      continuing={continuing}
+      snackbar={snackbar}
+      onCloseSnackbar={() => setSnackbar((s) => ({ ...s, open: false }))}
     >
-      {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          p: 4,
-          pb: 2,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: '#001f56',
-              mb: 0.5,
-            }}
-          >
-            Crear examen
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: '#666' }}
-          >
-            Diseña las preguntas y asigná puntajes.
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={savingDraft ? <CircularProgress size={16} /> : <SaveIcon />}
-            onClick={handleGuardarBorrador}
-            disabled={savingDraft || continuing}
-            sx={{
-              borderColor: '#001f56',
-              color: '#001f56',
-              textTransform: 'none',
-              fontWeight: 500,
-              px: 3,
-              '&:hover': {
-                borderColor: '#001f56',
-                bgcolor: 'rgba(0, 31, 86, 0.04)',
-              },
-            }}
-          >
-            {savingDraft ? 'Guardando...' : 'Guardar borrador'}
-          </Button>
-          <Button
-            variant="contained"
-            endIcon={continuing ? <CircularProgress size={16} sx={{ color: '#fff' }} /> : <ArrowForwardIcon />}
-            onClick={handleContinuar}
-            disabled={savingDraft || continuing}
-            sx={{
-              bgcolor: '#001f56',
-              textTransform: 'none',
-              fontWeight: 500,
-              px: 3,
-              '&:hover': {
-                bgcolor: '#002a75',
-              },
-            }}
-          >
-            {continuing ? 'Procesando...' : 'Continuar'}
-          </Button>
+      <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 3 }}>
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+              Nombre del examen
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="Parcial 1"
+              value={formData.nombre}
+              onChange={(e) => setFormData((prev) => ({ ...prev, nombre: e.target.value }))}
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+          </Box>
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+              Curso
+            </Typography>
+            <FormControl fullWidth size="small">
+              <Select
+                value={formData.curso}
+                onChange={(e) => setFormData((prev) => ({ ...prev, curso: e.target.value }))}
+                displayEmpty
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="" disabled>
+                  <em>Seleccioná</em>
+                </MenuItem>
+                {cursos.map((curso) => (
+                  <MenuItem key={curso.id} value={curso.id}>
+                    {curso.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+              Turno
+            </Typography>
+            <FormControl fullWidth size="small">
+              <Select
+                value={formData.turno}
+                onChange={(e) => setFormData((prev) => ({ ...prev, turno: e.target.value }))}
+                displayEmpty
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="" disabled>
+                  <em>Seleccioná</em>
+                </MenuItem>
+                {turnos.map((turno) => (
+                  <MenuItem key={turno.id} value={turno.id}>
+                    {turno.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+              Período
+            </Typography>
+            <TextField
+              fullWidth
+              value={formData.periodo}
+              disabled
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f5f5f5' } }}
+            />
+          </Box>
         </Box>
       </Box>
 
-      {/* Content */}
-      <Box sx={{ px: 4, pb: 4, flex: 1 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: '1px solid #e0e0e0',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Stepper */}
-          <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
-            <Stepper activeStep={activeStep} alternativeLabel>
-              {steps.map((label, index) => (
-                <Step key={label}>
-                  <StepLabel slotProps={STEP_ICON_SLOT_PROPS}>
-                    <Typography
-                      sx={{
-                        color: index === activeStep ? '#001f56' : '#666',
-                        fontWeight: index === activeStep ? 600 : 400,
-                        fontSize: '0.875rem',
-                      }}
-                    >
-                      {label}
-                    </Typography>
-                  </StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
-
-          {/* Form Fields */}
-          <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 3,
-              }}
-            >
-              <Box>
-                <Typography
-                  variant="body2"
-                  sx={{ mb: 1, fontWeight: 500, color: '#333' }}
-                >
-                  Nombre del examen
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="Parcial 1"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, nombre: e.target.value }))}
-                  size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-              </Box>
-              <Box>
-                <Typography
-                  variant="body2"
-                  sx={{ mb: 1, fontWeight: 500, color: '#333' }}
-                >
-                  Curso
-                </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={formData.curso}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, curso: e.target.value }))}
-                    displayEmpty
-                    sx={{ borderRadius: 2 }}
-                  >
-                    <MenuItem value="" disabled>
-                      <em>Seleccioná</em>
-                    </MenuItem>
-                    {cursos.map((curso) => (
-                      <MenuItem key={curso.id} value={curso.id}>
-                        {curso.nombre}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-              <Box>
-                <Typography
-                  variant="body2"
-                  sx={{ mb: 1, fontWeight: 500, color: '#333' }}
-                >
-                  Turno
-                </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={formData.turno}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, turno: e.target.value }))}
-                    displayEmpty
-                    sx={{ borderRadius: 2 }}
-                  >
-                    <MenuItem value="" disabled>
-                      <em>Seleccioná</em>
-                    </MenuItem>
-                    {turnos.map((turno) => (
-                      <MenuItem key={turno.id} value={turno.id}>
-                        {turno.nombre}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-              <Box>
-                <Typography
-                  variant="body2"
-                  sx={{ mb: 1, fontWeight: 500, color: '#333' }}
-                >
-                  Período
-                </Typography>
-                <TextField
-                  fullWidth
-                  value={formData.periodo}
-                  disabled
-                  size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      bgcolor: '#f5f5f5',
-                    },
-                  }}
-                />
-              </Box>
-            </Box>
-          </Box>
-
-          <ExamQuestionsPanel
-            temas={temas}
-            selectedTab={selectedTab}
-            onSelectTab={handleSelectTab}
-            onAddTema={handleAddTema}
-            onDeleteTema={handleDeleteTema}
-            onUpdateTemaColor={handleUpdateTemaColor}
-            onSelectQuestionType={handleSelectQuestionType}
-            onUpdateQuestion={handleUpdateQuestion}
-            onDeleteQuestion={handleDeleteQuestion}
-          />
-        </Paper>
-      </Box>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+      <ExamQuestionsPanel
+        temas={temas}
+        selectedTab={selectedTab}
+        onSelectTab={handleSelectTab}
+        onAddTema={handleAddTema}
+        onDeleteTema={handleDeleteTema}
+        onUpdateTemaColor={handleUpdateTemaColor}
+        onSelectQuestionType={handleSelectQuestionType}
+        onUpdateQuestion={handleUpdateQuestion}
+        onDeleteQuestion={handleDeleteQuestion}
+      />
+    </ExamWizardShell>
   );
 }

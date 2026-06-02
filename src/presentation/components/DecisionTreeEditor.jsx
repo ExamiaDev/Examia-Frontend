@@ -6,11 +6,6 @@ import {
   TextField,
   Paper,
   Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Divider,
   IconButton,
   Tooltip,
   Chip,
@@ -22,8 +17,6 @@ import FlagIcon from '@mui/icons-material/Flag';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlined';
 import {
   createDefaultDecisionTree,
-  getAllTreePaths,
-  formatDecisionPath,
   getNode,
   isLeafNode,
   getNodeDisplayNumbers,
@@ -32,10 +25,10 @@ import {
   addBranchToNode,
   removeBranchFromNode,
   extendLeafNode,
-  sanitizeCorrectPath,
 } from './decisionTreeUtils';
 
 const NODE_WIDTH = 220;
+const QUESTION_NODE_SIZE = 132;
 
 const EdgeConnector = () => (
   <Box
@@ -78,63 +71,108 @@ const TreeNodeView = ({
   nodeId,
   displayNumbers,
   onTreeChange,
-  correctPath,
+  readOnly,
 }) => {
   const node = getNode(tree, nodeId);
   if (!node) return null;
 
   const isRoot = nodeId === tree.rootId;
   const isLeaf = isLeafNode(node);
+  const isQuestionNode = !isLeaf;
   const displayNum = displayNumbers[nodeId] ?? '?';
   const minBranches = isRoot ? 2 : 1;
   const canRemoveBranch = (node.branches ?? []).length > minBranches;
 
-  const nodeKind = isRoot ? 'Inicio' : isLeaf ? 'Resultado' : 'Decisión';
+  const nodeKind = isRoot ? 'Inicio' : isLeaf ? 'Resultado' : 'Pregunta';
   const nodeColor = isRoot ? '#001f56' : isLeaf ? '#2e7d32' : '#3949ab';
 
-  const patchTree = (nextTree) => {
-    onTreeChange(nextTree, sanitizeCorrectPath(nextTree, correctPath));
-  };
+  const patchTree = (nextTree) => onTreeChange(nextTree);
+
+  const nodeBody = readOnly ? (
+    <Typography
+      variant="body2"
+      sx={{
+        textAlign: 'center',
+        color: '#222',
+        fontSize: isQuestionNode ? '0.8rem' : '0.875rem',
+        lineHeight: 1.35,
+        px: isQuestionNode ? 1 : 0,
+        wordBreak: 'break-word',
+      }}
+    >
+      {node.text || '(sin texto)'}
+    </Typography>
+  ) : (
+    <TextField
+      fullWidth
+      size="small"
+      multiline={!isQuestionNode}
+      minRows={isQuestionNode ? 2 : 2}
+      placeholder={isLeaf ? 'Texto del resultado final...' : 'Pregunta...'}
+      value={node.text ?? ''}
+      onChange={(e) => patchTree(updateNodeText(tree, nodeId, e.target.value))}
+      sx={{
+        '& .MuiOutlinedInput-root': {
+          bgcolor: '#fff',
+          fontSize: isQuestionNode ? '0.8rem' : '0.875rem',
+        },
+        '& .MuiOutlinedInput-input': { textAlign: isQuestionNode ? 'center' : 'left' },
+      }}
+    />
+  );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: NODE_WIDTH }}>
-      <Paper
-        elevation={0}
-        sx={{
-          width: NODE_WIDTH,
-          border: '2px solid',
-          borderColor: nodeColor,
-          borderRadius: 2,
-          overflow: 'hidden',
-          bgcolor: '#fff',
-        }}
-      >
-        <Box sx={{ bgcolor: nodeColor, px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Stack direction="row" spacing={0.75} alignItems="center">
-            {isLeaf ? (
-              <FlagIcon sx={{ fontSize: 14, color: '#fff' }} />
-            ) : (
-              <HelpOutlineIcon sx={{ fontSize: 14, color: '#fff' }} />
-            )}
-            <Typography variant="caption" sx={{ color: '#fff', fontWeight: 700 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: isQuestionNode ? QUESTION_NODE_SIZE : NODE_WIDTH }}>
+      {isQuestionNode ? (
+        <Box
+          sx={{
+            width: QUESTION_NODE_SIZE,
+            height: QUESTION_NODE_SIZE,
+            borderRadius: '50%',
+            border: '3px solid',
+            borderColor: nodeColor,
+            bgcolor: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,31,86,0.12)',
+            p: 1,
+          }}
+        >
+          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
+            <HelpOutlineIcon sx={{ fontSize: 13, color: nodeColor }} />
+            <Typography variant="caption" sx={{ color: nodeColor, fontWeight: 700, fontSize: '0.65rem' }}>
               {nodeKind} {displayNum}
             </Typography>
           </Stack>
+          <Box sx={{ width: '100%', flex: 1, display: 'flex', alignItems: 'center' }}>
+            {nodeBody}
+          </Box>
         </Box>
-        <Box sx={{ p: 1.5 }}>
-          <TextField
-            fullWidth
-            size="small"
-            multiline
-            minRows={isLeaf ? 2 : 1}
-            placeholder={isLeaf ? 'Texto del resultado final...' : 'Pregunta o decisión...'}
-            value={node.text ?? ''}
-            onChange={(e) => patchTree(updateNodeText(tree, nodeId, e.target.value))}
-          />
-        </Box>
-      </Paper>
+      ) : (
+        <Paper
+          elevation={0}
+          sx={{
+            width: NODE_WIDTH,
+            border: '2px solid',
+            borderColor: nodeColor,
+            borderRadius: 2,
+            overflow: 'hidden',
+            bgcolor: '#fff',
+          }}
+        >
+          <Box sx={{ bgcolor: nodeColor, px: 1.5, py: 0.75, display: 'flex', alignItems: 'center' }}>
+            <FlagIcon sx={{ fontSize: 14, color: '#fff', mr: 0.5 }} />
+            <Typography variant="caption" sx={{ color: '#fff', fontWeight: 700 }}>
+              {nodeKind} {displayNum}
+            </Typography>
+          </Box>
+          <Box sx={{ p: 1.5 }}>{nodeBody}</Box>
+        </Paper>
+      )}
 
-      {isLeaf && (
+      {isLeaf && !readOnly && (
         <Tooltip title="Convertir este resultado en una nueva decisión con ramas">
           <IconButton
             size="small"
@@ -144,7 +182,6 @@ const TreeNodeView = ({
               bgcolor: '#eef2ff',
               border: '1px dashed #3949ab',
               color: '#3949ab',
-              '&:hover': { bgcolor: '#e0e7ff' },
             }}
           >
             <AddIcon fontSize="small" />
@@ -171,59 +208,66 @@ const TreeNodeView = ({
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  minWidth: NODE_WIDTH,
+                  minWidth: QUESTION_NODE_SIZE,
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', mb: 0.5 }}>
-                  <TextField
-                    size="small"
-                    fullWidth
-                    placeholder={`Opción ${idx + 1}`}
-                    value={branch.label}
-                    onChange={(e) => patchTree(updateBranchLabel(tree, nodeId, idx, e.target.value))}
-                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#f8fafc' } }}
-                  />
-                  <Tooltip title={canRemoveBranch ? 'Eliminar esta opción y su sub-árbol' : `Mínimo ${minBranches} opciones`}>
-                    <span>
-                      <IconButton
+                  {readOnly ? (
+                    <Chip label={branch.label} size="small" sx={{ bgcolor: '#eef2ff', color: '#001f56', fontWeight: 600 }} />
+                  ) : (
+                    <>
+                      <TextField
                         size="small"
-                        disabled={!canRemoveBranch}
-                        onClick={() => patchTree(removeBranchFromNode(tree, nodeId, idx))}
-                        sx={{ color: canRemoveBranch ? '#c62828' : '#ccc' }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
+                        fullWidth
+                        placeholder={`Opción ${idx + 1}`}
+                        value={branch.label}
+                        onChange={(e) => patchTree(updateBranchLabel(tree, nodeId, idx, e.target.value))}
+                        sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#f8fafc' } }}
+                      />
+                      <Tooltip title={canRemoveBranch ? 'Eliminar esta opción y su sub-árbol' : `Mínimo ${minBranches} opciones`}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={!canRemoveBranch}
+                            onClick={() => patchTree(removeBranchFromNode(tree, nodeId, idx))}
+                            sx={{ color: canRemoveBranch ? '#c62828' : '#ccc' }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </>
+                  )}
                 </Box>
                 <TreeNodeView
                   tree={tree}
                   nodeId={branch.nextId}
                   displayNumbers={displayNumbers}
                   onTreeChange={onTreeChange}
-                  correctPath={correctPath}
+                  readOnly={readOnly}
                 />
               </Box>
             ))}
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', pt: 4 }}>
-              <Tooltip title="Agregar otra opción / rama">
-                <IconButton
-                  onClick={() => patchTree(addBranchToNode(tree, nodeId))}
-                  sx={{
-                    bgcolor: '#eef2ff',
-                    border: '1px dashed #3949ab',
-                    color: '#3949ab',
-                    '&:hover': { bgcolor: '#e0e7ff' },
-                  }}
-                >
-                  <AddIcon />
-                </IconButton>
-              </Tooltip>
-              <Typography variant="caption" sx={{ color: '#666', mt: 0.5, textAlign: 'center', maxWidth: 80 }}>
-                Nueva opción
-              </Typography>
-            </Box>
+            {!readOnly && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', pt: 4 }}>
+                <Tooltip title="Agregar otra opción / rama">
+                  <IconButton
+                    onClick={() => patchTree(addBranchToNode(tree, nodeId))}
+                    sx={{
+                      bgcolor: '#eef2ff',
+                      border: '1px dashed #3949ab',
+                      color: '#3949ab',
+                    }}
+                  >
+                    <AddIcon />
+                  </IconButton>
+                </Tooltip>
+                <Typography variant="caption" sx={{ color: '#666', mt: 0.5, textAlign: 'center', maxWidth: 80 }}>
+                  Nueva opción
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Box>
       )}
@@ -239,41 +283,31 @@ TreeNodeView.propTypes = {
   nodeId: PropTypes.string.isRequired,
   displayNumbers: PropTypes.object.isRequired,
   onTreeChange: PropTypes.func.isRequired,
-  correctPath: PropTypes.arrayOf(PropTypes.string),
+  readOnly: PropTypes.bool,
 };
 
-const DecisionTreeEditor = ({ tree, correctPath = [], onChange }) => {
+const DecisionTreeEditor = ({ tree, onChange, readOnly = false }) => {
   const data = tree ?? createDefaultDecisionTree();
-  const allPaths = getAllTreePaths(data);
   const displayNumbers = useMemo(() => getNodeDisplayNumbers(data), [data]);
-
-  const handleTreeChange = (nextTree, nextCorrectPath = correctPath) => {
-    onChange(nextTree, nextCorrectPath);
-  };
-
-  const handleCorrectPathChange = (pathIndex) => {
-    const selected = allPaths[pathIndex];
-    if (selected) onChange(data, selected);
-  };
-
-  const selectedPathIndex = allPaths.findIndex((p) =>
-    p.length === correctPath.length && p.every((step, i) => step === correctPath[i]));
 
   return (
     <Box>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 1.5 }}>
         <AccountTreeIcon sx={{ color: '#001f56' }} />
         <Typography variant="caption" sx={{ color: '#555', fontWeight: 600 }}>
-          Armá el árbol visualmente: cada caja es un paso, las ramas son las opciones del alumno.
+          {readOnly
+            ? 'Árbol de referencia (respuesta del docente).'
+            : 'El árbol completo es la respuesta. Los nodos redondos son las preguntas.'}
         </Typography>
-        <Chip label="Inicio" size="small" sx={{ bgcolor: '#001f56', color: '#fff', height: 22 }} />
-        <Chip label="Decisión" size="small" sx={{ bgcolor: '#3949ab', color: '#fff', height: 22 }} />
+        <Chip label="Pregunta" size="small" sx={{ bgcolor: '#3949ab', color: '#fff', height: 22, borderRadius: '12px' }} />
         <Chip label="Resultado" size="small" sx={{ bgcolor: '#2e7d32', color: '#fff', height: 22 }} />
       </Stack>
 
-      <Typography variant="caption" sx={{ color: '#888', display: 'block', mb: 2 }}>
-        Usá <strong>+</strong> en una hoja para agregar más pasos, o <strong>+ Nueva opción</strong> para ramificar. El ícono de papelera elimina una rama.
-      </Typography>
+      {!readOnly && (
+        <Typography variant="caption" sx={{ color: '#888', display: 'block', mb: 2 }}>
+          Usá <strong>+</strong> en una hoja para agregar más pasos, o <strong>+ Nueva opción</strong> para ramificar.
+        </Typography>
+      )}
 
       <Paper
         variant="outlined"
@@ -282,7 +316,6 @@ const DecisionTreeEditor = ({ tree, correctPath = [], onChange }) => {
           borderRadius: 2,
           bgcolor: '#f8fafc',
           overflowX: 'auto',
-          overflowY: 'hidden',
         }}
       >
         <Box sx={{ display: 'inline-flex', minWidth: '100%', justifyContent: 'center', py: 1 }}>
@@ -290,31 +323,11 @@ const DecisionTreeEditor = ({ tree, correctPath = [], onChange }) => {
             tree={data}
             nodeId={data.rootId}
             displayNumbers={displayNumbers}
-            onTreeChange={handleTreeChange}
-            correctPath={correctPath}
+            onTreeChange={onChange}
+            readOnly={readOnly}
           />
         </Box>
       </Paper>
-
-      <Divider sx={{ my: 2 }} />
-
-      <FormControl fullWidth size="small">
-        <InputLabel>Camino correcto</InputLabel>
-        <Select
-          label="Camino correcto"
-          value={selectedPathIndex >= 0 ? selectedPathIndex : ''}
-          onChange={(e) => handleCorrectPathChange(Number(e.target.value))}
-        >
-          {allPaths.map((path, idx) => (
-            <MenuItem key={formatDecisionPath(path)} value={idx}>
-              {formatDecisionPath(path)}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
-        El alumno navegará el árbol eligiendo opciones hasta llegar a un resultado final.
-      </Typography>
     </Box>
   );
 };
@@ -324,8 +337,8 @@ DecisionTreeEditor.propTypes = {
     rootId: PropTypes.string,
     nodes: PropTypes.object,
   }),
-  correctPath: PropTypes.arrayOf(PropTypes.string),
   onChange: PropTypes.func.isRequired,
+  readOnly: PropTypes.bool,
 };
 
 export default DecisionTreeEditor;

@@ -7,19 +7,15 @@ import {
   Chip,
   Stack,
   Alert,
-  Divider,
 } from '@mui/material';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
   getDecisionTree,
   getNode,
   getCurrentNodeId,
   isLeafNode,
   isDecisionTreeComplete,
-  formatDecisionPath,
-  pathsAreEqual,
 } from './decisionTreeUtils';
 
 const DecisionTreeAnswer = ({
@@ -27,15 +23,12 @@ const DecisionTreeAnswer = ({
   answer,
   onChange,
   readOnly = false,
-  showCorrectPath = false,
 }) => {
   const tree = getDecisionTree(question);
   const path = answer?.orderAnswer ?? [];
   const currentNodeId = getCurrentNodeId(tree, path);
   const currentNode = getNode(tree, currentNodeId);
   const complete = isDecisionTreeComplete(tree, path);
-  const correctPath = question.correctOrder ?? [];
-  const pathIsCorrect = pathsAreEqual(path, correctPath);
 
   if (!tree || !currentNode) {
     return (
@@ -60,7 +53,7 @@ const DecisionTreeAnswer = ({
     onChange({ ...answer, orderAnswer: path.slice(0, -1) });
   };
 
-  const showResultFeedback = readOnly || showCorrectPath;
+  const showResultFeedback = readOnly;
 
   return (
     <Box sx={{ mt: 1.5 }}>
@@ -87,21 +80,32 @@ const DecisionTreeAnswer = ({
       <Paper
         elevation={0}
         sx={{
-          border: '2px solid',
-          borderColor: complete && showResultFeedback
-            ? (pathIsCorrect ? '#a5d6a7' : '#ef9a9a')
-            : '#001f56',
-          borderRadius: 2,
+          border: '2px solid #001f56',
+          borderRadius: isLeafNode(currentNode) ? 2 : '50%',
+          width: isLeafNode(currentNode) ? '100%' : 140,
+          maxWidth: isLeafNode(currentNode) ? '100%' : 140,
+          minHeight: isLeafNode(currentNode) ? 'auto' : 140,
+          mx: isLeafNode(currentNode) ? 0 : 'auto',
           p: 2.5,
-          bgcolor: complete && showResultFeedback
-            ? (pathIsCorrect ? '#f1f8e9' : '#ffebee')
-            : '#fff',
+          bgcolor: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <Typography variant="caption" sx={{ color: '#888', fontWeight: 600, display: 'block', mb: 0.75 }}>
           {complete ? 'Conclusión' : 'Pregunta actual'}
         </Typography>
-        <Typography sx={{ color: '#222', fontWeight: complete ? 600 : 500, lineHeight: 1.5 }}>
+        <Typography
+          sx={{
+            color: '#222',
+            fontWeight: complete ? 600 : 500,
+            lineHeight: 1.5,
+            textAlign: isLeafNode(currentNode) ? 'left' : 'center',
+            fontSize: isLeafNode(currentNode) ? 'inherit' : '0.875rem',
+          }}
+        >
           {currentNode.text || '(sin texto)'}
         </Typography>
       </Paper>
@@ -142,13 +146,9 @@ const DecisionTreeAnswer = ({
       )}
 
       {complete && (
-        <Alert
-          severity={showResultFeedback ? (pathIsCorrect ? 'success' : 'error') : 'info'}
-          icon={showResultFeedback && pathIsCorrect ? <CheckCircleIcon fontSize="inherit" /> : undefined}
-          sx={{ mt: 2 }}
-        >
-          {showResultFeedback
-            ? (pathIsCorrect ? 'Recorrido correcto.' : 'Recorrido incorrecto.')
+        <Alert severity="info" sx={{ mt: 2 }}>
+          {readOnly
+            ? 'Recorrido del alumno por el árbol.'
             : 'Llegaste a una conclusión. Podés reiniciar si querés cambiar tu camino.'}
         </Alert>
       )}
@@ -170,24 +170,6 @@ const DecisionTreeAnswer = ({
           )}
         </Stack>
       )}
-
-      {readOnly && showCorrectPath && correctPath.length > 0 && (
-        <>
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 0.5 }}>
-            Camino correcto
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#1565c0' }}>
-            {formatDecisionPath(correctPath)}
-          </Typography>
-          <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mt: 1.5, mb: 0.5 }}>
-            Recorrido del alumno
-          </Typography>
-          <Typography variant="body2" sx={{ color: pathIsCorrect ? '#2e7d32' : '#c62828' }}>
-            {formatDecisionPath(path)}
-          </Typography>
-        </>
-      )}
     </Box>
   );
 };
@@ -205,7 +187,6 @@ DecisionTreeAnswer.propTypes = {
   }).isRequired,
   onChange: PropTypes.func,
   readOnly: PropTypes.bool,
-  showCorrectPath: PropTypes.bool,
 };
 
 export default DecisionTreeAnswer;
