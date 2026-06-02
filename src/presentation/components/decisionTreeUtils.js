@@ -26,6 +26,19 @@ export const getDecisionTree = (question) => {
   return null;
 };
 
+/** Árbol de referencia del docente (en corrección viene en decisionTree del DTO). */
+export const getReferenceDecisionTree = (answer) => getDecisionTree(answer);
+
+/** Árbol creado por el alumno (nunca usar decisionTree del DTO, que es la guía). */
+export const getStudentDecisionTree = (answer) => {
+  const tree = answer?.studentDecisionTree ?? answer?.student_decision_tree;
+  if (!tree?.nodes || !Object.keys(tree.nodes).length) return null;
+  return {
+    rootId: tree.rootId || Object.keys(tree.nodes)[0],
+    nodes: tree.nodes,
+  };
+};
+
 export const getNode = (tree, nodeId) => tree?.nodes?.[nodeId] ?? null;
 
 export const isLeafNode = (node) => !node?.branches?.length;
@@ -142,6 +155,11 @@ export const extendLeafNode = (tree, leafId) => {
     ],
   };
   return { ...tree, nodes };
+};
+
+export const isDecisionTreeContentComplete = (tree) => {
+  if (!tree?.rootId || !tree?.nodes) return false;
+  return Object.values(tree.nodes).some((node) => (node?.text || '').trim());
 };
 
 export const sanitizeCorrectPath = (tree, correctPath = []) => {

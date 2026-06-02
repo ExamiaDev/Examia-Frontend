@@ -15,7 +15,6 @@ import {
   IconButton,
   Tooltip,
   Stack,
-  InputAdornment,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -24,8 +23,8 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SendIcon from '@mui/icons-material/Send';
 import PersonIcon from '@mui/icons-material/Person';
 import SubmissionService from '../../../../../application/services/SubmissionService';
-import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
-import { getDecisionTree, pathsAreEqual } from '../../../../components/decisionTreeUtils';
+import { AnswerSection, DecisionTreeComparison, MatrixComparison } from '../../../../components/correctionAnswerViews';
+import CorrectionQuestionFooter from './correctionQuestionFooter';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -42,7 +41,7 @@ const QUESTION_TYPE_LABELS = {
   MATRIX: 'Matriz',
 };
 
-const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE', 'ORDERING', 'DECISION_TREE'];
+const AUTO_GRADABLE = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE', 'ORDERING'];
 const isAutoGradable = (type) => AUTO_GRADABLE.includes(type);
 
 const AnswerShape = PropTypes.shape({
@@ -61,7 +60,25 @@ const AnswerShape = PropTypes.shape({
     nodes: PropTypes.object,
   }),
   matchingPairs: PropTypes.objectOf(PropTypes.string),
+  matrixColumnHeaders: PropTypes.arrayOf(PropTypes.string),
+  matrixRows: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
+  studentDecisionTree: PropTypes.shape({
+    rootId: PropTypes.string,
+    nodes: PropTypes.object,
+  }),
+  studentMatrixColumnHeaders: PropTypes.arrayOf(PropTypes.string),
+  studentMatrixRows: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
   matchingAnswer: PropTypes.objectOf(PropTypes.string),
+  correctTextAnswer: PropTypes.string,
+  textAnswer: PropTypes.string,
+});
+
+const normalizeCorrectionAnswer = (answer) => ({
+  ...answer,
+  studentDecisionTree: answer.studentDecisionTree ?? answer.student_decision_tree ?? null,
+  studentMatrixColumnHeaders:
+    answer.studentMatrixColumnHeaders ?? answer.student_matrix_column_headers ?? null,
+  studentMatrixRows: answer.studentMatrixRows ?? answer.student_matrix_rows ?? null,
 });
 
 const autoScore = (answer) => {
@@ -79,17 +96,6 @@ const autoScore = (answer) => {
     return correct.size > 0 ? Number.parseFloat(((net / correct.size) * answer.points).toFixed(2)) : 0;
   }
   if (answer.questionType === 'ORDERING') {
-    const correct = answer.correctOrder || [];
-    const student = answer.orderAnswer || [];
-    const ok = correct.length === student.length && correct.every((item, idx) => item === student[idx]);
-    return ok ? answer.points : 0;
-  }
-  if (answer.questionType === 'DECISION_TREE') {
-    const tree = getDecisionTree(answer);
-    if (tree) {
-      const ok = pathsAreEqual(answer.orderAnswer || [], answer.correctOrder || []);
-      return ok ? answer.points : 0;
-    }
     const correct = answer.correctOrder || [];
     const student = answer.orderAnswer || [];
     const ok = correct.length === student.length && correct.every((item, idx) => item === student[idx]);
@@ -148,14 +154,25 @@ const MultipleChoiceAnswer = ({ answer }) => (
   </Stack>
 );
 
-const TextAnswer = ({ answer }) => (
-  <Box sx={{ mt: 1.5, p: 2, bgcolor: '#f9f9f9', borderRadius: 1, border: '1px solid #e0e0e0', whiteSpace: 'pre-wrap' }}>
-    {answer.textAnswer ? (
-      <Typography variant="body2" sx={{ color: '#333', lineHeight: 1.7 }}>{answer.textAnswer}</Typography>
+const TextBlock = ({ text, emptyMessage }) => (
+  <Box sx={{ p: 2, bgcolor: '#f9f9f9', borderRadius: 1, border: '1px solid #e0e0e0', whiteSpace: 'pre-wrap' }}>
+    {text?.trim() ? (
+      <Typography variant="body2" sx={{ color: '#333', lineHeight: 1.7 }}>{text}</Typography>
     ) : (
-      <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic' }}>El alumno no respondió esta pregunta.</Typography>
+      <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic' }}>{emptyMessage}</Typography>
     )}
   </Box>
+);
+
+const TextAnswer = ({ answer }) => (
+  <Stack spacing={2} sx={{ mt: 1.5 }}>
+    <AnswerSection title="Respuesta modelo del profesor (guía de corrección)">
+      <TextBlock text={answer.correctTextAnswer} emptyMessage="Sin respuesta modelo configurada." />
+    </AnswerSection>
+    <AnswerSection title="Respuesta del alumno">
+      <TextBlock text={answer.textAnswer} emptyMessage="El alumno no respondió esta pregunta." />
+    </AnswerSection>
+  </Stack>
 );
 
 const OrderingAnswer = ({ answer }) => {
@@ -238,79 +255,20 @@ const QuestionHeader = ({ answer, index, isAuto, readOnly, scoreNum }) => (
   </Box>
 );
 
-const QuestionBody = ({ answer }) => {
-  if (['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE'].includes(answer.questionType)) {
-    return <MultipleChoiceAnswer answer={answer} />;
-  }
-  if (['LONG_ANSWER', 'SHORT_ANSWER', 'FILL_IN_THE_BLANK'].includes(answer.questionType)) {
-    return <TextAnswer answer={answer} />;
-  }
-  if (answer.questionType === 'ORDERING') {
-    return <OrderingAnswer answer={answer} />;
-  }
-  if (answer.questionType === 'DECISION_TREE') {
-    const tree = getDecisionTree(answer);
-    if (tree) {
-      return (
-        <DecisionTreeAnswer
-          question={answer}
-          answer={answer}
-          readOnly
-          showCorrectPath
-        />
-      );
-    }
-    return <OrderingAnswer answer={answer} />;
-  }
-  if (['MATCHING', 'MATRIX'].includes(answer.questionType)) {
-    return <MatchingAnswer answer={answer} />;
-  }
+const CHOICE_TYPES = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECTION', 'TRUE_FALSE'];
+const TEXT_TYPES = ['LONG_ANSWER', 'SHORT_ANSWER', 'FILL_IN_THE_BLANK'];
+
+const renderQuestionBody = (answer) => {
+  if (CHOICE_TYPES.includes(answer.questionType)) return <MultipleChoiceAnswer answer={answer} />;
+  if (TEXT_TYPES.includes(answer.questionType)) return <TextAnswer answer={answer} />;
+  if (answer.questionType === 'ORDERING') return <OrderingAnswer answer={answer} />;
+  if (answer.questionType === 'DECISION_TREE') return <DecisionTreeComparison answer={answer} />;
+  if (answer.questionType === 'MATRIX') return <MatrixComparison answer={answer} />;
+  if (answer.questionType === 'MATCHING') return <MatchingAnswer answer={answer} />;
   return null;
 };
 
-const QuestionFooter = ({ answer, readOnly, scoreValue, feedbackValue, onScoreChange, onFeedbackChange }) => {
-  if (readOnly) {
-    if (!answer.teacherFeedback) return null;
-
-    return (
-      <Box sx={{ bgcolor: '#fffde7', borderRadius: 1, px: 2, py: 1.5, border: '1px solid #fff176' }}>
-        <Typography variant="caption" sx={{ color: '#f57f17', fontWeight: 600, display: 'block', mb: 0.5 }}>
-          Comentario del docente
-        </Typography>
-        <Typography variant="body2" sx={{ color: '#333', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{answer.teacherFeedback}</Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-      <TextField
-        label="Puntaje"
-        type="number"
-        size="small"
-        value={scoreValue}
-        onChange={(e) => onScoreChange(answer.questionId, e.target.value)}
-        error={scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue))}
-        helperText={scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue)) ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
-        slotProps={{
-          htmlInput: { min: 0, max: answer.points, step: 0.1 },
-          input: { endAdornment: <InputAdornment position="end">pts</InputAdornment> },
-        }}
-        sx={{ width: 140 }}
-      />
-      <TextField
-        label="Comentario (opcional)"
-        size="small"
-        value={feedbackValue}
-        onChange={(e) => onFeedbackChange(answer.questionId, e.target.value)}
-        placeholder="Feedback para el alumno..."
-        multiline
-        minRows={1}
-        sx={{ flex: 1, minWidth: 200 }}
-      />
-    </Box>
-  );
-};
+const QuestionBody = ({ answer }) => renderQuestionBody(answer);
 
 QuestionHeader.propTypes = {
   answer: AnswerShape.isRequired,
@@ -322,15 +280,6 @@ QuestionHeader.propTypes = {
 
 QuestionBody.propTypes = {
   answer: AnswerShape.isRequired,
-};
-
-QuestionFooter.propTypes = {
-  answer: AnswerShape.isRequired,
-  readOnly: PropTypes.bool.isRequired,
-  scoreValue: PropTypes.string,
-  feedbackValue: PropTypes.string,
-  onScoreChange: PropTypes.func.isRequired,
-  onFeedbackChange: PropTypes.func.isRequired,
 };
 
 const QuestionCard = ({ answer, index, scoreValue, feedbackValue, onScoreChange, onFeedbackChange, readOnly }) => {
@@ -351,7 +300,7 @@ const QuestionCard = ({ answer, index, scoreValue, feedbackValue, onScoreChange,
       <QuestionBody answer={answer} />
 
       <Divider sx={{ my: 2.5 }} />
-      <QuestionFooter
+      <CorrectionQuestionFooter
         answer={answer}
         readOnly={readOnly}
         scoreValue={scoreValue}
@@ -560,10 +509,13 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
         const data = await SubmissionService.getSubmission(examId, submissionId);
         if (!mounted) return;
 
-        setSubmission(data);
+        setSubmission({
+          ...data,
+          answers: (data.answers || []).map(normalizeCorrectionAnswer),
+        });
         const initialScores = {};
 
-        (data.answers || []).forEach((ans) => {
+        (data.answers || []).map(normalizeCorrectionAnswer).forEach((ans) => {
           const auto = autoScore(ans);
           initialScores[ans.questionId] = {
             score: auto === null ? '' : String(auto),

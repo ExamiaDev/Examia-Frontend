@@ -36,8 +36,10 @@ import SendIcon from '@mui/icons-material/Send';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
-import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
-import { getDecisionTree, isDecisionTreeComplete } from '../../../../components/decisionTreeUtils';
+import { createDefaultMatrix, isMatrixComplete } from '../../../../components/matrixTableUtils';
+import { createDefaultDecisionTree, isDecisionTreeContentComplete } from '../../../../components/decisionTreeUtils';
+import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
+import MatrixTableEditor from '../../../../components/MatrixTableEditor';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -76,6 +78,12 @@ const AnswerShape = PropTypes.shape({
   textAnswer: PropTypes.string,
   orderAnswer: PropTypes.arrayOf(PropTypes.string),
   matchingAnswer: PropTypes.objectOf(PropTypes.string),
+  decisionTree: PropTypes.shape({
+    rootId: PropTypes.string,
+    nodes: PropTypes.object,
+  }),
+  matrixColumns: PropTypes.arrayOf(PropTypes.string),
+  matrixRows: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
 });
 
 const GroupShape = PropTypes.shape({
@@ -100,10 +108,12 @@ const emptyAnswer = (question) => {
       return { ...base, orderAnswer: [...src].sort(() => Math.random() - 0.5) };
     }
     case 'DECISION_TREE':
-      return { ...base, orderAnswer: [] };
+      return { ...base, decisionTree: createDefaultDecisionTree() };
+    case 'MATRIX': {
+      const matrix = createDefaultMatrix();
+      return { ...base, matrixColumns: matrix.matrixColumns, matrixRows: matrix.matrixRows };
+    }
     case 'MATCHING':
-    case 'MATRIX':
-      return { ...base, matchingAnswer: {} };
     default:
       return base;
   }
@@ -111,8 +121,11 @@ const emptyAnswer = (question) => {
 
 const isAnswered = (question, answer) => {
   if (!answer) return false;
-  if (question?.type === 'DECISION_TREE' && getDecisionTree(question)) {
-    return isDecisionTreeComplete(getDecisionTree(question), answer.orderAnswer ?? []);
+  if (question?.type === 'DECISION_TREE') {
+    return isDecisionTreeContentComplete(answer.decisionTree);
+  }
+  if (question?.type === 'MATRIX') {
+    return isMatrixComplete(answer.matrixColumns, answer.matrixRows);
   }
   if (answer.selectedOptions !== undefined) return answer.selectedOptions.length > 0;
   if (answer.textAnswer !== undefined) return answer.textAnswer.trim().length > 0;
@@ -250,21 +263,33 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
       case 'FILL_IN_THE_BLANK': return <TextAnswer answer={answer} onChange={onChange} />;
       case 'ORDERING':
         return <OrderingAnswer answer={answer} onChange={onChange} />;
-      case 'DECISION_TREE': {
-        const tree = getDecisionTree(question);
-        if (tree) {
-          return (
-            <DecisionTreeAnswer
-              question={question}
-              answer={answer}
-              onChange={onChange}
+      case 'DECISION_TREE':
+        return (
+          <Box>
+            <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1.5 }}>
+              Armá tu árbol de decisión (nodos redondos = preguntas, rectángulos = resultados).
+            </Typography>
+            <DecisionTreeEditor
+              tree={answer.decisionTree ?? createDefaultDecisionTree()}
+              onChange={(nextTree) => onChange({ ...answer, decisionTree: nextTree })}
             />
-          );
-        }
-        return <OrderingAnswer answer={answer} onChange={onChange} />;
-      }
+          </Box>
+        );
+      case 'MATRIX':
+        return (
+          <Box>
+            <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1.5 }}>
+              Completá tu tabla. Podés agregar filas y columnas según necesites.
+            </Typography>
+            <MatrixTableEditor
+              matrixColumns={answer.matrixColumns ?? createDefaultMatrix().matrixColumns}
+              matrixRows={answer.matrixRows ?? createDefaultMatrix().matrixRows}
+              onChange={(next) => onChange({ ...answer, ...next })}
+            />
+          </Box>
+        );
       case 'MATCHING':
-      case 'MATRIX': return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
+        return <MatchingAnswer question={question} answer={answer} onChange={onChange} />;
       default: return <Typography color="text.secondary">Tipo no soportado: {question.type}</Typography>;
     }
   };
@@ -568,13 +593,44 @@ const RealizarExamenContent = ({ examId }) => {
   const handleBackToTopics = () => setView('topics');
 
   const selectedGroup = groups[selectedTopicIdx];
-  const topicAnswered = selectedGroup ? selectedGroup.questions.filter((q) => isAnswered(q, answers[q.id])).length : 0;
-  const topicTotal = selectedGroup ? selectedGroup.questions.length : 0;
+
+  const buildSubmitPayload = (question, answerState) => {
+    const a = answerState ?? emptyAnswer(question);
+    const base = { questionId: question.id };
+    switch (question.type) {
+      case 'DECISION_TREE':
+        return { ...base, decisionTree: a.decisionTree };
+      case 'MATRIX':
+        return {
+          ...base,
+          matrixColumnHeaders: a.matrixColumns,
+          matrixRows: a.matrixRows,
+        };
+      case 'MULTIPLE_CHOICE':
+      case 'TRUE_FALSE':
+      case 'MULTIPLE_SELECTION':
+        return { ...base, selectedOptions: a.selectedOptions };
+      case 'LONG_ANSWER':
+      case 'SHORT_ANSWER':
+      case 'FILL_IN_THE_BLANK':
+        return { ...base, textAnswer: a.textAnswer };
+      case 'ORDERING':
+        return { ...base, orderAnswer: a.orderAnswer };
+      case 'MATCHING':
+        return { ...base, matchingAnswer: a.matchingAnswer };
+      default:
+        return base;
+    }
+  };
+
+  const allQuestions = groups.flatMap((g) => g.questions);
+  const totalQuestions = allQuestions.length;
+  const totalAnswered = allQuestions.filter((q) => isAnswered(q, answers[q.id])).length;
 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const answersList = (selectedGroup?.questions ?? []).map((q) => answers[q.id] ?? emptyAnswer(q));
+      const answersList = allQuestions.map((q) => buildSubmitPayload(q, answers[q.id]));
       await SubmissionService.submitExam(examId, answersList);
       setConfirmOpen(false);
       setSnackbar({ open: true, message: '¡Examen entregado exitosamente!', severity: 'success' });
@@ -650,8 +706,8 @@ const RealizarExamenContent = ({ examId }) => {
         <DialogTitle sx={{ fontWeight: 700, color: '#001f56' }}>Confirmar entrega</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Respondiste {topicAnswered} de {topicTotal} pregunta{topicTotal === 1 ? '' : 's'} del tema seleccionado.
-            {topicAnswered < topicTotal && ` Hay ${topicTotal - topicAnswered} sin responder.`} ¿Querés entregar el examen?
+            Respondiste {totalAnswered} de {totalQuestions} pregunta{totalQuestions === 1 ? '' : 's'} del examen.
+            {totalAnswered < totalQuestions && ` Hay ${totalQuestions - totalAnswered} sin responder.`} ¿Querés entregar el examen?
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

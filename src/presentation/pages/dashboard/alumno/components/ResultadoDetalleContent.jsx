@@ -19,8 +19,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SubmissionService from '../../../../../application/services/SubmissionService';
-import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
-import { getDecisionTree } from '../../../../components/decisionTreeUtils';
+import { StudentDecisionTreeView, StudentMatrixView } from '../../../../components/correctionAnswerViews';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -189,19 +188,9 @@ const QuestionCard = ({ answer, index }) => {
         <TextAnswer answer={answer} />
       )}
       {(answer.questionType === 'ORDERING') && <OrderingAnswer answer={answer} />}
-      {answer.questionType === 'DECISION_TREE' && (
-        getDecisionTree(answer)
-          ? (
-            <DecisionTreeAnswer
-              question={answer}
-              answer={answer}
-              readOnly
-              showCorrectPath
-            />
-          )
-          : <OrderingAnswer answer={answer} />
-      )}
-      {(answer.questionType === 'MATCHING' || answer.questionType === 'MATRIX') && <MatchingAnswer answer={answer} />}
+      {answer.questionType === 'DECISION_TREE' && <StudentDecisionTreeView answer={answer} />}
+      {answer.questionType === 'MATRIX' && <StudentMatrixView answer={answer} />}
+      {answer.questionType === 'MATCHING' && <MatchingAnswer answer={answer} />}
 
       {answer.teacherFeedback && (
         <>
