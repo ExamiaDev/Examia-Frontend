@@ -31,6 +31,7 @@ const MatrixTableEditor = ({
   matrixRows: rowsProp,
   onChange,
   readOnly = false,
+  caption,
 }) => {
   const defaults = createDefaultMatrix();
   const columns = columnsProp?.length ? columnsProp : defaults.matrixColumns;
@@ -41,7 +42,9 @@ const MatrixTableEditor = ({
   return (
     <Box>
       <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1.5 }}>
-        Tabla de referencia (respuesta del docente). El alumno no ve esta tabla.
+        {caption ?? (readOnly
+          ? 'Tabla de referencia (respuesta del docente).'
+          : 'Completá la tabla. Podés agregar filas y columnas.')}
       </Typography>
       <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
         <Table size="small">
@@ -141,6 +144,7 @@ MatrixTableEditor.propTypes = {
   matrixRows: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
   onChange: PropTypes.func,
   readOnly: PropTypes.bool,
+  caption: PropTypes.string,
 };
 
 export default MatrixTableEditor;

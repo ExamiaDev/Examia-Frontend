@@ -19,9 +19,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SubmissionService from '../../../../../application/services/SubmissionService';
-import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
 import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
+import MatrixTableEditor from '../../../../components/MatrixTableEditor';
 import { getDecisionTree } from '../../../../components/decisionTreeUtils';
+import { getReferenceMatrixFromAnswer, getStudentMatrixFromAnswer } from '../../../../components/matrixTableUtils';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -191,26 +192,29 @@ const QuestionCard = ({ answer, index }) => {
       )}
       {(answer.questionType === 'ORDERING') && <OrderingAnswer answer={answer} />}
       {answer.questionType === 'DECISION_TREE' && (
-        getDecisionTree(answer)
-          ? (
-            <Stack spacing={2}>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
-                  Árbol de referencia
-                </Typography>
-                <DecisionTreeEditor tree={getDecisionTree(answer)} readOnly onChange={() => {}} />
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
-                  Tu recorrido
-                </Typography>
-                <DecisionTreeAnswer question={answer} answer={answer} readOnly />
-              </Box>
-            </Stack>
-          )
-          : <OrderingAnswer answer={answer} />
+        answer.studentDecisionTree ? (
+          <DecisionTreeEditor
+            tree={answer.studentDecisionTree}
+            readOnly
+            onChange={() => {}}
+          />
+        ) : (
+          <Typography variant="body2" sx={{ color: '#888', mt: 1.5 }}>Sin respuesta</Typography>
+        )
       )}
-      {answer.questionType === 'MATRIX' && <TextAnswer answer={answer} />}
+      {answer.questionType === 'MATRIX' && (() => {
+        const studentMatrix = getStudentMatrixFromAnswer(answer);
+        return studentMatrix ? (
+          <MatrixTableEditor
+            readOnly
+            matrixColumns={studentMatrix.matrixColumns}
+            matrixRows={studentMatrix.matrixRows}
+            onChange={() => {}}
+          />
+        ) : (
+          <Typography variant="body2" sx={{ color: '#888', mt: 1.5 }}>Sin respuesta</Typography>
+        );
+      })()}
       {answer.questionType === 'MATCHING' && <MatchingAnswer answer={answer} />}
 
       {answer.teacherFeedback && (

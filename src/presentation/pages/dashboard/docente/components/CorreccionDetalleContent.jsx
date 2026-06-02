@@ -24,11 +24,10 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SendIcon from '@mui/icons-material/Send';
 import PersonIcon from '@mui/icons-material/Person';
 import SubmissionService from '../../../../../application/services/SubmissionService';
-import DecisionTreeAnswer from '../../../../components/DecisionTreeAnswer';
 import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
 import MatrixTableEditor from '../../../../components/MatrixTableEditor';
-import { getDecisionTree } from '../../../../components/decisionTreeUtils';
-import { getMatrixFromQuestion } from '../../../../components/matrixTableUtils';
+import { getReferenceDecisionTree, getStudentDecisionTree } from '../../../../components/decisionTreeUtils';
+import { getReferenceMatrixFromAnswer, getStudentMatrixFromAnswer } from '../../../../components/matrixTableUtils';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -66,9 +65,35 @@ const AnswerShape = PropTypes.shape({
   matchingPairs: PropTypes.objectOf(PropTypes.string),
   matrixColumnHeaders: PropTypes.arrayOf(PropTypes.string),
   matrixRows: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
+  studentDecisionTree: PropTypes.shape({
+    rootId: PropTypes.string,
+    nodes: PropTypes.object,
+  }),
+  studentMatrixColumnHeaders: PropTypes.arrayOf(PropTypes.string),
+  studentMatrixRows: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.string)),
   matchingAnswer: PropTypes.objectOf(PropTypes.string),
+  correctTextAnswer: PropTypes.string,
   textAnswer: PropTypes.string,
 });
+
+const normalizeCorrectionAnswer = (answer) => ({
+  ...answer,
+  studentDecisionTree: answer.studentDecisionTree ?? answer.student_decision_tree ?? null,
+  studentMatrixColumnHeaders:
+    answer.studentMatrixColumnHeaders ?? answer.student_matrix_column_headers ?? null,
+  studentMatrixRows: answer.studentMatrixRows ?? answer.student_matrix_rows ?? null,
+});
+
+const AnswerSection = ({ title, children, emptyMessage = 'Sin contenido' }) => (
+  <Box>
+    <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
+      {title}
+    </Typography>
+    {children ?? (
+      <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic' }}>{emptyMessage}</Typography>
+    )}
+  </Box>
+);
 
 const autoScore = (answer) => {
   if (answer.questionType === 'MULTIPLE_CHOICE' || answer.questionType === 'TRUE_FALSE') {
@@ -143,14 +168,25 @@ const MultipleChoiceAnswer = ({ answer }) => (
   </Stack>
 );
 
-const TextAnswer = ({ answer }) => (
-  <Box sx={{ mt: 1.5, p: 2, bgcolor: '#f9f9f9', borderRadius: 1, border: '1px solid #e0e0e0', whiteSpace: 'pre-wrap' }}>
-    {answer.textAnswer ? (
-      <Typography variant="body2" sx={{ color: '#333', lineHeight: 1.7 }}>{answer.textAnswer}</Typography>
+const TextBlock = ({ text, emptyMessage }) => (
+  <Box sx={{ p: 2, bgcolor: '#f9f9f9', borderRadius: 1, border: '1px solid #e0e0e0', whiteSpace: 'pre-wrap' }}>
+    {text?.trim() ? (
+      <Typography variant="body2" sx={{ color: '#333', lineHeight: 1.7 }}>{text}</Typography>
     ) : (
-      <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic' }}>El alumno no respondió esta pregunta.</Typography>
+      <Typography variant="body2" sx={{ color: '#aaa', fontStyle: 'italic' }}>{emptyMessage}</Typography>
     )}
   </Box>
+);
+
+const TextAnswer = ({ answer }) => (
+  <Stack spacing={2} sx={{ mt: 1.5 }}>
+    <AnswerSection title="Respuesta modelo del profesor (guía de corrección)">
+      <TextBlock text={answer.correctTextAnswer} emptyMessage="Sin respuesta modelo configurada." />
+    </AnswerSection>
+    <AnswerSection title="Respuesta del alumno">
+      <TextBlock text={answer.textAnswer} emptyMessage="El alumno no respondió esta pregunta." />
+    </AnswerSection>
+  </Stack>
 );
 
 const OrderingAnswer = ({ answer }) => {
@@ -244,45 +280,63 @@ const QuestionBody = ({ answer }) => {
     return <OrderingAnswer answer={answer} />;
   }
   if (answer.questionType === 'DECISION_TREE') {
-    const tree = getDecisionTree(answer);
-    if (tree) {
-      return (
-        <Stack spacing={2} sx={{ mt: 1.5 }}>
-          <Box>
-            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
-              Árbol de referencia (respuesta del docente)
-            </Typography>
-            <DecisionTreeEditor tree={tree} readOnly onChange={() => {}} />
-          </Box>
-          <Box>
-            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
-              Recorrido del alumno
-            </Typography>
-            <DecisionTreeAnswer question={answer} answer={answer} readOnly />
-          </Box>
-        </Stack>
-      );
-    }
-    return <OrderingAnswer answer={answer} />;
-  }
-  if (answer.questionType === 'MATRIX') {
-    const matrix = getMatrixFromQuestion(answer);
+    const referenceTree = getReferenceDecisionTree(answer);
+    const studentTree = getStudentDecisionTree(answer);
+    const legacyPath = answer.orderAnswer ?? [];
     return (
       <Stack spacing={2} sx={{ mt: 1.5 }}>
-        {matrix && (
-          <Box>
-            <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1 }}>
-              Tabla de referencia (no visible para el alumno)
-            </Typography>
+        <AnswerSection title="Árbol de referencia del profesor (guía de corrección)">
+          {referenceTree ? (
+            <DecisionTreeEditor tree={referenceTree} readOnly onChange={() => {}} />
+          ) : null}
+        </AnswerSection>
+        <AnswerSection
+          title="Árbol del alumno"
+          emptyMessage="El alumno no envió un árbol (entrega anterior al fix o examen editado). Pedí una nueva entrega."
+        >
+          {studentTree ? (
+            <DecisionTreeEditor tree={studentTree} readOnly onChange={() => {}} />
+          ) : legacyPath.length > 0 ? (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+              {legacyPath.map((step, idx) => (
+                <Chip key={`${step}-${idx}`} label={step} size="small" sx={{ bgcolor: '#eef2ff', color: '#001f56' }} />
+              ))}
+            </Box>
+          ) : null}
+        </AnswerSection>
+      </Stack>
+    );
+  }
+  if (answer.questionType === 'MATRIX') {
+    const referenceMatrix = getReferenceMatrixFromAnswer(answer);
+    const studentMatrix = getStudentMatrixFromAnswer(answer);
+    return (
+      <Stack spacing={2} sx={{ mt: 1.5 }}>
+        <AnswerSection title="Tabla de referencia del profesor (guía de corrección)">
+          {referenceMatrix ? (
             <MatrixTableEditor
               readOnly
-              matrixColumns={matrix.matrixColumns}
-              matrixRows={matrix.matrixRows}
+              caption="Guía de corrección"
+              matrixColumns={referenceMatrix.matrixColumns}
+              matrixRows={referenceMatrix.matrixRows}
               onChange={() => {}}
             />
-          </Box>
-        )}
-        <TextAnswer answer={answer} />
+          ) : null}
+        </AnswerSection>
+        <AnswerSection
+          title="Tabla del alumno"
+          emptyMessage="El alumno no envió una tabla (entrega anterior al fix o examen editado). Pedí una nueva entrega."
+        >
+          {studentMatrix ? (
+            <MatrixTableEditor
+              readOnly
+              caption="Respuesta del alumno"
+              matrixColumns={studentMatrix.matrixColumns}
+              matrixRows={studentMatrix.matrixRows}
+              onChange={() => {}}
+            />
+          ) : null}
+        </AnswerSection>
       </Stack>
     );
   }
@@ -584,10 +638,13 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
         const data = await SubmissionService.getSubmission(examId, submissionId);
         if (!mounted) return;
 
-        setSubmission(data);
+        setSubmission({
+          ...data,
+          answers: (data.answers || []).map(normalizeCorrectionAnswer),
+        });
         const initialScores = {};
 
-        (data.answers || []).forEach((ans) => {
+        (data.answers || []).map(normalizeCorrectionAnswer).forEach((ans) => {
           const auto = autoScore(ans);
           initialScores[ans.questionId] = {
             score: auto === null ? '' : String(auto),

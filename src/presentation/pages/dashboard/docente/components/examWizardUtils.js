@@ -1,4 +1,4 @@
-import { createDefaultDecisionTree } from '../../../../components/decisionTreeUtils';
+import { createDefaultDecisionTree, isDecisionTreeContentComplete } from '../../../../components/decisionTreeUtils';
 import {
   createDefaultMatrix,
   migrateParesToMatrix,
@@ -207,10 +207,7 @@ export const validateStepQuestions = (temas) => {
   return null;
 };
 
-export const isDecisionTreeComplete = (tree) => {
-  if (!tree?.rootId || !tree?.nodes) return false;
-  return Object.values(tree.nodes).some((node) => (node?.text || '').trim());
-};
+export const isDecisionTreeComplete = isDecisionTreeContentComplete;
 
 export const validateStepAnswers = (temas) => {
   for (const tema of temas) {

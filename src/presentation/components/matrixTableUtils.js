@@ -87,3 +87,37 @@ export const getMatrixFromQuestion = (question) => {
   }
   return null;
 };
+
+export const getStudentMatrixFromAnswer = (answer) => {
+  const cols = answer?.studentMatrixColumnHeaders ?? answer?.student_matrix_column_headers;
+  const rows = answer?.studentMatrixRows ?? answer?.student_matrix_rows;
+  if (cols?.length) {
+    return {
+      matrixColumns: [...cols],
+      matrixRows: normalizeMatrixRows(cols, rows ?? []),
+    };
+  }
+  if (answer?.matchingAnswer && Object.keys(answer.matchingAnswer).length > 0) {
+    return migrateParesToMatrix(
+      Object.entries(answer.matchingAnswer).map(([izquierda, derecha]) => ({ izquierda, derecha })),
+    );
+  }
+  return null;
+};
+
+export const getReferenceMatrixFromAnswer = (answer) => {
+  const cols = answer?.matrixColumnHeaders;
+  const rows = answer?.matrixRows;
+  if (cols?.length) {
+    return {
+      matrixColumns: [...cols],
+      matrixRows: normalizeMatrixRows(cols, rows ?? []),
+    };
+  }
+  if (answer?.matchingPairs && Object.keys(answer.matchingPairs).length > 0) {
+    return migrateParesToMatrix(
+      Object.entries(answer.matchingPairs).map(([izquierda, derecha]) => ({ izquierda, derecha })),
+    );
+  }
+  return getMatrixFromQuestion(answer);
+};
