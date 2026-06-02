@@ -19,10 +19,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SubmissionService from '../../../../../application/services/SubmissionService';
-import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
-import MatrixTableEditor from '../../../../components/MatrixTableEditor';
-import { getDecisionTree } from '../../../../components/decisionTreeUtils';
-import { getReferenceMatrixFromAnswer, getStudentMatrixFromAnswer } from '../../../../components/matrixTableUtils';
+import { StudentDecisionTreeView, StudentMatrixView } from '../../../../components/correctionAnswerViews';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -191,30 +188,8 @@ const QuestionCard = ({ answer, index }) => {
         <TextAnswer answer={answer} />
       )}
       {(answer.questionType === 'ORDERING') && <OrderingAnswer answer={answer} />}
-      {answer.questionType === 'DECISION_TREE' && (
-        answer.studentDecisionTree ? (
-          <DecisionTreeEditor
-            tree={answer.studentDecisionTree}
-            readOnly
-            onChange={() => {}}
-          />
-        ) : (
-          <Typography variant="body2" sx={{ color: '#888', mt: 1.5 }}>Sin respuesta</Typography>
-        )
-      )}
-      {answer.questionType === 'MATRIX' && (() => {
-        const studentMatrix = getStudentMatrixFromAnswer(answer);
-        return studentMatrix ? (
-          <MatrixTableEditor
-            readOnly
-            matrixColumns={studentMatrix.matrixColumns}
-            matrixRows={studentMatrix.matrixRows}
-            onChange={() => {}}
-          />
-        ) : (
-          <Typography variant="body2" sx={{ color: '#888', mt: 1.5 }}>Sin respuesta</Typography>
-        );
-      })()}
+      {answer.questionType === 'DECISION_TREE' && <StudentDecisionTreeView answer={answer} />}
+      {answer.questionType === 'MATRIX' && <StudentMatrixView answer={answer} />}
       {answer.questionType === 'MATCHING' && <MatchingAnswer answer={answer} />}
 
       {answer.teacherFeedback && (

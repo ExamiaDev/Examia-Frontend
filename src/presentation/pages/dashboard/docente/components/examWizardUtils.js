@@ -1,9 +1,5 @@
-import { createDefaultDecisionTree, isDecisionTreeContentComplete } from '../../../../components/decisionTreeUtils';
-import {
-  createDefaultMatrix,
-  migrateParesToMatrix,
-  isMatrixComplete,
-} from '../../../../components/matrixTableUtils';
+import { createDefaultDecisionTree } from '../../../../components/decisionTreeUtils';
+import { createDefaultMatrix, migrateParesToMatrix } from '../../../../components/matrixTableUtils';
 
 export const WIZARD_STEPS = ['Crear examen', 'Cargar respuestas', 'Crear acceso'];
 
@@ -53,6 +49,38 @@ export const sumQuestionPoints = (preguntas = []) =>
 export const getQuestionTypeLabel = (typeId) =>
   QUESTION_TYPES.find((t) => t.id === typeId)?.title || typeId;
 
+const mapMatrixUiFields = (base, q) => {
+  if (q.matrixColumnHeaders?.length) {
+    base.matrixColumns = [...q.matrixColumnHeaders];
+    base.matrixRows = (q.matrixRows || []).map((row) => [...row]);
+    return base;
+  }
+  const pairs = q.matchingPairs ? Object.entries(q.matchingPairs) : [];
+  const migrated = pairs.length
+    ? migrateParesToMatrix(pairs.map(([izquierda, derecha]) => ({ izquierda, derecha })))
+    : createDefaultMatrix();
+  base.matrixColumns = migrated.matrixColumns;
+  base.matrixRows = migrated.matrixRows;
+  return base;
+};
+
+const UI_TYPE_MAPPERS = {
+  'multiple-choice': (base, q) => {
+    base.opciones = q.options?.length ? [...q.options] : ['', '', '', ''];
+    base.correcta = q.correctAnswers?.[0] ?? null;
+    return base;
+  },
+  tabla: (base, q) => mapMatrixUiFields(base, q),
+  'arbol-decision': (base, q) => {
+    base.decisionTree = q.decisionTree ?? createDefaultDecisionTree();
+    return base;
+  },
+  'texto-libre': (base, q) => {
+    if (q.correctTextAnswer) base.respuestaModelo = q.correctTextAnswer;
+    return base;
+  },
+};
+
 export const mapApiQuestionToUi = (q) => {
   const type = API_TYPE_MAP[q.type] || 'texto-libre';
   const base = {
@@ -61,32 +89,8 @@ export const mapApiQuestionToUi = (q) => {
     enunciado: q.text || '',
     puntaje: q.points ?? 1,
   };
-
-  if (type === 'multiple-choice') {
-    base.opciones = q.options?.length ? [...q.options] : ['', '', '', ''];
-    base.correcta = q.correctAnswers?.[0] ?? null;
-  }
-  if (type === 'tabla') {
-    if (q.matrixColumnHeaders?.length) {
-      base.matrixColumns = [...q.matrixColumnHeaders];
-      base.matrixRows = (q.matrixRows || []).map((row) => [...row]);
-    } else {
-      const pairs = q.matchingPairs ? Object.entries(q.matchingPairs) : [];
-      const migrated = pairs.length
-        ? migrateParesToMatrix(pairs.map(([izquierda, derecha]) => ({ izquierda, derecha })))
-        : createDefaultMatrix();
-      base.matrixColumns = migrated.matrixColumns;
-      base.matrixRows = migrated.matrixRows;
-    }
-  }
-  if (type === 'arbol-decision') {
-    base.decisionTree = q.decisionTree ?? createDefaultDecisionTree();
-  }
-  if (type === 'texto-libre' && q.correctTextAnswer) {
-    base.respuestaModelo = q.correctTextAnswer;
-  }
-
-  return base;
+  const mapper = UI_TYPE_MAPPERS[type];
+  return mapper ? mapper(base, q) : base;
 };
 
 export const groupQuestionsIntoTemas = (questions = []) => {
@@ -122,6 +126,34 @@ export const examToWizardState = (exam) => ({
   published: !!exam.published,
 });
 
+const ANSWER_FIELD_APPENDERS = {
+  'multiple-choice': (base, q) => {
+    if (!q.opciones) return base;
+    base.options = q.opciones;
+    if (q.correcta != null) base.correctAnswers = [q.correcta];
+    return base;
+  },
+  'arbol-decision': (base, q) => {
+    if (q.decisionTree) base.decisionTree = q.decisionTree;
+    return base;
+  },
+  tabla: (base, q) => {
+    if (!q.matrixColumns?.length) return base;
+    base.matrixColumnHeaders = q.matrixColumns;
+    base.matrixRows = q.matrixRows;
+    return base;
+  },
+  'texto-libre': (base, q) => {
+    if (q.respuestaModelo?.trim()) base.correctTextAnswer = q.respuestaModelo.trim();
+    return base;
+  },
+};
+
+const appendAnswerFields = (base, q) => {
+  const appender = ANSWER_FIELD_APPENDERS[q.type];
+  return appender ? appender(base, q) : base;
+};
+
 export const buildQuestionPayload = (tema, q, { includeAnswers = true } = {}) => {
   const base = {
     type: QUESTION_TYPE_MAP[q.type] || 'LONG_ANSWER',
@@ -136,28 +168,11 @@ export const buildQuestionPayload = (tema, q, { includeAnswers = true } = {}) =>
   }
 
   if (!includeAnswers) {
-    if (q.type === 'multiple-choice' && q.opciones) {
-      base.options = q.opciones;
-    }
+    if (q.type === 'multiple-choice' && q.opciones) base.options = q.opciones;
     return base;
   }
 
-  if (q.type === 'multiple-choice' && q.opciones) {
-    base.options = q.opciones;
-    if (q.correcta != null) base.correctAnswers = [q.correcta];
-  }
-  if (q.type === 'arbol-decision' && q.decisionTree) {
-    base.decisionTree = q.decisionTree;
-  }
-  if (q.type === 'tabla' && q.matrixColumns?.length) {
-    base.matrixColumnHeaders = q.matrixColumns;
-    base.matrixRows = q.matrixRows;
-  }
-  if (q.type === 'texto-libre' && q.respuestaModelo?.trim()) {
-    base.correctTextAnswer = q.respuestaModelo.trim();
-  }
-
-  return base;
+  return appendAnswerFields(base, q);
 };
 
 export const buildExamPayload = (formData, temas, { includeAnswers = true } = {}) => ({
@@ -174,65 +189,6 @@ export const validateExamMetadata = (formData) => {
   if (!formData.nombre?.trim()) return 'El nombre del examen es obligatorio';
   if (!formData.curso) return 'Tenés que seleccionar un curso';
   if (!formData.turno) return 'Tenés que seleccionar un turno';
-  return null;
-};
-
-export const validateStepQuestions = (temas) => {
-  const total = temas.reduce((acc, t) => acc + t.preguntas.length, 0);
-  if (total === 0) return 'Agregá al menos una pregunta';
-
-  const sinEnunciado = temas.flatMap((t) =>
-    t.preguntas
-      .filter((q) => !(q.enunciado || '').trim())
-      .map((q) => `${t.nombre} (${getQuestionTypeLabel(q.type)})`),
-  );
-  if (sinEnunciado.length) return `Completá el enunciado de: ${sinEnunciado.join(', ')}`;
-
-  const temasInvalidos = temas.filter((t) => sumQuestionPoints(t.preguntas) !== 10);
-  if (temasInvalidos.length) {
-    return `El puntaje de ${temasInvalidos.map((t) => t.nombre).join(', ')} debe sumar exactamente 10`;
-  }
-
-  for (const tema of temas) {
-    for (const q of tema.preguntas) {
-      if (q.type === 'multiple-choice') {
-        const opciones = (q.opciones || []).filter(Boolean);
-        if (opciones.length < 2) {
-          return `${tema.nombre} · Múltiple choice: agregá al menos 2 opciones`;
-        }
-      }
-    }
-  }
-
-  return null;
-};
-
-export const isDecisionTreeComplete = isDecisionTreeContentComplete;
-
-export const validateStepAnswers = (temas) => {
-  for (const tema of temas) {
-    for (const q of tema.preguntas) {
-      const label = `${tema.nombre} · ${getQuestionTypeLabel(q.type)}`;
-
-      if (q.type === 'multiple-choice') {
-        const opciones = (q.opciones || []).filter(Boolean);
-        if (opciones.length < 2) return `${label}: agregá al menos 2 opciones`;
-        if (q.correcta == null) return `${label}: marcá la opción correcta`;
-      }
-
-      if (q.type === 'tabla') {
-        if (!isMatrixComplete(q.matrixColumns, q.matrixRows)) {
-          return `${label}: completá la tabla (columnas, filas y celdas)`;
-        }
-      }
-
-      if (q.type === 'arbol-decision') {
-        if (!isDecisionTreeComplete(q.decisionTree)) {
-          return `${label}: completá el árbol de decisión`;
-        }
-      }
-    }
-  }
   return null;
 };
 

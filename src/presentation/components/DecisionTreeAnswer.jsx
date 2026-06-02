@@ -53,8 +53,6 @@ const DecisionTreeAnswer = ({
     onChange({ ...answer, orderAnswer: path.slice(0, -1) });
   };
 
-  const showResultFeedback = readOnly;
-
   return (
     <Box sx={{ mt: 1.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>

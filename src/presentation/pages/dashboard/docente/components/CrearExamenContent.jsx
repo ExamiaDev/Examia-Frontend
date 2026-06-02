@@ -32,9 +32,9 @@ import {
   PUNTAJE_OPTIONS as puntajeOptions,
   buildExamPayload,
   validateExamMetadata,
-  validateStepQuestions,
   createEmptyQuestion,
 } from './examWizardUtils';
+import { validateStepQuestions } from './examWizardValidation';
 
 const questionTypes = [
   {

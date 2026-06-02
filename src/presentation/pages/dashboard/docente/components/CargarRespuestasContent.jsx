@@ -4,13 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import ExamService from '../../../../../application/services/ExamService';
 import ExamWizardShell from './ExamWizardShell';
-import QuestionAnswersEditor from './QuestionAnswersEditor';
+import TemaAnswersSection from './TemaAnswersSection';
 import {
   buildExamPayload,
   examToWizardState,
   validateExamMetadata,
-  validateStepAnswers,
 } from './examWizardUtils';
+import { validateStepAnswers } from './examWizardValidation';
+import { updateTemasQuestion } from './questionAnswersHelpers';
 
 const CargarRespuestasContent = ({ examId }) => {
   const navigate = useNavigate();
@@ -48,11 +49,7 @@ const CargarRespuestasContent = ({ examId }) => {
   }, [examId]);
 
   const handleUpdateQuestion = useCallback((temaIndex, questionId, updated) => {
-    setTemas((prev) => prev.map((tema, idx) => (
-      idx === temaIndex
-        ? { ...tema, preguntas: tema.preguntas.map((q) => (q.id === questionId ? updated : q)) }
-        : tema
-    )));
+    setTemas((prev) => updateTemasQuestion(prev, temaIndex, questionId, updated));
   }, []);
 
   const persistExam = async () => {
@@ -126,19 +123,12 @@ const CargarRespuestasContent = ({ examId }) => {
         </Typography>
 
         {temas.map((tema, temaIndex) => (
-          <Box key={tema.id} sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" sx={{ color: '#001f56', fontWeight: 700, mb: 1.5 }}>
-              {tema.nombre}
-            </Typography>
-            {tema.preguntas.map((question, index) => (
-              <QuestionAnswersEditor
-                key={question.id}
-                question={question}
-                index={index}
-                onUpdate={(updated) => handleUpdateQuestion(temaIndex, question.id, updated)}
-              />
-            ))}
-          </Box>
+          <TemaAnswersSection
+            key={tema.id}
+            tema={tema}
+            temaIndex={temaIndex}
+            onUpdateQuestion={handleUpdateQuestion}
+          />
         ))}
       </Box>
     </ExamWizardShell>

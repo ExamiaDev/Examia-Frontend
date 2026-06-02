@@ -593,8 +593,6 @@ const RealizarExamenContent = ({ examId }) => {
   const handleBackToTopics = () => setView('topics');
 
   const selectedGroup = groups[selectedTopicIdx];
-  const topicAnswered = selectedGroup ? selectedGroup.questions.filter((q) => isAnswered(q, answers[q.id])).length : 0;
-  const topicTotal = selectedGroup ? selectedGroup.questions.length : 0;
 
   const buildSubmitPayload = (question, answerState) => {
     const a = answerState ?? emptyAnswer(question);
