@@ -11,6 +11,8 @@ import {
   IconButton,
   Collapse,
   Chip,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,7 +24,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import TableChartOutlinedIcon from '@mui/icons-material/TableChartOutlined';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, useEffect, memo } from 'react';
 import ExamService from '../../../../../application/services/ExamService';
 import ExamWizardShell from './ExamWizardShell';
 import {
@@ -30,9 +32,12 @@ import {
   TURNOS as turnos,
   TOPIC_COLORS,
   PUNTAJE_OPTIONS as puntajeOptions,
+  MAX_TEMAS,
+  MAX_OPTIONS,
   buildExamPayload,
   validateExamMetadata,
   createEmptyQuestion,
+  examToWizardState,
 } from './examWizardUtils';
 import { validateStepQuestions } from './examWizardValidation';
 
@@ -71,8 +76,12 @@ const QUESTION_HINTS = {
 };
 
 // Question Card Component
-const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onDelete }) {
+const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onDelete, hasEnunciadoError = false }) {
   const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    if (hasEnunciadoError) setExpanded(true);
+  }, [hasEnunciadoError]);
 
   const saveQuestion = (updated) => onUpdate(question.id, updated);
   
@@ -92,6 +101,7 @@ const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onD
       const opciones = question.opciones || ['', '', '', ''];
 
       const handleAddOption = () => {
+        if (opciones.length >= MAX_OPTIONS) return;
         saveQuestion({ ...question, opciones: [...opciones, ''] });
       };
 
@@ -109,6 +119,9 @@ const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onD
 
       return (
         <Box>
+          <Typography variant="caption" sx={{ color: '#555', fontWeight: 600, display: 'block', mb: 0.5 }}>
+            Enunciado <span style={{ color: '#d32f2f' }}>*</span>
+          </Typography>
           <TextField
             fullWidth
             multiline
@@ -116,6 +129,8 @@ const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onD
             placeholder="Enunciado de la pregunta..."
             value={question.enunciado || ''}
             onChange={handleEnunciadoChange}
+            error={hasEnunciadoError}
+            helperText={hasEnunciadoError ? 'El enunciado es obligatorio' : ''}
             sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
           <Typography variant="caption" sx={{ color: '#666', fontWeight: 600, display: 'block', mb: 1.5 }}>
@@ -161,14 +176,19 @@ const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onD
               </Box>
             ))}
           </Box>
-          <Button
-            size="small"
-            startIcon={<AddIcon />}
-            onClick={handleAddOption}
-            sx={{ textTransform: 'none', color: '#001f56', mt: 1.5 }}
-          >
-            Agregar opción
-          </Button>
+          <Tooltip title={opciones.length >= MAX_OPTIONS ? `Límite de ${MAX_OPTIONS} opciones alcanzado` : ''} arrow>
+            <span>
+              <Button
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={handleAddOption}
+                disabled={opciones.length >= MAX_OPTIONS}
+                sx={{ textTransform: 'none', color: '#001f56', mt: 1.5, '&.Mui-disabled': { color: '#bbb' } }}
+              >
+                Agregar opción
+              </Button>
+            </span>
+          </Tooltip>
           <Typography variant="caption" sx={{ color: '#666', mt: 1, display: 'block' }}>
             {QUESTION_HINTS['multiple-choice']}
           </Typography>
@@ -178,6 +198,9 @@ const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onD
 
     return (
       <Box>
+        <Typography variant="caption" sx={{ color: '#555', fontWeight: 600, display: 'block', mb: 0.5 }}>
+          Enunciado <span style={{ color: '#d32f2f' }}>*</span>
+        </Typography>
         <TextField
           fullWidth
           multiline
@@ -185,6 +208,8 @@ const QuestionCard = memo(function QuestionCard({ question, index, onUpdate, onD
           placeholder="Enunciado de la pregunta..."
           value={question.enunciado || ''}
           onChange={handleEnunciadoChange}
+          error={hasEnunciadoError}
+          helperText={hasEnunciadoError ? 'El enunciado es obligatorio' : ''}
           sx={{ mb: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
         />
         <Typography variant="caption" sx={{ color: '#666' }}>
@@ -297,6 +322,8 @@ const ExamQuestionsPanel = memo(function ExamQuestionsPanel({
   onSelectQuestionType,
   onUpdateQuestion,
   onDeleteQuestion,
+  temasLimitReached,
+  invalidQuestionIds = new Set(),
 }) {
   const currentTema = temas[selectedTab];
   const currentTemaPts = currentTema?.preguntas.reduce((s, q) => s + Number(q.puntaje || 0), 0) ?? 0;
@@ -372,13 +399,18 @@ const ExamQuestionsPanel = memo(function ExamQuestionsPanel({
               </Box>
             );
           })}
-          <Button
-            startIcon={<AddIcon sx={{ fontSize: 18 }} />}
-            onClick={onAddTema}
-            sx={{ textTransform: 'none', color: '#001f56', fontWeight: 500, '&:hover': { bgcolor: 'rgba(0, 31, 86, 0.08)' } }}
-          >
-            Agregar tema
-          </Button>
+          <Tooltip title={temasLimitReached ? `Límite de ${MAX_TEMAS} temas alcanzado` : ''} arrow>
+            <span>
+              <Button
+                startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+                onClick={onAddTema}
+                disabled={temasLimitReached}
+                sx={{ textTransform: 'none', color: '#001f56', fontWeight: 500, '&:hover': { bgcolor: 'rgba(0, 31, 86, 0.08)' }, '&.Mui-disabled': { color: '#bbb' } }}
+              >
+                Agregar tema
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1.5 }}>
           <Typography variant="caption" sx={{ color: '#666', flexShrink: 0 }}>Color del tema:</Typography>
@@ -407,6 +439,7 @@ const ExamQuestionsPanel = memo(function ExamQuestionsPanel({
             index={index}
             onUpdate={onUpdateQuestion}
             onDelete={onDeleteQuestion}
+            hasEnunciadoError={invalidQuestionIds.has(question.id)}
           />
         ))}
 
@@ -451,7 +484,7 @@ const ExamQuestionsPanel = memo(function ExamQuestionsPanel({
   );
 });
 
-export default function CrearExamenContent() {
+export default function CrearExamenContent({ initialExamId = null }) {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState(0);
   const [formData, setFormData] = useState({
@@ -462,11 +495,45 @@ export default function CrearExamenContent() {
   });
   const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', color: TOPIC_COLORS[0], preguntas: [] }]);
   const [examId, setExamId] = useState(null);
+  const [invalidQuestionIds, setInvalidQuestionIds] = useState(new Set());
+  const [loadingExam, setLoadingExam] = useState(!!initialExamId);
   const [savingDraft, setSavingDraft] = useState(false);
   const [continuing, setContinuing] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, severity: 'success', message: '' });
 
+  useEffect(() => {
+    if (!initialExamId) return;
+    let mounted = true;
+    const load = async () => {
+      try {
+        const exam = await ExamService.getExamById(initialExamId);
+        if (!mounted) return;
+        const { formData: fd, temas: tm } = examToWizardState(exam);
+        setFormData(fd);
+        setTemas(tm);
+        setExamId(initialExamId);
+        setSelectedTab(0);
+      } catch {
+        if (mounted) showMessage('error', 'No se pudo cargar el examen para editar');
+      } finally {
+        if (mounted) setLoadingExam(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [initialExamId]);
+
   const showMessage = (severity, message) => setSnackbar({ open: true, severity, message });
+
+  const getEmptyEnunciadoIds = () => {
+    const ids = new Set();
+    temas.forEach((tema) => {
+      tema.preguntas.forEach((q) => {
+        if (!(q.enunciado || '').trim()) ids.add(q.id);
+      });
+    });
+    return ids;
+  };
 
   const validateDraft = () => {
     const metaError = validateExamMetadata(formData);
@@ -511,7 +578,11 @@ export default function CrearExamenContent() {
     if (metaError) return showMessage('error', metaError);
 
     const questionsError = validateStepQuestions(temas);
-    if (questionsError) return showMessage('error', questionsError);
+    if (questionsError) {
+      setInvalidQuestionIds(getEmptyEnunciadoIds());
+      return showMessage('error', questionsError);
+    }
+    setInvalidQuestionIds(new Set());
 
     setContinuing(true);
     try {
@@ -547,6 +618,7 @@ export default function CrearExamenContent() {
 
   const handleAddTema = useCallback(() => {
     setTemas((prev) => {
+      if (prev.length >= MAX_TEMAS) return prev;
       const newId = prev.length + 1;
       const color = TOPIC_COLORS[prev.length % TOPIC_COLORS.length];
       setSelectedTab(prev.length);
@@ -568,6 +640,14 @@ export default function CrearExamenContent() {
   }, [selectedTab]);
 
   const handleUpdateQuestion = useCallback((questionId, updatedQuestion) => {
+    if ((updatedQuestion.enunciado || '').trim()) {
+      setInvalidQuestionIds((prev) => {
+        if (!prev.has(questionId)) return prev;
+        const next = new Set(prev);
+        next.delete(questionId);
+        return next;
+      });
+    }
     setTemas((prev) => prev.map((tema, index) => (
       index === selectedTab
         ? {
@@ -588,10 +668,18 @@ export default function CrearExamenContent() {
 
   const handleSelectTab = useCallback((index) => setSelectedTab(index), []);
 
+  if (loadingExam) {
+    return (
+      <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress sx={{ color: '#001f56' }} />
+      </Box>
+    );
+  }
+
   return (
     <ExamWizardShell
       activeStep={0}
-      title="Crear examen"
+      title={initialExamId ? 'Editar examen' : 'Crear examen'}
       subtitle="Diseñá las preguntas y asigná puntajes. Las respuestas se configuran en el paso 2."
       onSaveDraft={handleGuardarBorrador}
       onContinue={handleContinuar}
@@ -684,6 +772,8 @@ export default function CrearExamenContent() {
         onSelectQuestionType={handleSelectQuestionType}
         onUpdateQuestion={handleUpdateQuestion}
         onDeleteQuestion={handleDeleteQuestion}
+        temasLimitReached={temas.length >= MAX_TEMAS}
+        invalidQuestionIds={invalidQuestionIds}
       />
     </ExamWizardShell>
   );

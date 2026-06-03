@@ -21,10 +21,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Popover,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
@@ -32,9 +32,20 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import ExamService from '../../../../../application/services/ExamService';
 import httpClient from '../../../../../infrastructure/http/httpClient';
 
-const TURNO_LABELS = { 1: 'Mañana', 2: 'Tarde', 3: 'Noche' };
+const STATUS_CONFIG = {
+  ACTIVO:    { label: 'Activo',    color: '#1b5e20', bg: '#e8f5e9' },
+  PUBLICADO: { label: 'Publicado', color: '#0d47a1', bg: '#e3f2fd' },
+  BORRADOR:  { label: 'Borrador',  color: '#616161', bg: '#f5f5f5' },
+};
 
-// Mapea el status del backend a la etiqueta que mostramos
+function getExamStatus(exam) {
+  if (!exam.published) return 'BORRADOR';
+  const now = new Date();
+  const start = exam.scheduledStartTime ? new Date(exam.scheduledStartTime) : null;
+  const end   = exam.scheduledEndTime   ? new Date(exam.scheduledEndTime)   : null;
+  if (start && now >= start && (!end || now <= end)) return 'ACTIVO';
+  return 'PUBLICADO';
+}
 
 export default function ExamenesContent() {
   const navigate = useNavigate();
@@ -42,8 +53,6 @@ export default function ExamenesContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [turnoAnchor, setTurnoAnchor] = useState(null);
-  const [turnoExam, setTurnoExam] = useState(null);
   const [monitoreoExam, setMonitoreoExam] = useState(null);
   const [monitoreoSubs, setMonitoreoSubs] = useState([]);
   const [monitoreoLoading, setMonitoreoLoading] = useState(false);
@@ -86,11 +95,6 @@ export default function ExamenesContent() {
       // revertir si falla
       setExams((prev) => [...prev, exam]);
     }
-  };
-
-  const handleTurnoClick = (event, exam) => {
-    setTurnoAnchor(event.currentTarget);
-    setTurnoExam(exam);
   };
 
   const handleMonitoreoClick = async (exam) => {
@@ -287,8 +291,8 @@ export default function ExamenesContent() {
                     {exam.subjectName || exam.subjectId || exam.curso || '—'}
                   </TableCell>
                   <TableCell>
-                    <Tooltip title={exam.published ? 'Publicado — click para despublicar' : 'Borrador — click para publicar'}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Tooltip title={exam.published ? 'Click para despublicar' : 'Click para publicar'}>
                         <Switch
                           checked={!!exam.published}
                           onChange={() => handleTogglePublish(exam)}
@@ -298,19 +302,39 @@ export default function ExamenesContent() {
                             '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#001f56' },
                           }}
                         />
-                        <Typography variant="body2" sx={{ color: exam.published ? '#2e7d32' : '#888', fontSize: '0.8rem', fontWeight: 500 }}>
-                          {exam.published ? 'Publicado' : 'Borrador'}
-                        </Typography>
-                      </Box>
-                    </Tooltip>
+                      </Tooltip>
+                      {(() => {
+                        const { label, color, bg } = STATUS_CONFIG[getExamStatus(exam)];
+                        return (
+                          <Box sx={{ display: 'inline-flex', alignItems: 'center', bgcolor: bg, color, borderRadius: 1.5, px: 1.5, py: 0.3 }}>
+                            <Typography sx={{ fontSize: '0.78rem', fontWeight: 700 }}>{label}</Typography>
+                          </Box>
+                        );
+                      })()}
+                    </Box>
                   </TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                       <Button
                         variant="text"
                         size="small"
+                        startIcon={<EditIcon sx={{ fontSize: '14px !important' }} />}
+                        onClick={() => navigate(`/docente/examenes/${exam.id}/editar`)}
+                        sx={{
+                          color: '#666',
+                          textTransform: 'none',
+                          fontWeight: 500,
+                          fontSize: '0.8rem',
+                          '&:hover': { backgroundColor: 'transparent', color: '#001f56' },
+                        }}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="text"
+                        size="small"
                         startIcon={<AccessTimeIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={(e) => handleTurnoClick(e, exam)}
+                        onClick={() => navigate(`/docente/examenes/${exam.id}/acceso`)}
                         sx={{
                           color: '#666',
                           textTransform: 'none',
@@ -389,57 +413,6 @@ export default function ExamenesContent() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Turno Popover */}
-      <Popover
-        open={!!turnoAnchor}
-        anchorEl={turnoAnchor}
-        onClose={() => { setTurnoAnchor(null); setTurnoExam(null); }}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-        PaperProps={{
-          sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
-            p: 0,
-            minWidth: 220,
-            overflow: 'hidden',
-          }
-        }}
-      >
-        <Box sx={{ bgcolor: '#001f56', px: 2.5, py: 1.5 }}>
-          <Typography sx={{ fontWeight: 700, color: '#fff', fontSize: '0.82rem', lineHeight: 1.3, noWrap: true }}>
-            {turnoExam?.title || '—'}
-          </Typography>
-        </Box>
-        <Box sx={{ px: 2.5, py: 2 }}>
-          {turnoExam?.shift ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ bgcolor: '#eef2ff', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <AccessTimeIcon sx={{ fontSize: 18, color: '#001f56' }} />
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: '0.72rem', color: '#888', lineHeight: 1 }}>Turno asignado</Typography>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: 700, color: '#001f56', mt: 0.25 }}>
-                  {TURNO_LABELS[turnoExam.shift] ?? `Turno ${turnoExam.shift}`}
-                </Typography>
-              </Box>
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ bgcolor: '#f5f5f5', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <AccessTimeIcon sx={{ fontSize: 18, color: '#bbb' }} />
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: '0.88rem', fontWeight: 600, color: '#555' }}>Sin turno asignado</Typography>
-                <Typography sx={{ fontSize: '0.72rem', color: '#aaa', mt: 0.25 }}>
-                  Editá el examen para asignar uno.
-                </Typography>
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </Popover>
 
       {/* Monitoreo Dialog */}
       <Dialog

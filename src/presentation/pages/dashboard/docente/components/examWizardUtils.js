@@ -3,6 +3,9 @@ import { createDefaultMatrix, migrateParesToMatrix } from '../../../../component
 
 export const WIZARD_STEPS = ['Crear examen', 'Cargar respuestas', 'Crear acceso'];
 
+export const MAX_TEMAS = 5;
+export const MAX_OPTIONS = 5;
+
 export const CURSOS = [
   { id: 1, nombre: 'Testing de Aplicaciones - Mañana' },
   { id: 2, nombre: 'Testing de Aplicaciones - Tarde' },
