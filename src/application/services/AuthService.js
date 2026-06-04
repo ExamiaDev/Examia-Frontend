@@ -1,6 +1,7 @@
 import AuthAPI from '../../infrastructure/api/AuthAPI';
 import { ValidationError } from '../../domain/errors/AppErrors';
-import { debugJwt } from '../../utils/jwt';
+import { debugJwt, decodeJwt } from '../../utils/jwt';
+import { isValidRole } from '../../domain/enums/RoleEnum';
 
 // Extrae el JWT del response soportando distintos nombres de campo
 const extractToken = (response) =>
@@ -28,11 +29,17 @@ const persistSession = (response, extras = {}) => {
 
 export const AuthService = {
   register: async ({ nombre, apellido, username, email, recoveryEmail, password, role }) => {
-    if (!nombre || !apellido || !username || !email || !recoveryEmail || !password) {
+    if (!nombre || !apellido || !username || !email || !password) {
       throw new ValidationError('Todos los campos son obligatorios');
     }
     if (/\s/.test(username)) {
       throw new ValidationError('El nombre de usuario no puede contener espacios');
+    }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(password)) {
+      throw new ValidationError('La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial');
+    }
+    if (recoveryEmail && recoveryEmail.trim() && recoveryEmail.trim().toLowerCase() === email.trim().toLowerCase()) {
+      throw new ValidationError('El mail de recupero debe ser diferente al mail principal');
     }
 
     const response = await AuthAPI.register({ nombre, apellido, username, email, recoveryEmail, password, role });
@@ -80,8 +87,15 @@ export const AuthService = {
   },
 
   getCurrentUser: () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) return null;
     const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (!user) return null;
+    // Derive role from the signed JWT claim — cannot be forged without the backend secret
+    const decoded = decodeJwt(token);
+    const jwtRole = decoded?.role;
+    return { ...user, role: isValidRole(jwtRole) ? jwtRole : user.role };
   },
 
   isAuthenticated: () => {

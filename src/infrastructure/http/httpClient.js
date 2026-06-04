@@ -38,11 +38,11 @@ httpClient.interceptors.response.use(
     const status = error.response?.status;
     console.error('[HTTP] Error', error.config?.method?.toUpperCase(), url, '→', status, error.message);
 
-    // Solo redirigir a login si el 401 viene de un endpoint protegido (no de auth)
+    // Solo disparar sesión expirada si el 401 viene de un endpoint protegido (no de auth)
     if (status === 401 && !url.includes('/auth/')) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      window.dispatchEvent(new Event('session-expired'));
     }
     return Promise.reject(error);
   }
