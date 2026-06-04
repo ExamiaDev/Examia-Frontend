@@ -8,7 +8,7 @@ export const AuthAPI = {
       return response.data;
     } catch (error) {
       if (error.response?.status === 401) {
-        throw new InvalidCredentialsError('Email o contraseña incorrectos');
+        throw new InvalidCredentialsError(error.response?.data?.message || 'Email o contraseña incorrectos');
       }
       if (error.response?.data?.message) {
         throw new AuthenticationError(error.response.data.message);
@@ -23,10 +23,7 @@ export const AuthAPI = {
       return response.data;
     } catch (error) {
       if (error.response?.status === 401) {
-        throw new InvalidCredentialsError('Credenciales UADE incorrectas');
-      }
-      if (error.response?.status === 404) {
-        throw new AuthenticationError('Usuario UADE no encontrado. Verificá tu legajo y email.');
+        throw new InvalidCredentialsError(error.response?.data?.message || 'Credenciales UADE incorrectas');
       }
       if (error.response?.data?.message) {
         throw new AuthenticationError(error.response.data.message);
@@ -88,10 +85,12 @@ export const AuthAPI = {
 
   logout: async () => {
     try {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
+      await httpClient.post('/auth/logout');
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
     }
   },
 };

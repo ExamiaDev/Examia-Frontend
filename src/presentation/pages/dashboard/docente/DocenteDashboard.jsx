@@ -42,6 +42,11 @@ const DocenteDashboard = () => {
       return <CrearExamenContent />;
     }
 
+    if (path.match(/\/examenes\/[^/]+\/editar$/)) {
+      const segments = path.split('/').filter(Boolean);
+      return <CrearExamenContent initialExamId={segments[2]} />;
+    }
+
     if (path.match(/\/examenes\/[^/]+\/respuestas$/)) {
       const segments = path.split('/').filter(Boolean);
       return <CargarRespuestasContent examId={segments[2]} />;

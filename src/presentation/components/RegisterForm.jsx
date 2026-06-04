@@ -10,6 +10,7 @@ import {
   FormControlLabel,
   IconButton,
   InputAdornment,
+  Link,
   RadioGroup,
   Radio,
   FormControl,
@@ -21,6 +22,7 @@ import CustomTextField from './CustomTextField';
 import FormLayout from './FormLayout';
 import AuthService from '../../application/services/AuthService';
 import { labelSx, backButtonSx, primaryButtonDisabledSx } from './formStyles';
+import TermsAndConditionsModal from './TermsAndConditionsModal';
 
 const INITIAL_FORM = {
   nombre: '',
@@ -39,6 +41,7 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -150,8 +153,23 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
             onChange={handleChange}
             disabled={loading}
             autoComplete="email"
-            sx={{ mb: 2 }}
+            sx={{ mb: 0.5 }}
           />
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mb: 1.5,
+              fontSize: '0.78rem',
+              color: '#d32f2f',
+              visibility: (form.recoveryEmail && form.email &&
+                form.recoveryEmail.trim().toLowerCase() === form.email.trim().toLowerCase())
+                ? 'visible' : 'hidden',
+              minHeight: '1.1rem',
+            }}
+          >
+            El mail de recupero debe ser diferente al mail principal.
+          </Typography>
 
           <Typography variant="caption" sx={labelSx}>Contraseña</Typography>
           <CustomTextField
@@ -176,8 +194,25 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
                 ),
               },
             }}
-            sx={{ mb: 2 }}
+            sx={{ mb: 0.5 }}
           />
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mb: 1.5,
+              fontSize: '0.78rem',
+              color: form.password && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(form.password)
+                ? '#2e7d32'
+                : '#d32f2f',
+              visibility: form.password ? 'visible' : 'hidden',
+              minHeight: '1.1rem',
+            }}
+          >
+            {form.password && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(form.password)
+              ? 'Contraseña segura ✓'
+              : 'Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.'}
+          </Typography>
 
           <Typography variant="caption" sx={labelSx}>Repetir contraseña</Typography>
           <CustomTextField
@@ -259,17 +294,31 @@ const RegisterForm = ({ onSuccess = () => {} }) => {
             }
             label={
               <Typography variant="body2" sx={{ fontSize: '0.85rem', color: '#333' }}>
-                Acepto los términos y condiciones
+                Acepto los{' '}
+                <Link
+                  component="button"
+                  type="button"
+                  onClick={() => setTermsOpen(true)}
+                  underline="hover"
+                  sx={{ color: '#2c5cc5', fontWeight: 600, fontSize: '0.85rem', verticalAlign: 'baseline' }}
+                >
+                  términos y condiciones
+                </Link>
               </Typography>
             }
             sx={{ mb: 2 }}
           />
 
+          <TermsAndConditionsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
+
            <Button
              type="submit"
              fullWidth
              variant="contained"
-             disabled={loading || !termsAccepted}
+             disabled={loading || !termsAccepted || (
+               form.recoveryEmail && form.email &&
+               form.recoveryEmail.trim().toLowerCase() === form.email.trim().toLowerCase()
+             )}
              sx={primaryButtonDisabledSx}
            >
              {loading ? <CircularProgress size={24} color="inherit" /> : 'Crear cuenta'}
