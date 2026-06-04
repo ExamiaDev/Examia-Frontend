@@ -49,7 +49,7 @@ export const AuthAPI = {
 
   forgotPassword: async (email) => {
     try {
-      const response = await httpClient.post('/auth/forgot-password', { email });
+      const response = await httpClient.post('/auth/forgot-password', { email }, { timeout: 30000 });
       return response.data;
     } catch (error) {
       if (error.response?.data?.message) {
