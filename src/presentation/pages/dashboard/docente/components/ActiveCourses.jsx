@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { Box, Paper, Typography, Button, Chip, Skeleton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -116,6 +117,11 @@ const ActiveCourses = ({ exams, loading }) => {
       </Box>
     </Box>
   );
+};
+
+ActiveCourses.propTypes = {
+  exams: PropTypes.array.isRequired,
+  loading: PropTypes.bool.isRequired,
 };
 
 export default ActiveCourses;

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import {
   Box,
   Typography,
@@ -129,6 +130,11 @@ const RecentExams = ({ exams, loading }) => {
       </Paper>
     </Box>
   );
+};
+
+RecentExams.propTypes = {
+  exams: PropTypes.array.isRequired,
+  loading: PropTypes.bool.isRequired,
 };
 
 export default RecentExams;

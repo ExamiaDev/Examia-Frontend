@@ -232,17 +232,24 @@ const MetricasContent = () => {
           </FormControl>
         </Paper>
 
-        {exams.length === 0 ? (
-          <Paper elevation={0} sx={{ p: 6, borderRadius: 2, border: '1px solid #e0e0e0', textAlign: 'center' }}>
-            <Typography variant="body1" sx={{ color: '#999' }}>
-              No tenés exámenes creados todavía.
-            </Typography>
-          </Paper>
-        ) : loadingSubmissions ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <CircularProgress sx={{ color: '#001f56' }} />
-          </Box>
-        ) : (
+        {(() => {
+          if (exams.length === 0) {
+            return (
+              <Paper elevation={0} sx={{ p: 6, borderRadius: 2, border: '1px solid #e0e0e0', textAlign: 'center' }}>
+                <Typography variant="body1" sx={{ color: '#999' }}>
+                  No tenés exámenes creados todavía.
+                </Typography>
+              </Paper>
+            );
+          }
+          if (loadingSubmissions) {
+            return (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                <CircularProgress sx={{ color: '#001f56' }} />
+              </Box>
+            );
+          }
+          return (
           <>
             {/* Stats Cards */}
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
@@ -363,8 +370,10 @@ const MetricasContent = () => {
                     filteredSubmissions.map((s) => {
                       const grade = toGrade(s);
                       const isGraded = s.status === 'GRADED';
-                      const gradeColor =
-                        grade === null ? '#999' : grade >= passingGrade ? '#2e7d32' : '#f44336';
+                      let gradeColor = '#999';
+                      if (grade !== null) {
+                        gradeColor = grade >= passingGrade ? '#2e7d32' : '#f44336';
+                      }
                       return (
                         <TableRow key={s.id} sx={{ '&:hover': { bgcolor: '#fafafa' } }}>
                           <TableCell sx={{ fontWeight: 500, color: '#333', borderBottom: '1px solid #f0f0f0', py: 2 }}>
@@ -407,7 +416,8 @@ const MetricasContent = () => {
               </Table>
             </TableContainer>
           </>
-        )}
+          );
+        })()}
       </Box>
     </Box>
   );

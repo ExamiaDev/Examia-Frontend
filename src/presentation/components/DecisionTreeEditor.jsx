@@ -85,7 +85,10 @@ const EditableLabel = ({ id, label, updateNodeData, color }) => {
         value={val}
         onChange={(e) => setVal(e.target.value)}
         onBlur={commit}
-        onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setEditing(false); setVal(label ?? ''); } }}
+        onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            else if (e.key === 'Escape') { setEditing(false); setVal(label ?? ''); }
+          }}
         onClick={(e) => e.stopPropagation()}
         style={{ width: '80%', fontSize: 11, border: 'none', outline: `2px solid ${color}`, borderRadius: 2, textAlign: 'center', padding: '2px 4px', background: 'white', fontFamily: 'inherit' }}
       />
@@ -93,13 +96,23 @@ const EditableLabel = ({ id, label, updateNodeData, color }) => {
   }
   return (
     <span
+      role="button"
+      tabIndex={0}
       onDoubleClick={(e) => { e.stopPropagation(); setEditing(true); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setEditing(true); } }}
       title="Doble clic para editar"
       style={{ color: val ? '#1a1a1a' : '#bbb', textAlign: 'center', padding: '0 8px', wordBreak: 'break-word', lineHeight: 1.3, fontSize: 11, fontFamily: 'inherit', cursor: 'text' }}
     >
       {val || 'Doble clic para editar'}
     </span>
   );
+};
+
+EditableLabel.propTypes = {
+  id: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  updateNodeData: PropTypes.func.isRequired,
+  color: PropTypes.string.isRequired,
 };
 
 // ─── Custom node: Decisión (rombo) ────────────────────────────────────────────
@@ -127,6 +140,12 @@ const DecisionNode = ({ data, id, selected }) => {
   );
 };
 
+DecisionNode.propTypes = {
+  data: PropTypes.shape({ label: PropTypes.string }),
+  id: PropTypes.string.isRequired,
+  selected: PropTypes.bool,
+};
+
 // ─── Custom node: Proceso (rectángulo) ────────────────────────────────────────
 
 const ProcessNode = ({ data, id, selected }) => {
@@ -148,6 +167,12 @@ const ProcessNode = ({ data, id, selected }) => {
   );
 };
 
+ProcessNode.propTypes = {
+  data: PropTypes.shape({ label: PropTypes.string }),
+  id: PropTypes.string.isRequired,
+  selected: PropTypes.bool,
+};
+
 // ─── Custom node: Terminal (elipse) ───────────────────────────────────────────
 
 const TerminalNode = ({ data, id, selected }) => {
@@ -165,6 +190,12 @@ const TerminalNode = ({ data, id, selected }) => {
       <Handle type="source" position={Position.Bottom} id="b" style={{ background: '#616161', width: 8, height: 8 }} />
     </div>
   );
+};
+
+TerminalNode.propTypes = {
+  data: PropTypes.shape({ label: PropTypes.string }),
+  id: PropTypes.string.isRequired,
+  selected: PropTypes.bool,
 };
 
 // ─── Custom edge con etiqueta editable ────────────────────────────────────────
@@ -215,6 +246,19 @@ const EditableEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, 
       </EdgeLabelRenderer>
     </>
   );
+};
+
+EditableEdge.propTypes = {
+  id: PropTypes.string.isRequired,
+  sourceX: PropTypes.number.isRequired,
+  sourceY: PropTypes.number.isRequired,
+  targetX: PropTypes.number.isRequired,
+  targetY: PropTypes.number.isRequired,
+  sourcePosition: PropTypes.string.isRequired,
+  targetPosition: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  selected: PropTypes.bool,
+  markerEnd: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
 };
 
 // ─── Mapas de tipos (fuera del componente para evitar recrearlos) ─────────────
@@ -348,6 +392,12 @@ const EditorInner = ({ initialData, onChange, readOnly }) => {
       )}
     </Box>
   );
+};
+
+EditorInner.propTypes = {
+  initialData: PropTypes.shape({ nodes: PropTypes.array, edges: PropTypes.array }),
+  onChange: PropTypes.func,
+  readOnly: PropTypes.bool,
 };
 
 // ─── Componente público ───────────────────────────────────────────────────────
