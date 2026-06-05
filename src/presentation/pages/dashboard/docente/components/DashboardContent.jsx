@@ -1,12 +1,23 @@
+import { useState, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import QuickActions from './QuickActions';
 import ActiveCourses from './ActiveCourses';
 import RecentExams from './RecentExams';
+import { ExamAPI } from '../../../../../infrastructure/api/ExamAPI';
 
 const DashboardContent = () => {
   const navigate = useNavigate();
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ExamAPI.getExams()
+      .then(setExams)
+      .catch(() => setExams([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleCrearExamen = () => {
     navigate('/docente/examenes/crear');
@@ -77,8 +88,8 @@ const DashboardContent = () => {
         }}
       >
         <QuickActions />
-        <ActiveCourses />
-        <RecentExams />
+        <ActiveCourses exams={exams} loading={loading} />
+        <RecentExams exams={exams} loading={loading} />
       </Box>
     </Box>
   );

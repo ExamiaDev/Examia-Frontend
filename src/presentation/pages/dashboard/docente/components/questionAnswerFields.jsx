@@ -3,7 +3,6 @@ import { Box, Typography, TextField } from '@mui/material';
 import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
 import MultipleChoiceOptionsEditor from './MultipleChoiceOptionsEditor';
 import MatrixTableEditor from '../../../../components/MatrixTableEditor';
-import { createDefaultDecisionTree } from '../../../../components/decisionTreeUtils';
 import { createDefaultMatrix } from '../../../../components/matrixTableUtils';
 
 const FreeTextModelAnswer = ({ value, onSave }) => (
@@ -50,8 +49,8 @@ export const QuestionAnswerFields = ({ question, onSave }) => {
     case 'arbol-decision':
       return (
         <DecisionTreeEditor
-          tree={question.decisionTree ?? createDefaultDecisionTree()}
-          onChange={(nextTree) => onSave({ decisionTree: nextTree })}
+          initialData={question.decisionTree}
+          onChange={(treeJson) => onSave({ decisionTree: treeJson })}
         />
       );
     case 'texto-libre':

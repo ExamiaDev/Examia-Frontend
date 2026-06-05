@@ -17,7 +17,22 @@ ReadOnlyTeacherFeedback.propTypes = {
 };
 
 const EditableGradingFields = ({ answer, scoreValue, feedbackValue, onScoreChange, onFeedbackChange }) => {
-  const scoreInvalid = scoreValue !== '' && Number.isNaN(Number.parseFloat(scoreValue));
+  const parsed = Number.parseFloat(scoreValue);
+  const scoreInvalid =
+    scoreValue !== '' &&
+    (Number.isNaN(parsed) || parsed < 0 || parsed > answer.points);
+
+  const handleScoreChange = (e) => {
+    const raw = e.target.value;
+    if (raw === '' || raw === '-') {
+      onScoreChange(answer.questionId, raw);
+      return;
+    }
+    const num = Number.parseFloat(raw);
+    if (Number.isNaN(num)) return;
+    const clamped = Math.min(num, answer.points);
+    onScoreChange(answer.questionId, String(clamped));
+  };
 
   return (
     <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -26,7 +41,7 @@ const EditableGradingFields = ({ answer, scoreValue, feedbackValue, onScoreChang
         type="number"
         size="small"
         value={scoreValue}
-        onChange={(e) => onScoreChange(answer.questionId, e.target.value)}
+        onChange={handleScoreChange}
         error={scoreInvalid}
         helperText={scoreInvalid ? `Entre 0 y ${answer.points}` : `Máx. ${answer.points}`}
         slotProps={{
