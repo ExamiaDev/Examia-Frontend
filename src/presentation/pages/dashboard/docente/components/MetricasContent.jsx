@@ -8,6 +8,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Paper,
   Chip,
   Select,
@@ -16,6 +17,7 @@ import {
   InputLabel,
   CircularProgress,
 } from '@mui/material';
+import { usePagination } from '../../../../hooks/usePagination';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -137,6 +139,10 @@ const MetricasContent = () => {
     if (filterAlumnos === 'desaprobados') return submissions.filter((s) => { const g = toGrade(s); return g !== null && g < passingGrade; });
     return submissions;
   }, [submissions, filterAlumnos, passingGrade]);
+
+  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedSubs, setPage } = usePagination(filteredSubmissions);
+
+  useEffect(() => { setPage(0); }, [selectedExamId, filterAlumnos, setPage]);
 
   const totalEntregas = submissions.length;
   const totalCalificados = gradedSubmissions.length;
@@ -367,7 +373,7 @@ const MetricasContent = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredSubmissions.map((s) => {
+                    pagedSubs.map((s) => {
                       const grade = toGrade(s);
                       const isGraded = s.status === 'GRADED';
                       let gradeColor = '#999';
@@ -415,6 +421,18 @@ const MetricasContent = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              component="div"
+              count={filteredSubmissions.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25]}
+              labelRowsPerPage="Filas:"
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+              sx={{ borderTop: '1px solid #e0e0e0' }}
+            />
           </>
           );
         })()}

@@ -13,6 +13,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   CircularProgress,
   Alert,
   IconButton,
@@ -23,6 +24,7 @@ import AddIcon from '@mui/icons-material/Add';
 import PeopleIcon from '@mui/icons-material/People';
 import ExamService from '../../../../../application/services/ExamService';
 import { getCourseById } from './coursesData';
+import { usePagination } from '../../../../hooks/usePagination';
 
 export default function CursoContent({ courseId }) {
   const navigate = useNavigate();
@@ -31,6 +33,7 @@ export default function CursoContent({ courseId }) {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedExams } = usePagination(exams);
 
   useEffect(() => {
     if (!course) return;
@@ -156,6 +159,7 @@ export default function CursoContent({ courseId }) {
         )}
 
         {!loading && !error && exams.length > 0 && (
+          <>
           <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
             <Table>
               <TableHead>
@@ -168,7 +172,7 @@ export default function CursoContent({ courseId }) {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {exams.map((exam) => (
+                {pagedExams.map((exam) => (
                   <TableRow key={exam.id} sx={{ '&:hover': { bgcolor: '#f9f9f9' } }}>
                     <TableCell sx={{ fontWeight: 500, color: '#001f56' }}>
                       {exam.title || exam.nombre || '(sin título)'}
@@ -204,6 +208,19 @@ export default function CursoContent({ courseId }) {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={exams.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+            labelRowsPerPage="Filas:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            sx={{ borderTop: '1px solid #e0e0e0' }}
+          />
+          </>
         )}
       </Box>
     </Box>
