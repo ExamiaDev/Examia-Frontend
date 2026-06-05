@@ -115,14 +115,24 @@ EditableLabel.propTypes = {
   color: PropTypes.string.isRequired,
 };
 
+// Shared handle style — 14px dot with white ring for visibility and larger hitbox.
+const hs = (color, extra = {}) => ({
+  background: color, width: 14, height: 14,
+  border: '2.5px solid #fff', boxShadow: `0 0 0 1.5px ${color}`,
+  borderRadius: '50%', ...extra,
+});
+
 // ─── Custom node: Decisión (rombo) ────────────────────────────────────────────
 
 const DecisionNode = ({ data, id, selected }) => {
   const { updateNodeData } = useReactFlow();
+  // Container 120×120 so the rotated 80×80 square (tip-to-tip ≈113px) fits fully.
+  // Diamond center (60,60), corner distance ≈56.6px → corners at (60,3.4) etc.
+  // Handle radius=7px → offset = 3.4 - 7 ≈ -4 to center handle on each tip.
   return (
-    <div style={{ width: 150, height: 90, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ width: 120, height: 120, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{
-        position: 'absolute', width: 82, height: 82, top: 4, left: 34,
+        position: 'absolute', width: 80, height: 80, top: 20, left: 20,
         background: '#e3f2fd',
         border: `2px solid ${selected ? '#001f56' : '#1976d2'}`,
         transform: 'rotate(45deg)',
@@ -132,10 +142,10 @@ const DecisionNode = ({ data, id, selected }) => {
       <div style={{ position: 'relative', zIndex: 1, width: '100%', textAlign: 'center' }}>
         <EditableLabel id={id} label={data.label} updateNodeData={updateNodeData} color="#1976d2" />
       </div>
-      <Handle type="target" position={Position.Top} style={{ background: '#1976d2', width: 8, height: 8, top: 3 }} />
-      <Handle type="source" position={Position.Bottom} id="b" style={{ background: '#1976d2', width: 8, height: 8, bottom: 3 }} />
-      <Handle type="source" position={Position.Left} id="l" style={{ background: '#1976d2', width: 8, height: 8 }} />
-      <Handle type="source" position={Position.Right} id="r" style={{ background: '#1976d2', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Top}    style={hs('#1976d2', { top: -4,    left: '50%', transform: 'translateX(-50%)' })} />
+      <Handle type="source" position={Position.Bottom} id="b" style={hs('#1976d2', { bottom: -4, left: '50%', transform: 'translateX(-50%)' })} />
+      <Handle type="source" position={Position.Left}   id="l" style={hs('#1976d2', { left: -4,   top: '50%', transform: 'translateY(-50%)' })} />
+      <Handle type="source" position={Position.Right}  id="r" style={hs('#1976d2', { right: -4,  top: '50%', transform: 'translateY(-50%)' })} />
     </div>
   );
 };
@@ -159,10 +169,10 @@ const ProcessNode = ({ data, id, selected }) => {
       boxShadow: selected ? '0 0 0 2px #001f56' : 'none',
     }}>
       <EditableLabel id={id} label={data.label} updateNodeData={updateNodeData} color="#2e7d32" />
-      <Handle type="target" position={Position.Top} style={{ background: '#2e7d32', width: 8, height: 8 }} />
-      <Handle type="source" position={Position.Bottom} id="b" style={{ background: '#2e7d32', width: 8, height: 8 }} />
-      <Handle type="source" position={Position.Left} id="l" style={{ background: '#2e7d32', width: 8, height: 8 }} />
-      <Handle type="source" position={Position.Right} id="r" style={{ background: '#2e7d32', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Top}    style={hs('#2e7d32')} />
+      <Handle type="source" position={Position.Bottom} id="b" style={hs('#2e7d32')} />
+      <Handle type="source" position={Position.Left}   id="l" style={hs('#2e7d32')} />
+      <Handle type="source" position={Position.Right}  id="r" style={hs('#2e7d32')} />
     </div>
   );
 };
@@ -186,8 +196,10 @@ const TerminalNode = ({ data, id, selected }) => {
       boxShadow: selected ? '0 0 0 2px #001f56' : 'none',
     }}>
       <EditableLabel id={id} label={data.label} updateNodeData={updateNodeData} color="#616161" />
-      <Handle type="target" position={Position.Top} style={{ background: '#616161', width: 8, height: 8 }} />
-      <Handle type="source" position={Position.Bottom} id="b" style={{ background: '#616161', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Top}    style={hs('#616161')} />
+      <Handle type="source" position={Position.Bottom} id="b" style={hs('#616161')} />
+      <Handle type="source" position={Position.Left}   id="l" style={hs('#616161')} />
+      <Handle type="source" position={Position.Right}  id="r" style={hs('#616161')} />
     </div>
   );
 };
@@ -219,28 +231,33 @@ const EditableEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, 
       <EdgeLabelRenderer>
         <div
           className="nodrag nopan"
-          onDoubleClick={(e) => { e.stopPropagation(); setEditing(true); }}
-          title="Doble clic para editar etiqueta"
+          role="button"
+          tabIndex={0}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setEditing(true); } }}
+          title="Clic para editar etiqueta"
           style={{
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             background: '#fff',
-            border: `1px solid ${selected ? '#001f56' : '#d1d5db'}`,
+            border: `1px solid ${selected ? '#001f56' : '#94a3b8'}`,
             borderRadius: 4, padding: '2px 8px', fontSize: 11,
-            cursor: 'pointer', minWidth: 28, textAlign: 'center',
-            fontFamily: 'inherit',
+            cursor: 'text', minWidth: 40, textAlign: 'center',
+            fontFamily: 'inherit', pointerEvents: 'all',
           }}
         >
           {editing ? (
             <input
               autoFocus value={editLabel}
               onChange={(e) => setEditLabel(e.target.value)}
+              onMouseDown={(e) => e.stopPropagation()}
               onBlur={commit}
               onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setEditing(false); setEditLabel(label || ''); } }}
-              style={{ width: 64, fontSize: 11, border: 'none', outline: 'none', fontFamily: 'inherit' }}
+              style={{ width: 80, fontSize: 11, border: 'none', outline: 'none', fontFamily: 'inherit' }}
             />
           ) : (
-            <span style={{ color: editLabel ? '#374151' : '#d1d5db' }}>{editLabel || '•'}</span>
+            <span style={{ color: editLabel ? '#374151' : '#9ca3af', fontStyle: editLabel ? 'normal' : 'italic' }}>{editLabel || 'etiqueta'}</span>
           )}
         </div>
       </EdgeLabelRenderer>
@@ -368,6 +385,8 @@ const EditorInner = ({ initialData, onChange, readOnly }) => {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
+          connectionMode="loose"
+          connectionRadius={35}
           nodesDraggable={!readOnly && !connectMode}
           nodesConnectable={!readOnly}
           elementsSelectable={!readOnly}
