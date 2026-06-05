@@ -1,42 +1,25 @@
-export const createDefaultDecisionTree = () => ({
-  rootId: 'n1',
-  nodes: {
-    n1: {
-      text: '',
-      branches: [
-        { label: 'Sí', nextId: 'n2' },
-        { label: 'No', nextId: 'n3' },
-      ],
-    },
-    n2: {
-      text: 'Resultado si la respuesta es Sí',
-      branches: [],
-    },
-    n3: {
-      text: 'Resultado si la respuesta es No',
-      branches: [],
-    },
-  },
-});
+// Formato nuevo: nodos y aristas de React Flow (draw.io style)
+export const createDefaultDecisionTree = () => ({ nodes: [], edges: [] });
+
+const isValidTree = (tree) => {
+  if (!tree) return false;
+  if (Array.isArray(tree.nodes)) return true; // formato nuevo
+  if (tree.rootId && tree.nodes && typeof tree.nodes === 'object') return true; // formato viejo
+  return false;
+};
 
 export const getDecisionTree = (question) => {
-  if (question?.decisionTree?.rootId && question.decisionTree?.nodes) {
-    return question.decisionTree;
-  }
-  return null;
+  const tree = question?.decisionTree;
+  return isValidTree(tree) ? tree : null;
 };
 
 /** Árbol de referencia del docente (en corrección viene en decisionTree del DTO). */
 export const getReferenceDecisionTree = (answer) => getDecisionTree(answer);
 
-/** Árbol creado por el alumno (nunca usar decisionTree del DTO, que es la guía). */
+/** Árbol creado por el alumno (en la entrega viene en studentDecisionTree). */
 export const getStudentDecisionTree = (answer) => {
   const tree = answer?.studentDecisionTree ?? answer?.student_decision_tree;
-  if (!tree?.nodes || !Object.keys(tree.nodes).length) return null;
-  return {
-    rootId: tree.rootId || Object.keys(tree.nodes)[0],
-    nodes: tree.nodes,
-  };
+  return isValidTree(tree) ? tree : null;
 };
 
 export const getNode = (tree, nodeId) => tree?.nodes?.[nodeId] ?? null;
@@ -158,8 +141,16 @@ export const extendLeafNode = (tree, leafId) => {
 };
 
 export const isDecisionTreeContentComplete = (tree) => {
-  if (!tree?.rootId || !tree?.nodes) return false;
-  return Object.values(tree.nodes).some((node) => (node?.text || '').trim());
+  if (!tree) return false;
+  // Formato nuevo: nodes es array
+  if (Array.isArray(tree.nodes)) {
+    return tree.nodes.some((n) => (n?.data?.label || '').trim().length > 0);
+  }
+  // Formato viejo (retrocompatibilidad)
+  if (tree.rootId && tree.nodes && typeof tree.nodes === 'object') {
+    return Object.values(tree.nodes).some((n) => (n?.text || '').trim());
+  }
+  return false;
 };
 
 export const sanitizeCorrectPath = (tree, correctPath = []) => {

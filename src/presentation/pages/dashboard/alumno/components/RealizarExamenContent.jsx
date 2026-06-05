@@ -37,7 +37,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 import { createDefaultMatrix, isMatrixComplete } from '../../../../components/matrixTableUtils';
-import { createDefaultDecisionTree, isDecisionTreeContentComplete } from '../../../../components/decisionTreeUtils';
+import { isDecisionTreeContentComplete } from '../../../../components/decisionTreeUtils';
 import DecisionTreeEditor from '../../../../components/DecisionTreeEditor';
 import MatrixTableEditor from '../../../../components/MatrixTableEditor';
 
@@ -108,7 +108,7 @@ const emptyAnswer = (question) => {
       return { ...base, orderAnswer: [...src].sort(() => Math.random() - 0.5) };
     }
     case 'DECISION_TREE':
-      return { ...base, decisionTree: createDefaultDecisionTree() };
+      return { ...base, decisionTree: null };
     case 'MATRIX': {
       const matrix = createDefaultMatrix();
       return { ...base, matrixColumns: matrix.matrixColumns, matrixRows: matrix.matrixRows };
@@ -267,11 +267,11 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
         return (
           <Box>
             <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1.5 }}>
-              Armá tu árbol de decisión (nodos redondos = preguntas, rectángulos = resultados).
+              Armá tu árbol de decisión: agregá nodos con los botones, arrastrá para conectarlos y editá los textos haciendo doble clic.
             </Typography>
             <DecisionTreeEditor
-              tree={answer.decisionTree ?? createDefaultDecisionTree()}
-              onChange={(nextTree) => onChange({ ...answer, decisionTree: nextTree })}
+              initialData={answer.decisionTree}
+              onChange={(treeJson) => onChange({ ...answer, decisionTree: treeJson })}
             />
           </Box>
         );
