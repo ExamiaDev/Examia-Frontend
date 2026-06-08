@@ -10,6 +10,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Paper,
   Button,
   Chip,
@@ -18,6 +19,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import { usePagination } from '../../../../hooks/usePagination';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ExamService from '../../../../../application/services/ExamService';
@@ -63,6 +65,7 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { page: examsPage, rowsPerPage: examsRpp, handleChangePage: onExamsPage, handleChangeRowsPerPage: onExamsRpp, paginated: pagedRows } = usePagination(rows);
 
   useEffect(() => {
     let mounted = true;
@@ -149,6 +152,7 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
         )}
 
         {!loading && !error && rows.length > 0 && (
+          <>
           <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
             <Table>
               <TableHead>
@@ -161,7 +165,7 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((exam) => (
+                {pagedRows.map((exam) => (
                   <TableRow
                     key={exam.id}
                     sx={{ cursor: 'pointer', '&:hover': { bgcolor: '#fafafa' } }}
@@ -209,6 +213,19 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={rows.length}
+            page={examsPage}
+            onPageChange={onExamsPage}
+            rowsPerPage={examsRpp}
+            onRowsPerPageChange={onExamsRpp}
+            rowsPerPageOptions={[5, 10, 25]}
+            labelRowsPerPage="Filas:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            sx={{ borderTop: '1px solid #e0e0e0' }}
+          />
+          </>
         )}
       </Box>
     </>
@@ -227,6 +244,7 @@ const SubmissionsView = ({ exam, onBack }) => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { page: subsPage, rowsPerPage: subsRpp, handleChangePage: onSubsPage, handleChangeRowsPerPage: onSubsRpp, paginated: pagedSubs } = usePagination(submissions);
 
   useEffect(() => {
     let mounted = true;
@@ -292,6 +310,7 @@ const SubmissionsView = ({ exam, onBack }) => {
         )}
 
         {!loading && !error && submissions.length > 0 && (
+          <>
           <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
             <Table>
               <TableHead>
@@ -304,7 +323,7 @@ const SubmissionsView = ({ exam, onBack }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {submissions.map((sub) => (
+                {pagedSubs.map((sub) => (
                   <TableRow key={sub.id} sx={{ '&:hover': { bgcolor: '#fafafa' } }}>
                     <TableCell sx={{ color: '#666', borderBottom: '1px solid #f0f0f0', py: 2.5 }}>
                       {sub.studentLegajo || '—'}
@@ -343,6 +362,19 @@ const SubmissionsView = ({ exam, onBack }) => {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={submissions.length}
+            page={subsPage}
+            onPageChange={onSubsPage}
+            rowsPerPage={subsRpp}
+            onRowsPerPageChange={onSubsRpp}
+            rowsPerPageOptions={[5, 10, 25]}
+            labelRowsPerPage="Filas:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            sx={{ borderTop: '1px solid #e0e0e0' }}
+          />
+          </>
         )}
       </Box>
     </>
