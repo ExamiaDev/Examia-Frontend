@@ -16,11 +16,11 @@ const loadSavedViolations = (examId) => {
 };
 
 const persistViolations = (examId, violations) => {
-  try { localStorage.setItem(lsViolationsKey(examId), JSON.stringify(violations)); } catch {}
+  try { localStorage.setItem(lsViolationsKey(examId), JSON.stringify(violations)); } catch (error) { void error; }
 };
 
 export const clearSavedViolations = (examId) => {
-  try { localStorage.removeItem(lsViolationsKey(examId)); } catch {}
+  try { localStorage.removeItem(lsViolationsKey(examId)); } catch (error) { void error; }
 };
 
 const getIsFullscreen = () => !!(

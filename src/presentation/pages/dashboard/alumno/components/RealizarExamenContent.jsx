@@ -30,7 +30,6 @@ import {
   Grid,
   Badge,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import SendIcon from '@mui/icons-material/Send';
@@ -593,7 +592,7 @@ TopicQuestionsView.propTypes = {
 const lsKey = (examId, suffix) => `examia_exam_${examId}_${suffix}`;
 
 const saveProgress = (examId, answers) => {
-  try { localStorage.setItem(lsKey(examId, 'answers'), JSON.stringify(answers)); } catch {}
+  try { localStorage.setItem(lsKey(examId, 'answers'), JSON.stringify(answers)); } catch (error) { void error; }
 };
 
 const clearProgress = (examId) => {
@@ -601,7 +600,7 @@ const clearProgress = (examId) => {
     localStorage.removeItem(lsKey(examId, 'answers'));
     localStorage.removeItem(lsKey(examId, 'started_at'));
     clearSavedViolations(examId);
-  } catch {}
+  } catch (error) { void error; }
 };
 
 const getStartedAt = (examId) => {
@@ -616,7 +615,7 @@ const setStartedAt = (examId) => {
     if (!localStorage.getItem(lsKey(examId, 'started_at'))) {
       localStorage.setItem(lsKey(examId, 'started_at'), String(Date.now()));
     }
-  } catch {}
+  } catch (error) { void error; }
 };
 
 const getSavedAnswers = (examId) => {
@@ -650,8 +649,8 @@ const RealizarExamenContent = ({ examId }) => {
 
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
 
-  const { violations, violationCount, violationsPayload, warningOpen, lastViolation, dismissWarning,
-          isFullscreen, fullscreenExitOpen, reEnterFullscreen } =
+  const { violationCount, violationsPayload, warningOpen, lastViolation, dismissWarning,
+          fullscreenExitOpen, reEnterFullscreen } =
     useExamProctoring({ enabled: examStarted && !loading && !alreadySubmitted, examId });
 
   // Auto-guardar respuestas en localStorage cada vez que cambian
@@ -731,7 +730,7 @@ const RealizarExamenContent = ({ examId }) => {
           });
           try {
             await SubmissionService.submitExam(examId, answersList, [], elapsedSoFar);
-          } catch {}
+          } catch (error) { void error; }
           clearProgress(examId);
           setAlreadySubmitted(true);
           setLoading(false);
@@ -776,7 +775,6 @@ const RealizarExamenContent = ({ examId }) => {
   }, []);
 
   const handleSelectTopic = (idx) => { setSelectedTopicIdx(idx); setView('questions'); };
-  const handleBackToTopics = () => setView('topics');
 
   const selectedGroup = groups[selectedTopicIdx];
 
