@@ -124,6 +124,7 @@ export const examToWizardState = (exam) => ({
     curso: exam.subjectId || '',
     turno: exam.shift || '',
     periodo: '2026 - 1°c',
+    durationMinutes: exam.durationMinutes ? String(exam.durationMinutes) : '',
   },
   temas: groupQuestionsIntoTemas(exam.questions || []),
   published: !!exam.published,
@@ -178,15 +179,20 @@ export const buildQuestionPayload = (tema, q, { includeAnswers = true } = {}) =>
   return appendAnswerFields(base, q);
 };
 
-export const buildExamPayload = (formData, temas, { includeAnswers = true } = {}) => ({
-  title: formData.nombre,
-  subjectId: formData.curso ? String(formData.curso) : '',
-  shift: formData.turno ? String(formData.turno) : '',
-  period: formData.periodo,
-  questions: temas.flatMap((tema) =>
-    tema.preguntas.map((q) => buildQuestionPayload(tema, q, { includeAnswers })),
-  ),
-});
+export const buildExamPayload = (formData, temas, { includeAnswers = true } = {}) => {
+  const payload = {
+    title: formData.nombre,
+    subjectId: formData.curso ? String(formData.curso) : '',
+    shift: formData.turno ? String(formData.turno) : '',
+    period: formData.periodo,
+    questions: temas.flatMap((tema) =>
+      tema.preguntas.map((q) => buildQuestionPayload(tema, q, { includeAnswers })),
+    ),
+  };
+  const dur = parseInt(formData.durationMinutes, 10);
+  if (!isNaN(dur) && dur > 0) payload.durationMinutes = dur;
+  return payload;
+};
 
 export const validateExamMetadata = (formData) => {
   if (!formData.nombre?.trim()) return 'El nombre del examen es obligatorio';

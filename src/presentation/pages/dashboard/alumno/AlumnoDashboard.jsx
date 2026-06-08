@@ -46,10 +46,13 @@ const AlumnoDashboard = () => {
     return <ExamenesDisponiblesContent />;
   };
 
+  const segments = location.pathname.split('/').filter(Boolean);
+  const isExamPage = segments.length >= 3 && segments[1] === 'examenes';
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
-      <AlumnoSidebar user={user} />
-      <Box sx={{ flex: 1, marginLeft: '240px', minHeight: '100vh' }}>
+      {!isExamPage && <AlumnoSidebar user={user} />}
+      <Box sx={{ flex: 1, marginLeft: isExamPage ? 0 : '240px', minHeight: '100vh' }}>
         {renderContent()}
       </Box>
     </Box>

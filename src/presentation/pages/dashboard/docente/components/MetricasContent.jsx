@@ -9,6 +9,7 @@ import {
   TableHead,
   TableRow,
   TablePagination,
+  TableSortLabel,
   Paper,
   Chip,
   Select,
@@ -18,10 +19,12 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { usePagination } from '../../../../hooks/usePagination';
+import { useSortableTable } from '../../../../hooks/useSortableTable';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import GradeIcon from '@mui/icons-material/Grade';
+import TimerIcon from '@mui/icons-material/Timer';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 
@@ -69,7 +72,7 @@ const StatCard = ({ icon: Icon, label, value, bgColor, iconColor }) => (
 
 const MetricasContent = () => {
   const [exams, setExams] = useState([]);
-  const [selectedExamId, setSelectedExamId] = useState('');
+  const [selectedExamId, setSelectedExamId] = useState('todos');
   const [selectedExam, setSelectedExam] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [loadingExams, setLoadingExams] = useState(true);
@@ -81,10 +84,6 @@ const MetricasContent = () => {
       try {
         const data = await ExamAPI.getExams();
         setExams(data);
-        if (data.length > 0) {
-          setSelectedExamId(data[0].id);
-          setSelectedExam(data[0]);
-        }
       } catch (e) {
         console.error('Error cargando exámenes:', e);
       } finally {
@@ -95,11 +94,20 @@ const MetricasContent = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedExamId) return;
+    if (selectedExamId !== 'todos' && !selectedExamId) return;
+    if (selectedExamId === 'todos' && exams.length === 0) return;
     const fetchSubmissions = async () => {
       setLoadingSubmissions(true);
       try {
-        const data = await SubmissionService.getSubmissions(selectedExamId);
+        let data;
+        if (selectedExamId === 'todos') {
+          const results = await Promise.all(
+            exams.map((e) => SubmissionService.getSubmissions(e.id).catch(() => []))
+          );
+          data = results.flat();
+        } else {
+          data = await SubmissionService.getSubmissions(selectedExamId);
+        }
         setSubmissions(data);
       } catch (e) {
         console.error('Error cargando entregas:', e);
@@ -109,11 +117,11 @@ const MetricasContent = () => {
       }
     };
     fetchSubmissions();
-  }, [selectedExamId]);
+  }, [selectedExamId, exams]);
 
   const handleExamChange = (examId) => {
     setSelectedExamId(examId);
-    setSelectedExam(exams.find((e) => e.id === examId) ?? null);
+    setSelectedExam(examId === 'todos' ? null : (exams.find((e) => e.id === examId) ?? null));
     setFilterAlumnos('todos');
   };
 
@@ -140,9 +148,29 @@ const MetricasContent = () => {
     return submissions;
   }, [submissions, filterAlumnos, passingGrade]);
 
-  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedSubs, setPage } = usePagination(filteredSubmissions);
+  const filteredWithGrade = useMemo(
+    () => filteredSubmissions.map((s) => ({ ...s, _grade: toGrade(s) })),
+    [filteredSubmissions]
+  );
+  const { sorted: sortedSubs, sortKey: subSortKey, sortDir: subSortDir, handleSort: handleSubSort } = useSortableTable(filteredWithGrade, 'submittedAt', 'desc');
+  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedSubs, setPage } = usePagination(sortedSubs);
 
   useEffect(() => { setPage(0); }, [selectedExamId, filterAlumnos, setPage]);
+
+  const formatDuration = (secs) => {
+    if (secs == null) return '—';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const timedSubmissions = submissions.filter((s) => s.timeTakenSeconds != null);
+  const avgTime = timedSubmissions.length > 0
+    ? Math.round(timedSubmissions.reduce((acc, s) => acc + s.timeTakenSeconds, 0) / timedSubmissions.length)
+    : null;
 
   const totalEntregas = submissions.length;
   const totalCalificados = gradedSubmissions.length;
@@ -195,7 +223,9 @@ const MetricasContent = () => {
             Métricas
           </Typography>
           <Typography variant="body2" sx={{ color: '#666' }}>
-            Análisis de desempeño por examen.
+            {selectedExamId === 'todos'
+              ? 'Métricas agregadas de todos los exámenes.'
+              : `Análisis de desempeño — ${selectedExam?.title ?? ''}`}
           </Typography>
         </Box>
       </Box>
@@ -211,6 +241,7 @@ const MetricasContent = () => {
               onChange={(e) => handleExamChange(e.target.value)}
               sx={{ bgcolor: '#fff', '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' } }}
             >
+              <MenuItem value="todos">Todos los exámenes</MenuItem>
               {exams.length === 0 && (
                 <MenuItem disabled value="">Sin exámenes</MenuItem>
               )}
@@ -258,11 +289,12 @@ const MetricasContent = () => {
           return (
           <>
             {/* Stats Cards */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 2, mb: 3 }}>
               <StatCard icon={GroupsIcon} label="Entregas" value={totalEntregas} bgColor="#e3f2fd" iconColor="#1976d2" />
               <StatCard icon={CheckCircleIcon} label="Calificados" value={totalCalificados} bgColor="#e8f5e9" iconColor="#2e7d32" />
               <StatCard icon={WarningIcon} label="Sin calificar" value={totalPendientes} bgColor="#fff3e0" iconColor="#f57c00" />
               <StatCard icon={GradeIcon} label="Promedio" value={promedio} bgColor="#e3f2fd" iconColor="#1976d2" />
+              <StatCard icon={TimerIcon} label="Tiempo promedio" value={formatDuration(avgTime)} bgColor="#f3e5f5" iconColor="#7b1fa2" />
             </Box>
 
             {/* Charts Row */}
@@ -353,12 +385,26 @@ const MetricasContent = () => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    {['Alumno', 'Legajo', 'Fecha de envío', 'Estado', 'Puntos', 'Nota (0–10)'].map((h) => (
+                    {[
+                      { label: 'Alumno', key: 'studentName' },
+                      { label: 'Legajo', key: 'studentLegajo' },
+                      { label: 'Fecha de envío', key: 'submittedAt' },
+                      { label: 'Estado', key: 'status' },
+                      { label: 'Tiempo', key: 'timeTakenSeconds' },
+                      { label: 'Puntos', key: 'totalScore' },
+                      { label: 'Nota (0–10)', key: '_grade' },
+                    ].map(({ label, key }) => (
                       <TableCell
-                        key={h}
+                        key={label}
                         sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid #e0e0e0', py: 2, whiteSpace: 'nowrap' }}
                       >
-                        {h}
+                        <TableSortLabel
+                          active={subSortKey === key}
+                          direction={subSortKey === key ? subSortDir : 'asc'}
+                          onClick={() => handleSubSort(key)}
+                        >
+                          {label}
+                        </TableSortLabel>
                       </TableCell>
                     ))}
                   </TableRow>
@@ -404,6 +450,9 @@ const MetricasContent = () => {
                               }}
                             />
                           </TableCell>
+                          <TableCell sx={{ color: '#666', borderBottom: '1px solid #f0f0f0', py: 2, fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                            {formatDuration(s.timeTakenSeconds)}
+                          </TableCell>
                           <TableCell sx={{ color: '#666', borderBottom: '1px solid #f0f0f0', py: 2 }}>
                             {isGraded && s.totalScore != null
                               ? `${s.totalScore} / ${s.totalPoints}`
@@ -423,7 +472,7 @@ const MetricasContent = () => {
             </TableContainer>
             <TablePagination
               component="div"
-              count={filteredSubmissions.length}
+              count={sortedSubs.length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}

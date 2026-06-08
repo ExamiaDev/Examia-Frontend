@@ -15,6 +15,7 @@ import {
   IconButton,
   Tooltip,
   Stack,
+  Collapse,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -22,6 +23,9 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SendIcon from '@mui/icons-material/Send';
 import PersonIcon from '@mui/icons-material/Person';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 import { AnswerSection, DecisionTreeComparison, MatrixComparison } from '../../../../components/correctionAnswerViews';
 import CorrectionQuestionFooter from './correctionQuestionFooter';
@@ -109,6 +113,16 @@ const formatDate = (iso) => {
   return new Date(iso).toLocaleString('es-AR', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
+};
+
+const formatDuration = (secs) => {
+  if (secs == null) return null;
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) return `${h}h ${m}min ${s}seg`;
+  if (m > 0) return `${m}min ${s}seg`;
+  return `${s}seg`;
 };
 
 // ─── Sub-componentes para mostrar respuestas ──────────────────────────────────
@@ -488,6 +502,123 @@ ReviewActions.propTypes = {
   onCancel: PropTypes.func.isRequired,
 };
 
+const VIOLATION_LABELS = {
+  tab_switch:      'Cambio de pestaña',
+  window_blur:     'Cambio de ventana / Alt+Tab',
+  page_reload:     'Recarga / cierre de página',
+  fullscreen_exit: 'Salida de pantalla completa',
+};
+
+const formatTs = (iso) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('es-AR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+};
+
+const ViolationsPanel = ({ violations, timeTakenSeconds }) => {
+  // Normalizar: tratar null/undefined como [] si el examen es nuevo (tiene timeTakenSeconds)
+  const normalizedViolations = Array.isArray(violations)
+    ? violations
+    : (timeTakenSeconds != null ? [] : null);
+
+  const hasData = normalizedViolations !== null;
+  const count = hasData ? normalizedViolations.length : 0;
+  const [open, setOpen] = useState(true);
+
+  // Sin datos = entrega anterior al sistema de vigilancia (no tiene timeTakenSeconds ni violations)
+  if (!hasData) {
+    return (
+      <Box sx={{ px: 4, pb: 2 }}>
+        <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, px: 3, py: 2, display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: '#fafafa' }}>
+          <VisibilityOffIcon sx={{ color: '#bbb', fontSize: 20 }} />
+          <Typography variant="body2" sx={{ color: '#999' }}>
+            Vigilancia: sin datos — esta entrega es anterior al sistema de monitoreo.
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // Sin infracciones
+  if (count === 0) {
+    return (
+      <Box sx={{ px: 4, pb: 2 }}>
+        <Paper elevation={0} sx={{ border: '1px solid #a5d6a7', borderRadius: 2, px: 3, py: 2, display: 'flex', alignItems: 'center', gap: 1.5, bgcolor: '#f1f8e9' }}>
+          <CheckCircleIcon sx={{ color: '#2e7d32', fontSize: 20 }} />
+          <Typography variant="body2" sx={{ color: '#2e7d32', fontWeight: 500 }}>
+            Sin infracciones de vigilancia — el alumno no salió del examen durante la realización.
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  // Con infracciones
+  const borderColor = count >= 3 ? '#c62828' : '#e65100';
+  const bgColor = count >= 3 ? '#ffebee' : '#fff3e0';
+
+  return (
+    <Box sx={{ px: 4, pb: 2 }}>
+      <Paper elevation={0} sx={{ border: `1px solid ${borderColor}`, borderRadius: 2, bgcolor: bgColor, overflow: 'hidden' }}>
+        <Box
+          onClick={() => setOpen((p) => !p)}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 3, py: 2, cursor: 'pointer', userSelect: 'none' }}
+        >
+          <WarningAmberIcon sx={{ color: borderColor, fontSize: 22 }} />
+          <Typography variant="body1" sx={{ fontWeight: 700, color: borderColor, flex: 1 }}>
+            {count} infracción{count !== 1 ? 'es' : ''} de vigilancia registrada{count !== 1 ? 's' : ''}
+          </Typography>
+          <Chip
+            label={count >= 3 ? 'Alta severidad' : 'Baja severidad'}
+            size="small"
+            sx={{ bgcolor: borderColor, color: '#fff', fontWeight: 600, fontSize: '0.72rem' }}
+          />
+          <ExpandMoreIcon
+            sx={{ color: borderColor, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }}
+          />
+        </Box>
+        <Collapse in={open}>
+          <Divider sx={{ borderColor }} />
+          <Box sx={{ px: 3, py: 2 }}>
+            <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1.5 }}>
+              Cada evento indica que el alumno cambió de pestaña o ventana durante el examen. Fecha y hora exacta de cada infracción:
+            </Typography>
+            <Stack spacing={1}>
+              {normalizedViolations.map((v, i) => (
+                <Box
+                  key={i}
+                  sx={{ display: 'flex', alignItems: 'center', gap: 2, bgcolor: '#fff', borderRadius: 1, px: 2, py: 1.25, border: `1px solid ${borderColor}44` }}
+                >
+                  <Typography variant="caption" sx={{ color: '#aaa', fontWeight: 700, minWidth: 24 }}>
+                    #{i + 1}
+                  </Typography>
+                  <VisibilityOffIcon sx={{ color: borderColor, fontSize: 18, flexShrink: 0 }} />
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#333', flex: 1 }}>
+                    {VIOLATION_LABELS[v.type] ?? v.type}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#555', fontFamily: 'monospace', flexShrink: 0, fontSize: '0.8rem' }}>
+                    {formatTs(v.timestamp)}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+        </Collapse>
+      </Paper>
+    </Box>
+  );
+};
+
+ViolationsPanel.propTypes = {
+  violations: PropTypes.arrayOf(PropTypes.shape({
+    type: PropTypes.string,
+    timestamp: PropTypes.string,
+  })),
+  timeTakenSeconds: PropTypes.number,
+};
+
 const CorreccionDetalleContent = ({ examId, submissionId }) => {
   const navigate = useNavigate();
   const [submission, setSubmission] = useState(null);
@@ -633,22 +764,34 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
               {submission.student?.email || ''}
             </Typography>
           </Box>
-          <Box sx={{ ml: 'auto', textAlign: 'right' }}>
-            <Typography variant="caption" sx={{ color: '#888' }}>Entregado</Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
-              {formatDate(submission.submittedAt)}
-            </Typography>
-            {readOnly && submission.gradedAt && (
-              <>
-                <Typography variant="caption" sx={{ color: '#888', display: 'block', mt: 0.5 }}>Corregido</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
-                  {formatDate(submission.gradedAt)}
+          <Box sx={{ ml: 'auto', textAlign: 'right', display: 'flex', gap: 3 }}>
+            {formatDuration(submission.timeTakenSeconds) && (
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography variant="caption" sx={{ color: '#888' }}>Tiempo empleado</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#001f56', fontFamily: 'monospace' }}>
+                  {formatDuration(submission.timeTakenSeconds)}
                 </Typography>
-              </>
+              </Box>
             )}
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="caption" sx={{ color: '#888' }}>Entregado</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
+                {formatDate(submission.submittedAt)}
+              </Typography>
+              {readOnly && submission.gradedAt && (
+                <>
+                  <Typography variant="caption" sx={{ color: '#888', display: 'block', mt: 0.5 }}>Corregido</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>
+                    {formatDate(submission.gradedAt)}
+                  </Typography>
+                </>
+              )}
+            </Box>
           </Box>
         </Paper>
       </Box>
+
+      <ViolationsPanel violations={submission.violations} timeTakenSeconds={submission.timeTakenSeconds} />
 
       <Box sx={{ px: 4, pb: 2, flex: 1 }}>
         <Typography variant="h6" sx={{ fontWeight: 600, color: '#333', mb: 2 }}>
