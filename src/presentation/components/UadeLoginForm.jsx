@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Link,
   Typography,
 } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
@@ -94,9 +95,20 @@ const UadeLoginForm = ({ onSuccess = () => {} }) => {
           sx={{ mb: 2 }}
         />
 
-        <Typography variant="caption" sx={labelSx}>
-          Contraseña UADE
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
+          <Typography variant="caption" sx={{ ...labelSx, mb: 0 }}>
+            Contraseña UADE
+          </Typography>
+          <Link
+            component="button"
+            type="button"
+            onClick={() => navigate('/forgot-password')}
+            underline="hover"
+            sx={{ fontSize: '0.82rem', color: '#2c5cc5', fontWeight: 500, cursor: 'pointer', background: 'none', border: 'none' }}
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </Box>
         <CustomTextField
           name="password"
           type="password"
