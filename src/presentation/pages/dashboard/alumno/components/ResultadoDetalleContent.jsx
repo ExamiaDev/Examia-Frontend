@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../../../hooks/useGoBack';
 import {
   Box,
   Typography,
@@ -232,7 +232,7 @@ QuestionCard.propTypes = {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 const ResultadoDetalleContent = ({ submissionId }) => {
-  const navigate = useNavigate();
+  const goBack = useGoBack('/alumno/resultados');
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -267,7 +267,7 @@ const ResultadoDetalleContent = ({ submissionId }) => {
     return (
       <Box sx={{ p: 4 }}>
         <Alert severity="error">{error}</Alert>
-        <Button sx={{ mt: 2 }} onClick={() => navigate('/alumno/resultados')}>Volver</Button>
+        <Button sx={{ mt: 2 }} onClick={goBack}>Volver</Button>
       </Box>
     );
   }
@@ -289,7 +289,7 @@ const ResultadoDetalleContent = ({ submissionId }) => {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 4, pb: 2 }}>
         <Tooltip title="Volver a mis resultados">
-          <IconButton onClick={() => navigate('/alumno/resultados')} sx={{ mt: 0.25, color: '#001f56' }}>
+          <IconButton onClick={goBack} sx={{ mt: 0.25, color: '#001f56' }}>
             <ArrowBackIcon />
           </IconButton>
         </Tooltip>
@@ -368,7 +368,7 @@ const ResultadoDetalleContent = ({ submissionId }) => {
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', pb: 4 }}>
           <Button
             variant="outlined"
-            onClick={() => navigate('/alumno/resultados')}
+            onClick={goBack}
             sx={{ textTransform: 'none', borderColor: '#001f56', color: '#001f56' }}
           >
             Volver a mis resultados

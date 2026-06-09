@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -11,6 +11,7 @@ import {
   TableHead,
   TableRow,
   TablePagination,
+  TableSortLabel,
   Paper,
   CircularProgress,
   Alert,
@@ -24,6 +25,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import { usePagination } from '../../../../hooks/usePagination';
+import { useSortableTable } from '../../../../hooks/useSortableTable';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -40,6 +42,9 @@ const STATUS_CONFIG = {
   BORRADOR:  { label: 'Borrador',  color: '#616161', bg: '#f5f5f5' },
 };
 
+// Orden semántico para que el sort por estado tenga sentido (no alfabético).
+const STATUS_ORDER = { ACTIVO: 0, PUBLICADO: 1, BORRADOR: 2 };
+
 function getExamStatus(exam) {
   if (!exam.published) return 'BORRADOR';
   const now = new Date();
@@ -49,6 +54,13 @@ function getExamStatus(exam) {
   return 'PUBLICADO';
 }
 
+const formatExamDate = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
 export default function ExamenesContent() {
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
@@ -56,7 +68,28 @@ export default function ExamenesContent() {
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [monitoreoExam, setMonitoreoExam] = useState(null);
-  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedExams } = usePagination(exams);
+
+  // Enriquecemos cada examen con campos derivados para que el sort funcione consistente:
+  // - statusKey: clave normalizada del estado (orden semántico, no alfabético).
+  // - subjectLabel: etiqueta de curso elegida con prioridad clara.
+  // - title:     fallback explícito si no viene title.
+  const enrichedExams = useMemo(
+    () => exams.map((e) => ({
+      ...e,
+      title: e.title || e.nombre || '(sin título)',
+      subjectLabel: e.subjectName || e.subjectId || e.curso || '',
+      statusKey: STATUS_ORDER[getExamStatus(e)] ?? 99,
+    })),
+    [exams],
+  );
+
+  const { sorted: sortedExams, sortKey, sortDir, handleSort } = useSortableTable(
+    enrichedExams,
+    'createdAt',
+    'desc',
+  );
+
+  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedExams } = usePagination(sortedExams);
   const [monitoreoSubs, setMonitoreoSubs] = useState([]);
   const [monitoreoLoading, setMonitoreoLoading] = useState(false);
 
@@ -235,46 +268,41 @@ export default function ExamenesContent() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell
-                  sx={{
-                    fontWeight: 600,
-                    color: '#666',
-                    fontSize: '0.875rem',
-                    borderBottom: '1px solid #e0e0e0',
-                  }}
-                >
-                  Examen
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontWeight: 600,
-                    color: '#666',
-                    fontSize: '0.875rem',
-                    borderBottom: '1px solid #e0e0e0',
-                  }}
-                >
-                  Curso
-                </TableCell>
-                <TableCell
-                  sx={{
-                    fontWeight: 600,
-                    color: '#666',
-                    fontSize: '0.875rem',
-                    borderBottom: '1px solid #e0e0e0',
-                  }}
-                >
-                  Estado
-                </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    borderBottom: '1px solid #e0e0e0',
-                  }}
-                />
+                {[
+                  { label: 'Examen',             key: 'title' },
+                  { label: 'Curso',              key: 'subjectLabel' },
+                  { label: 'Fecha de creación', key: 'createdAt' },
+                  { label: 'Estado',             key: 'statusKey' },
+                  { label: '',                   key: null, align: 'right' },
+                ].map(({ label, key, align }) => (
+                  <TableCell
+                    key={label || 'actions'}
+                    align={align}
+                    sx={{
+                      fontWeight: 600,
+                      color: '#666',
+                      fontSize: '0.875rem',
+                      borderBottom: '1px solid #e0e0e0',
+                    }}
+                  >
+                    {key ? (
+                      <TableSortLabel
+                        active={sortKey === key}
+                        direction={sortKey === key ? sortDir : 'asc'}
+                        onClick={() => handleSort(key)}
+                      >
+                        {label}
+                      </TableSortLabel>
+                    ) : label}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {pagedExams.map((exam) => (
+              {pagedExams.map((exam) => {
+                const statusName = getExamStatus(exam);
+                const { label: statusLabel, color: statusColor, bg: statusBg } = STATUS_CONFIG[statusName];
+                return (
                 <TableRow
                   key={exam.id}
                   sx={{
@@ -289,10 +317,13 @@ export default function ExamenesContent() {
                       fontSize: '0.875rem',
                     }}
                   >
-                    {exam.title || exam.nombre || '(sin título)'}
+                    {exam.title}
                   </TableCell>
                   <TableCell sx={{ color: '#666', fontSize: '0.875rem' }}>
-                    {exam.subjectName || exam.subjectId || exam.curso || '—'}
+                    {exam.subjectLabel || '—'}
+                  </TableCell>
+                  <TableCell sx={{ color: '#666', fontSize: '0.875rem' }}>
+                    {formatExamDate(exam.createdAt)}
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -307,14 +338,9 @@ export default function ExamenesContent() {
                           }}
                         />
                       </Tooltip>
-                      {(() => {
-                        const { label, color, bg } = STATUS_CONFIG[getExamStatus(exam)];
-                        return (
-                          <Box sx={{ display: 'inline-flex', alignItems: 'center', bgcolor: bg, color, borderRadius: 1.5, px: 1.5, py: 0.3 }}>
-                            <Typography sx={{ fontSize: '0.78rem', fontWeight: 700 }}>{label}</Typography>
-                          </Box>
-                        );
-                      })()}
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', bgcolor: statusBg, color: statusColor, borderRadius: 1.5, px: 1.5, py: 0.3 }}>
+                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 700 }}>{statusLabel}</Typography>
+                      </Box>
                     </Box>
                   </TableCell>
                   <TableCell align="right">
@@ -392,13 +418,14 @@ export default function ExamenesContent() {
                     </Box>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
           component="div"
-          count={exams.length}
+          count={sortedExams.length}
           page={page}
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}

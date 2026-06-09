@@ -26,7 +26,7 @@ Frontend profesional para Examia - Una plataforma integral de evaluación educat
 - **Login seguro**: Ingresa con email y contraseña proporcionadas por administradores
 - **Sesiones persistentes**: Mantén la sesión activa entre recargas
 - **Manejo robusto de errores**: Manejo de credenciales inválidas y validaciones
-- **Roles diferenciados**: Soporte para roles ALUMNO y PROFESOR
+- **Roles diferenciados**: Soporte para roles ALUMNO y DOCENTE con dashboards específicos para cada uno
 
 ### Interfaz de Usuario 
 - **Diseño responsivo**: Optimizado para desktop, tablet y móvil
@@ -37,8 +37,22 @@ Frontend profesional para Examia - Una plataforma integral de evaluación educat
 
 ### Navegación 
 - **Router protegido**: Redirección automática basada en autenticación
-- **Rutas lógicas**: Estructura clara de navegación (`/login`, `/dashboard`)
+- **Rutas lógicas**: Estructura clara de navegación. Rutas públicas (`/login`, `/uade-login`, `/register`, `/forgot-password`) y protegidas por rol (`/docente/*`, `/alumno/*`, `/dashboard`)
+- **Botón "atrás" inteligente**: hook `useGoBack` que retrocede en el historial real cuando lo hay y cae a una ruta de fallback ante deep links / refresh.
 - **Persistencia de sesión**: Sesión automática al cargar la página
+
+### Gestión de Exámenes (Docente)
+- **Listado con orden y paginación**: tabla de exámenes con orden por columna (Examen, Curso, **Fecha de creación**, Estado) y paginación reutilizable.
+- **Creación multi-paso**: wizard para diseñar examen, cargar respuestas modelo y generar acceso.
+- **Tipos de pregunta**: texto libre, múltiple choice, tabla y árbol de decisión.
+- **Estados de examen**: Borrador / Publicado / Activo, con toggle inline para publicar.
+- **Monitoreo de entregas**: vista en diálogo con métricas y listado de submissions.
+- **Corrección detallada**: panel de corrección por entrega con feedback al alumno y vuelta automática a la lista de entregas.
+
+### Realización de Examen (Alumno)
+- **Vigilancia activa (proctoring)**: detección de cambios de pestaña, blur de ventana, recargas y salidas de pantalla completa, con persistencia en `localStorage` para sobrevivir refreshes.
+- **Timer con estados**: muestra tiempo transcurrido o restante con cambios de color (warning / danger / expirado).
+- **Tablas ordenables**: hook `useSortableTable` reutilizado en exámenes disponibles, mis resultados, correcciones y métricas.
 
 ---
 
@@ -273,6 +287,28 @@ Página protegida que muestra información del usuario autenticado.
 
 ---
 
+## 🪝 Hooks Personalizados
+
+Se exponen en `src/presentation/hooks/`:
+
+### `usePagination(data, initialRowsPerPage = 10)`
+Encapsula el estado y handlers de paginación para tablas. Devuelve `{ page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated }`.
+
+### `useSortableTable(data, defaultKey = null, defaultDir = 'desc')`
+Provee orden multicolumna con detección automática de strings, fechas ISO y números. Devuelve `{ sorted, sortKey, sortDir, handleSort }`. Listo para combinar con `<TableSortLabel>`.
+
+### `useGoBack(fallbackPath)`
+Botón "atrás" inteligente:
+- Si hay historial real (`location.key !== 'default'`), usa `navigate(-1)` para volver al lugar exacto desde donde el usuario llegó (preservando filtros, paginación, scroll).
+- Si la pantalla se abrió por deep link / refresh, navega al `fallbackPath` con `replace: true`.
+
+Se usa por ejemplo en `CorreccionDetalleContent`, `CorreccionesContent` y `ResultadoDetalleContent`.
+
+### `useExamTimer` / `useExamProctoring`
+Soporte para el flujo de realización de examen (alumno): cronómetro con estados visuales y vigilancia activa con persistencia local.
+
+---
+
 ##  API Endpoints
 
 El frontend consume los siguientes endpoints del backend:
@@ -296,7 +332,7 @@ Response (200 OK):
   "email": "usuario@email.com",
   "nombre": "Juan",
   "apellido": "Pérez",
-  "role": "PROFESOR",
+  "role": "DOCENTE",
   "message": "Inicio de sesión exitoso"
 }
 ```
@@ -337,7 +373,7 @@ Request:
   "email": "juan@email.com",
   "recoveryEmail": "juan.recovery@gmail.com",
   "password": "miPassword123",
-  "role": "ALUMNO"  // o "PROFESOR"
+  "role": "ALUMNO"  // o "DOCENTE"
 }
 
 Response (201 Created):
@@ -582,18 +618,18 @@ Para preguntas o sugerencias:
 #### Cambios principales
 - **Login externo actualizado**: El formulario de login para usuarios externos ahora usa campo "Email" genérico en lugar de "Mail institucional UADE"
 - **Login UADE mejorado**: Agregado campo "Número de Legajo" para autenticación institucional
-- **Registro con selección de rol**: Los usuarios externos pueden elegir si son ALUMNO o PROFESOR al registrarse
+- **Registro con selección de rol**: Los usuarios externos pueden elegir si son ALUMNO o DOCENTE al registrarse
 - **Usuarios UADE precargados**: Los usuarios de UADE no necesitan registrarse, están precargados en el sistema
 
 #### Nuevos endpoints integrados
 - `POST /api/auth/login` - Login para usuarios externos
 - `POST /api/auth/login-uade` - Login para usuarios UADE (legajo, email, password)
-- `POST /api/auth/register` - Registro con campo `role` (ALUMNO/PROFESOR)
+- `POST /api/auth/register` - Registro con campo `role` (ALUMNO/DOCENTE)
 
 #### Archivos modificados
 - `AuthForm.jsx` - Campo email genérico para usuarios externos
 - `UadeLoginForm.jsx` - Agregado campo Número de Legajo
-- `RegisterForm.jsx` - Agregado selector de rol (Alumno/Profesor)
+- `RegisterForm.jsx` - Agregado selector de rol (Alumno/DOCENTE)
 - `AuthAPI.js` - Nueva función `loginUade`
 - `AuthService.js` - Nueva función `loginUade` y actualización de `register` con `role`
 - `UadeLoginPage.jsx` - Integración con callback onSuccess

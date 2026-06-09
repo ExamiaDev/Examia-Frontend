@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../../../hooks/useGoBack';
 import {
   Box,
   Typography,
@@ -620,6 +621,9 @@ ViolationsPanel.propTypes = {
 
 const CorreccionDetalleContent = ({ examId, submissionId }) => {
   const navigate = useNavigate();
+  // Fallback: si entran por deep link, los devolvemos a la lista de entregas del
+  // examen actual (parent natural de esta vista).
+  const goBack = useGoBack(`/docente/correcciones/${examId}`);
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -709,12 +713,14 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
 
       await SubmissionService.gradeSubmission(examId, submissionId, {
         questionGrades,
-        totalScore: parseFloat(totalScore.toFixed(2)),
+        totalScore: Number.parseFloat(totalScore.toFixed(2)),
         teacherFeedback,
       });
 
       setSnackbar({ open: true, message: 'Corrección guardada exitosamente.', severity: 'success' });
-      setTimeout(() => navigate('/docente/correcciones'), 1500);
+      // Tras guardar, volvemos a la lista de entregas del mismo examen para
+      // facilitar corregir la próxima.
+      setTimeout(() => navigate(`/docente/correcciones/${examId}`), 1500);
     } catch (err) {
       setSnackbar({ open: true, message: err.message || 'Error al guardar la corrección.', severity: 'error' });
     } finally {
@@ -723,7 +729,7 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
   };
 
   if (loading) return <LoadingView />;
-  if (error) return <ErrorView error={error} onBack={() => navigate('/docente/correcciones')} />;
+  if (error) return <ErrorView error={error} onBack={goBack} />;
   if (!submission) return null;
 
   const readOnly = submission.status === 'GRADED';
@@ -732,7 +738,7 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa', minHeight: '100vh' }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 4, pb: 2 }}>
         <Tooltip title="Volver a entregas">
-          <IconButton onClick={() => navigate('/docente/correcciones')} sx={{ mt: 0.25, color: '#001f56' }}>
+          <IconButton onClick={goBack} sx={{ mt: 0.25, color: '#001f56' }}>
             <ArrowBackIcon />
           </IconButton>
         </Tooltip>
@@ -828,7 +834,7 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
           hasValidScores={hasValidScores}
           saving={saving}
           handleSubmit={handleSubmit}
-          onCancel={() => navigate('/docente/correcciones')}
+          onCancel={goBack}
         />
       </Box>
 
