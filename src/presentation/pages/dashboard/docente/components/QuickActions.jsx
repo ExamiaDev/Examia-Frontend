@@ -1,38 +1,38 @@
-import { useNavigate } from 'react-router-dom';
-import { Box, Paper, Typography } from '@mui/material';
+import { useNavigate } from "react-router-dom";
+import { Box, Paper, Typography } from "@mui/material";
 import {
   Add as AddIcon,
   Assignment as AssignmentIcon,
   Send as SendIcon,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 
 const actions = [
   {
-    id: 'crear-examen',
-    path: '/docente/examenes/crear',
+    id: "crear-examen",
+    path: "/docente/examenes/crear",
     icon: AddIcon,
-    title: 'Crear examen',
-    description: 'Diseña un nuevo examen',
-    iconBg: '#eef2ff',
-    iconColor: '#001f56',
+    title: "Crear examen",
+    description: "Diseña un nuevo examen",
+    iconBg: "#eef2ff",
+    iconColor: "#001f56",
   },
   {
-    id: 'correcciones',
-    path: '/docente/correcciones',
+    id: "correcciones",
+    path: "/docente/correcciones",
     icon: AssignmentIcon,
-    title: 'Correcciones pendientes',
-    description: '12 entregas por revisar',
-    iconBg: '#eef2ff',
-    iconColor: '#001f56',
+    title: "Correcciones pendientes",
+    description: "Examenes por revisar",
+    iconBg: "#eef2ff",
+    iconColor: "#001f56",
   },
   {
-    id: 'publicar',
-    path: '/docente/examenes',
+    id: "publicar",
+    path: "/docente/examenes",
     icon: SendIcon,
-    title: 'Publicar notas',
-    description: 'Notifica a tus alumnos',
-    iconBg: '#eef2ff',
-    iconColor: '#001f56',
+    title: "Publicar notas",
+    description: "Notifica a tus alumnos",
+    iconBg: "#eef2ff",
+    iconColor: "#001f56",
   },
 ];
 
@@ -42,11 +42,11 @@ const QuickActions = () => {
   return (
     <Box
       sx={{
-        display: 'grid',
+        display: "grid",
         gridTemplateColumns: {
-          xs: '1fr',
-          sm: 'repeat(2, 1fr)',
-          md: 'repeat(3, 1fr)',
+          xs: "1fr",
+          sm: "repeat(2, 1fr)",
+          md: "repeat(3, 1fr)",
         },
         gap: 3,
         mb: 4,
@@ -60,7 +60,7 @@ const QuickActions = () => {
             elevation={0}
             onClick={() => navigate(action.path)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
+              if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 navigate(action.path);
               }
@@ -68,17 +68,17 @@ const QuickActions = () => {
             role="button"
             tabIndex={0}
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 2,
               p: 2.5,
-              borderRadius: '12px',
-              border: '1px solid #e5e7eb',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                borderColor: '#001f56',
-                boxShadow: '0 4px 12px rgba(0,31,86,0.08)',
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                borderColor: "#001f56",
+                boxShadow: "0 4px 12px rgba(0,31,86,0.08)",
               },
             }}
           >
@@ -86,11 +86,11 @@ const QuickActions = () => {
               sx={{
                 width: 48,
                 height: 48,
-                borderRadius: '12px',
+                borderRadius: "12px",
                 backgroundColor: action.iconBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 flexShrink: 0,
               }}
             >
@@ -100,8 +100,8 @@ const QuickActions = () => {
               <Typography
                 sx={{
                   fontWeight: 600,
-                  color: '#111827',
-                  fontSize: '0.95rem',
+                  color: "#111827",
+                  fontSize: "0.95rem",
                   lineHeight: 1.3,
                 }}
               >
@@ -109,8 +109,8 @@ const QuickActions = () => {
               </Typography>
               <Typography
                 sx={{
-                  color: '#6b7280',
-                  fontSize: '0.8rem',
+                  color: "#6b7280",
+                  fontSize: "0.8rem",
                   mt: 0.3,
                 }}
               >

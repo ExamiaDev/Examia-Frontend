@@ -10,6 +10,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Paper,
   CircularProgress,
   Alert,
@@ -22,6 +23,7 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material';
+import { usePagination } from '../../../../hooks/usePagination';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -54,6 +56,7 @@ export default function ExamenesContent() {
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [monitoreoExam, setMonitoreoExam] = useState(null);
+  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedExams } = usePagination(exams);
   const [monitoreoSubs, setMonitoreoSubs] = useState([]);
   const [monitoreoLoading, setMonitoreoLoading] = useState(false);
 
@@ -220,6 +223,7 @@ export default function ExamenesContent() {
         )}
 
         {!loading && !error && exams.length > 0 && (
+        <>
         <TableContainer
           component={Paper}
           elevation={0}
@@ -270,7 +274,7 @@ export default function ExamenesContent() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {exams.map((exam) => (
+              {pagedExams.map((exam) => (
                 <TableRow
                   key={exam.id}
                   sx={{
@@ -392,6 +396,19 @@ export default function ExamenesContent() {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination
+          component="div"
+          count={exams.length}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25]}
+          labelRowsPerPage="Filas:"
+          labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+          sx={{ borderTop: '1px solid #e0e0e0' }}
+        />
+        </>
         )}
       </Box>
 

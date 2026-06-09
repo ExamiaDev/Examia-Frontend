@@ -9,15 +9,23 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
+  TableSortLabel,
   Paper,
   Button,
   Chip,
   CircularProgress,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
+import { usePagination } from '../../../../hooks/usePagination';
+import { useSortableTable } from '../../../../hooks/useSortableTable';
 
 const ExamenesDisponiblesContent = () => {
   const navigate = useNavigate();
@@ -25,6 +33,16 @@ const ExamenesDisponiblesContent = () => {
   const [submittedExamIds, setSubmittedExamIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState('todos');
+
+  const subjects = [...new Set(exams.map((e) => e.subjectName || e.subjectId).filter(Boolean))];
+  const filteredExams = selectedSubject === 'todos'
+    ? exams
+    : exams.filter((e) => (e.subjectName || e.subjectId) === selectedSubject);
+  const pendingCount = filteredExams.filter((e) => !submittedExamIds.has(e.id)).length;
+
+  const { sorted: sortedExams, sortKey, sortDir, handleSort } = useSortableTable(filteredExams);
+  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedExams } = usePagination(sortedExams);
 
   useEffect(() => {
     let mounted = true;
@@ -50,6 +68,19 @@ const ExamenesDisponiblesContent = () => {
     return () => { mounted = false; };
   }, []);
 
+  const examPluralSuffix = filteredExams.length === 1 ? '' : 'es';
+  const availabilityPluralSuffix = filteredExams.length === 1 ? '' : 's';
+  const pendingPluralSuffix = pendingCount === 1 ? '' : 's';
+
+  let summaryText;
+  if (loading) {
+    summaryText = 'Cargando...';
+  } else if (filteredExams.length > 0) {
+    summaryText = `${pendingCount} pendiente${pendingPluralSuffix} de ${filteredExams.length} examen${examPluralSuffix} disponible${availabilityPluralSuffix}.`;
+  } else {
+    summaryText = 'No hay exámenes disponibles en este momento.';
+  }
+
   return (
     <>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', p: 4, pb: 2 }}>
@@ -58,13 +89,24 @@ const ExamenesDisponiblesContent = () => {
             Exámenes Disponibles
           </Typography>
           <Typography variant="body2" sx={{ color: '#666' }}>
-            {loading
-              ? 'Cargando...'
-              : exams.length > 0
-              ? `${exams.length - submittedExamIds.size} pendiente${exams.length - submittedExamIds.size !== 1 ? 's' : ''} de ${exams.length} examen${exams.length !== 1 ? 'es' : ''} disponible${exams.length !== 1 ? 's' : ''}.`
-              : 'No hay exámenes disponibles en este momento.'}
+            {summaryText}
           </Typography>
         </Box>
+        {!loading && subjects.length > 0 && (
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Materia</InputLabel>
+            <Select
+              value={selectedSubject}
+              label="Materia"
+              onChange={(e) => { setSelectedSubject(e.target.value); handleChangePage(null, 0); }}
+            >
+              <MenuItem value="todos">Todas las materias</MenuItem>
+              {subjects.map((s) => (
+                <MenuItem key={s} value={s}>{s}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       <Box sx={{ px: 4, pb: 4 }}>
@@ -76,7 +118,7 @@ const ExamenesDisponiblesContent = () => {
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-        {!loading && !error && exams.length === 0 && (
+        {!loading && !error && filteredExams.length === 0 && (
           <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0', p: 6, textAlign: 'center' }}>
             <AssignmentIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
             <Typography variant="h6" color="text.secondary">
@@ -85,23 +127,39 @@ const ExamenesDisponiblesContent = () => {
           </Paper>
         )}
 
-        {!loading && !error && exams.length > 0 && (
+        {!loading && !error && filteredExams.length > 0 && (
+          <>
           <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
             <Table>
               <TableHead>
                 <TableRow>
-                  {['Examen', 'Materia', 'Preguntas', 'Puntaje', 'Duración', ''].map((h) => (
+                  {[
+                    { label: 'Examen', key: 'title' },
+                    { label: 'Materia', key: 'subjectName' },
+                    { label: 'Preguntas', key: 'questionCount' },
+                    { label: 'Puntaje', key: 'totalPoints' },
+                    { label: 'Duración', key: 'durationMinutes' },
+                    { label: '', key: null },
+                  ].map(({ label, key }) => (
                     <TableCell
-                      key={h}
+                      key={label}
                       sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid #e0e0e0', py: 2 }}
                     >
-                      {h}
+                      {key ? (
+                        <TableSortLabel
+                          active={sortKey === key}
+                          direction={sortKey === key ? sortDir : 'asc'}
+                          onClick={() => handleSort(key)}
+                        >
+                          {label}
+                        </TableSortLabel>
+                      ) : label}
                     </TableCell>
                   ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {exams.map((exam) => {
+                {pagedExams.map((exam) => {
                   const done = submittedExamIds.has(exam.id);
                   return (
                     <TableRow key={exam.id} sx={{ '&:hover': { bgcolor: '#fafafa' }, opacity: done ? 0.75 : 1 }}>
@@ -147,6 +205,19 @@ const ExamenesDisponiblesContent = () => {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={sortedExams.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+            labelRowsPerPage="Filas:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            sx={{ borderTop: '1px solid #e0e0e0' }}
+          />
+          </>
         )}
       </Box>
     </>

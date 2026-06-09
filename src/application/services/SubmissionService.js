@@ -24,11 +24,13 @@ export class SubmissionService {
   }
 
   // answers: [{ questionId, selectedOptions?, textAnswer?, orderAnswer?, matchingAnswer? }]
-  static async submitExam(examId, answers) {
+  static async submitExam(examId, answers, violations = [], timeTakenSeconds = null) {
     if (!examId) throw new AppError('El ID del examen es obligatorio');
     if (!answers || answers.length === 0) throw new AppError('Debés responder al menos una pregunta');
     try {
-      return await ExamAPI.submitExam(examId, { answers });
+      const payload = { answers, violations };
+      if (timeTakenSeconds != null && timeTakenSeconds > 0) payload.timeTakenSeconds = timeTakenSeconds;
+      return await ExamAPI.submitExam(examId, payload);
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw new AppError('Error al entregar el examen');

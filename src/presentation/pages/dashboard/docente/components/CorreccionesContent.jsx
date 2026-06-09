@@ -10,6 +10,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
+  TableSortLabel,
   Paper,
   Button,
   Chip,
@@ -18,8 +20,11 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import { usePagination } from '../../../../hooks/usePagination';
+import { useSortableTable } from '../../../../hooks/useSortableTable';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ExamService from '../../../../../application/services/ExamService';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 
@@ -63,6 +68,8 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { sorted: sortedRows, sortKey: examSortKey, sortDir: examSortDir, handleSort: handleExamSort } = useSortableTable(rows, 'pendingCount', 'desc');
+  const { page: examsPage, rowsPerPage: examsRpp, handleChangePage: onExamsPage, handleChangeRowsPerPage: onExamsRpp, paginated: pagedRows } = usePagination(sortedRows);
 
   useEffect(() => {
     let mounted = true;
@@ -149,19 +156,35 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
         )}
 
         {!loading && !error && rows.length > 0 && (
+          <>
           <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
             <Table>
               <TableHead>
                 <TableRow>
-                  {['Examen', 'Materia', 'Pendientes', 'Calificados', 'Total', ''].map((h) => (
-                    <TableCell key={h} sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid #e0e0e0', py: 2 }}>
-                      {h}
+                  {[
+                    { label: 'Examen', key: 'title' },
+                    { label: 'Materia', key: 'subjectName' },
+                    { label: 'Pendientes', key: 'pendingCount' },
+                    { label: 'Calificados', key: 'gradedCount' },
+                    { label: 'Total', key: 'totalSubmissions' },
+                    { label: '', key: null },
+                  ].map(({ label, key }) => (
+                    <TableCell key={label} sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid #e0e0e0', py: 2 }}>
+                      {key ? (
+                        <TableSortLabel
+                          active={examSortKey === key}
+                          direction={examSortKey === key ? examSortDir : 'asc'}
+                          onClick={() => handleExamSort(key)}
+                        >
+                          {label}
+                        </TableSortLabel>
+                      ) : label}
                     </TableCell>
                   ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((exam) => (
+                {pagedRows.map((exam) => (
                   <TableRow
                     key={exam.id}
                     sx={{ cursor: 'pointer', '&:hover': { bgcolor: '#fafafa' } }}
@@ -209,6 +232,19 @@ const ExamsView = ({ onSelectExam, initialExamId }) => {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={sortedRows.length}
+            page={examsPage}
+            onPageChange={onExamsPage}
+            rowsPerPage={examsRpp}
+            onRowsPerPageChange={onExamsRpp}
+            rowsPerPageOptions={[5, 10, 25]}
+            labelRowsPerPage="Filas:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            sx={{ borderTop: '1px solid #e0e0e0' }}
+          />
+          </>
         )}
       </Box>
     </>
@@ -227,6 +263,8 @@ const SubmissionsView = ({ exam, onBack }) => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { sorted: sortedSubs, sortKey: subSortKey, sortDir: subSortDir, handleSort: handleSubSort } = useSortableTable(submissions, 'submittedAt', 'desc');
+  const { page: subsPage, rowsPerPage: subsRpp, handleChangePage: onSubsPage, handleChangeRowsPerPage: onSubsRpp, paginated: pagedSubs } = usePagination(sortedSubs);
 
   useEffect(() => {
     let mounted = true;
@@ -292,19 +330,35 @@ const SubmissionsView = ({ exam, onBack }) => {
         )}
 
         {!loading && !error && submissions.length > 0 && (
+          <>
           <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
             <Table>
               <TableHead>
                 <TableRow>
-                  {['Legajo', 'Alumno', 'Entregado', 'Estado', ''].map((h) => (
-                    <TableCell key={h} sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid #e0e0e0', py: 2 }}>
-                      {h}
+                  {[
+                    { label: 'Legajo', key: 'studentLegajo' },
+                    { label: 'Alumno', key: 'studentName' },
+                    { label: 'Entregado', key: 'submittedAt' },
+                    { label: 'Estado', key: 'status' },
+                    { label: 'Infracciones', key: 'violationCount' },
+                    { label: '', key: null },
+                  ].map(({ label, key }) => (
+                    <TableCell key={label} sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid #e0e0e0', py: 2 }}>
+                      {key ? (
+                        <TableSortLabel
+                          active={subSortKey === key}
+                          direction={subSortKey === key ? subSortDir : 'asc'}
+                          onClick={() => handleSubSort(key)}
+                        >
+                          {label}
+                        </TableSortLabel>
+                      ) : label}
                     </TableCell>
                   ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {submissions.map((sub) => (
+                {pagedSubs.map((sub) => (
                   <TableRow key={sub.id} sx={{ '&:hover': { bgcolor: '#fafafa' } }}>
                     <TableCell sx={{ color: '#666', borderBottom: '1px solid #f0f0f0', py: 2.5 }}>
                       {sub.studentLegajo || '—'}
@@ -317,6 +371,18 @@ const SubmissionsView = ({ exam, onBack }) => {
                     </TableCell>
                     <TableCell sx={{ borderBottom: '1px solid #f0f0f0', py: 2.5 }}>
                       <StatusChip status={sub.status} score={sub.totalScore} />
+                    </TableCell>
+                    <TableCell sx={{ borderBottom: '1px solid #f0f0f0', py: 2.5 }}>
+                      {sub.violationCount > 0 ? (
+                        <Chip
+                          icon={<WarningAmberIcon sx={{ fontSize: '0.9rem !important' }} />}
+                          label={sub.violationCount}
+                          size="small"
+                          sx={{ bgcolor: sub.violationCount >= 3 ? '#ffebee' : '#fff3e0', color: sub.violationCount >= 3 ? '#c62828' : '#e65100', fontWeight: 700 }}
+                        />
+                      ) : (
+                        <Typography variant="body2" sx={{ color: '#aaa' }}>—</Typography>
+                      )}
                     </TableCell>
                     <TableCell align="right" sx={{ borderBottom: '1px solid #f0f0f0', py: 2.5 }}>
                       <Button
@@ -343,6 +409,19 @@ const SubmissionsView = ({ exam, onBack }) => {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={submissions.length}
+            page={subsPage}
+            onPageChange={onSubsPage}
+            rowsPerPage={subsRpp}
+            onRowsPerPageChange={onSubsRpp}
+            rowsPerPageOptions={[5, 10, 25]}
+            labelRowsPerPage="Filas:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            sx={{ borderTop: '1px solid #e0e0e0' }}
+          />
+          </>
         )}
       </Box>
     </>
