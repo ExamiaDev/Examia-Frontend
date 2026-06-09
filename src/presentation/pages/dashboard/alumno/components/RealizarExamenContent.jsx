@@ -28,12 +28,20 @@ import {
   LinearProgress,
   Chip,
   Grid,
+  Badge,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import SendIcon from '@mui/icons-material/Send';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import TimerIcon from '@mui/icons-material/Timer';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import LockIcon from '@mui/icons-material/Lock';
+import { useExamProctoring, clearSavedViolations, enterFullscreen } from '../../../../hooks/useExamProctoring';
+import { useExamTimer } from '../../../../hooks/useExamTimer';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 import { createDefaultMatrix, isMatrixComplete } from '../../../../components/matrixTableUtils';
@@ -312,14 +320,38 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
 
 // ─── Vista: selección de temas ────────────────────────────────────────────────
 
-const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
+const getTimerPalette = ({ isDanger, isWarning }) => {
+  if (isDanger) return { bg: '#ffebee', border: '#ef9a9a', text: '#c62828' };
+  if (isWarning) return { bg: '#fff3e0', border: '#ffcc80', text: '#e65100' };
+  return { bg: '#e3f2fd', border: '#90caf9', text: '#1565c0' };
+};
+
+const TopicSelectionView = ({ exam, groups, answers, onSelectTopic, timer }) => {
   const totalQuestions = groups.reduce((s, g) => s + g.questions.length, 0);
   const totalAnswered = groups.reduce((s, g) => s + g.questions.filter((q) => isAnswered(q, answers[q.id])).length, 0);
+  const timerPalette = timer ? getTimerPalette(timer) : null;
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa', minHeight: '100vh' }}>
       <Box sx={{ p: 4, pb: 2 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#001f56', mb: 0.5 }}>{exam.title}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 0.5 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: '#001f56' }}>{exam.title}</Typography>
+          {timer && timerPalette && (
+            <Box sx={{
+              display: 'flex', alignItems: 'center', gap: 1, bgcolor: timerPalette.bg,
+              border: `1px solid ${timerPalette.border}`,
+              borderRadius: 2, px: 2, py: 1,
+            }}>
+              <TimerIcon sx={{ fontSize: 18, color: timerPalette.text }} />
+              <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.1rem', color: timerPalette.text, letterSpacing: 1 }}>
+                {timer.displayTime}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#888', ml: 0.5 }}>
+                {timer.hasLimit ? 'restante' : 'transcurrido'}
+              </Typography>
+            </Box>
+          )}
+        </Box>
         <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
           {exam.subjectName || exam.subjectId}
           {exam.durationMinutes ? ` · ${exam.durationMinutes} min` : ''}
@@ -391,7 +423,35 @@ const TopicSelectionView = ({ exam, groups, answers, onSelectTopic }) => {
 
 // ─── Vista: preguntas de un tema ──────────────────────────────────────────────
 
-const TopicQuestionsView = ({ group, topicIdx, answers, onAnswerChange, onBack, onFinish }) => {
+const TimerChip = ({ displayTime, hasLimit, isWarning, isDanger, expired }) => {
+  const color = '#fff';
+  let bg = 'rgba(255,255,255,0.15)';
+  if (expired) bg = '#b71c1c';
+  else if (isDanger) bg = '#e53935';
+  else if (isWarning) bg = '#fb8c00';
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: bg, borderRadius: 1.5, px: 1.5, py: 0.5, flexShrink: 0 }}>
+      <TimerIcon sx={{ fontSize: 16, color }} />
+      <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.95rem', color, letterSpacing: 1 }}>
+        {displayTime}
+      </Typography>
+      {!hasLimit && (
+        <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', ml: 0.25 }}>transcurrido</Typography>
+      )}
+    </Box>
+  );
+};
+
+TimerChip.propTypes = {
+  displayTime: PropTypes.string.isRequired,
+  hasLimit: PropTypes.bool.isRequired,
+  isWarning: PropTypes.bool,
+  isDanger: PropTypes.bool,
+  expired: PropTypes.bool,
+};
+
+const TopicQuestionsView = ({ group, topicIdx, answers, onAnswerChange, onFinish, violationCount, timer }) => {
   const color = group.color || '#001f56';
   const answered = group.questions.filter((q) => isAnswered(q, answers[q.id])).length;
 
@@ -400,11 +460,6 @@ const TopicQuestionsView = ({ group, topicIdx, answers, onAnswerChange, onBack, 
       {/* Header coloreado */}
       <Box sx={{ bgcolor: color, px: 4, py: 3, position: 'sticky', top: 0, zIndex: 10 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-          <Tooltip title="Cambiar tema">
-            <IconButton onClick={onBack} sx={{ color: 'rgba(255,255,255,0.8)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' } }}>
-              <ArrowBackIcon />
-            </IconButton>
-          </Tooltip>
           <Box sx={{ flex: 1 }}>
             <Typography sx={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Tema {topicIdx + 1}
@@ -416,6 +471,16 @@ const TopicQuestionsView = ({ group, topicIdx, answers, onAnswerChange, onBack, 
           <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem' }}>
             {answered}/{group.questions.length} respondidas
           </Typography>
+          {timer && <TimerChip {...timer} />}
+          {violationCount > 0 && (
+            <Tooltip title={`${violationCount} infracción${violationCount !== 1 ? 'es' : ''} registrada${violationCount !== 1 ? 's' : ''}`}>
+              <Badge badgeContent={violationCount} color="error">
+                <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 1, p: 0.75, display: 'flex', alignItems: 'center' }}>
+                  <WarningAmberIcon sx={{ color: '#fff', fontSize: 20 }} />
+                </Box>
+              </Badge>
+            </Tooltip>
+          )}
         </Box>
         <LinearProgress
           variant="determinate"
@@ -440,15 +505,7 @@ const TopicQuestionsView = ({ group, topicIdx, answers, onAnswerChange, onBack, 
           />
         ))}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pb: 4 }}>
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={onBack}
-            sx={{ textTransform: 'none', borderColor: '#001f56', color: '#001f56' }}
-          >
-            Cambiar tema
-          </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, pb: 4 }}>
           <Button
             variant="contained"
             endIcon={<SendIcon />}
@@ -505,6 +562,15 @@ QuestionCard.propTypes = {
   topicColor: PropTypes.string,
 };
 
+const TimerShape = PropTypes.shape({
+  displayTime: PropTypes.string,
+  hasLimit: PropTypes.bool,
+  isWarning: PropTypes.bool,
+  isDanger: PropTypes.bool,
+  expired: PropTypes.bool,
+  elapsed: PropTypes.number,
+});
+
 TopicSelectionView.propTypes = {
   exam: PropTypes.shape({
     title: PropTypes.string,
@@ -515,6 +581,7 @@ TopicSelectionView.propTypes = {
   groups: PropTypes.arrayOf(GroupShape).isRequired,
   answers: PropTypes.object.isRequired,
   onSelectTopic: PropTypes.func.isRequired,
+  timer: TimerShape,
 };
 
 TopicQuestionsView.propTypes = {
@@ -522,8 +589,47 @@ TopicQuestionsView.propTypes = {
   topicIdx: PropTypes.number.isRequired,
   answers: PropTypes.object.isRequired,
   onAnswerChange: PropTypes.func.isRequired,
-  onBack: PropTypes.func.isRequired,
   onFinish: PropTypes.func.isRequired,
+  violationCount: PropTypes.number,
+  timer: TimerShape,
+};
+
+// ─── localStorage helpers ─────────────────────────────────────────────────────
+
+const lsKey = (examId, suffix) => `examia_exam_${examId}_${suffix}`;
+
+const saveProgress = (examId, answers) => {
+  try { localStorage.setItem(lsKey(examId, 'answers'), JSON.stringify(answers)); } catch (error) { void error; }
+};
+
+const clearProgress = (examId) => {
+  try {
+    localStorage.removeItem(lsKey(examId, 'answers'));
+    localStorage.removeItem(lsKey(examId, 'started_at'));
+    clearSavedViolations(examId);
+  } catch { /* ignore storage errors */ }
+};
+
+const getStartedAt = (examId) => {
+  try {
+    const ts = localStorage.getItem(lsKey(examId, 'started_at'));
+    return ts ? Number.parseInt(ts, 10) : null;
+  } catch { return null; }
+};
+
+const setStartedAt = (examId) => {
+  try {
+    if (!localStorage.getItem(lsKey(examId, 'started_at'))) {
+      localStorage.setItem(lsKey(examId, 'started_at'), String(Date.now()));
+    }
+  } catch (error) { void error; }
+};
+
+const getSavedAnswers = (examId) => {
+  try {
+    const raw = localStorage.getItem(lsKey(examId, 'answers'));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
 };
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -538,12 +644,56 @@ const RealizarExamenContent = ({ examId }) => {
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [examStarted, setExamStarted] = useState(false);
+  const [recovered, setRecovered] = useState(false);
+  const [initialElapsed, setInitialElapsed] = useState(0);
+  // Pantalla de inicio: el alumno debe activar fullscreen antes de comenzar
+  const [readyToStart, setReadyToStart] = useState(false);
 
   // 'topics' | 'questions'
   const [view, setView] = useState('topics');
   const [selectedTopicIdx, setSelectedTopicIdx] = useState(0);
 
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+
+  const { violationCount, violationsPayload, warningOpen, lastViolation, dismissWarning,
+          fullscreenExitOpen, reEnterFullscreen } =
+    useExamProctoring({ enabled: examStarted && !loading && !alreadySubmitted, examId });
+
+  // Auto-guardar respuestas en localStorage cada vez que cambian
+  useEffect(() => {
+    if (!examStarted || loading) return;
+    saveProgress(examId, answers);
+  }, [answers, examStarted, loading, examId]);
+
+  const handleTimeUp = useCallback(() => {
+    setConfirmOpen(false);
+    const autoSubmit = async () => {
+      setSubmitting(true);
+      try {
+        const allQuestions = groups.flatMap((g) => g.questions);
+        const answersList = allQuestions.map((q) => buildSubmitPayload(q, answers[q.id]));
+        const elapsed = Math.floor((Date.now() - (getStartedAt(examId) ?? Date.now())) / 1000);
+        await SubmissionService.submitExam(examId, answersList, violationsPayload, elapsed);
+        clearProgress(examId);
+        setExamStarted(false);
+        setSnackbar({ open: true, message: 'Tiempo agotado — examen entregado automáticamente.', severity: 'warning' });
+        setTimeout(() => navigate('/alumno'), 2000);
+      } catch {
+        setSnackbar({ open: true, message: 'Tiempo agotado. No se pudo entregar automáticamente.', severity: 'error' });
+      } finally {
+        setSubmitting(false);
+      }
+    };
+    autoSubmit();
+  }, [groups, answers, examId, violationsPayload, navigate]);
+
+  const timer = useExamTimer({
+    durationMinutes: exam?.durationMinutes ?? null,
+    enabled: examStarted && !loading && !alreadySubmitted,
+    onTimeUp: handleTimeUp,
+    initialElapsed,
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -572,9 +722,51 @@ const RealizarExamenContent = ({ examId }) => {
         });
         setGroups([...seen.values()]);
 
+        // Calcular tiempo transcurrido desde el inicio real
+        const startedAt = getStartedAt(examId);
+        const elapsedSoFar = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
+
+        // Verificar si el tiempo ya venció antes de cargar
+        if (data.durationMinutes > 0 && elapsedSoFar >= data.durationMinutes * 60) {
+          // Tiempo vencido durante el reload — entregar automáticamente
+          const savedAns = getSavedAnswers(examId) ?? {};
+          const allQuestions = [...seen.values()].flatMap((g) => g.questions);
+          const answersList = allQuestions.map((q) => {
+            const saved = savedAns[q.id];
+            return buildSubmitPayload(q, saved ?? emptyAnswer(q));
+          });
+          try {
+            await SubmissionService.submitExam(examId, answersList, [], elapsedSoFar);
+          } catch { /* ignore submission errors during force-submit */ }
+          clearProgress(examId);
+          setAlreadySubmitted(true);
+          setLoading(false);
+          return;
+        }
+
+        setInitialElapsed(elapsedSoFar);
+
+        // Restaurar respuestas guardadas o inicializar vacías
+        const savedAnswers = getSavedAnswers(examId);
         const initial = {};
         qs.forEach((q) => { initial[q.id] = emptyAnswer(q); });
+
+        if (savedAnswers) {
+          qs.forEach((q) => { initial[q.id] = savedAnswers[q.id] ?? emptyAnswer(q); });
+          setRecovered(true);
+        }
+
         setAnswers(initial);
+
+        if (savedAnswers) {
+          // Ya estaba en progreso (reload): iniciar directo y pedir fullscreen
+          setStartedAt(examId);
+          setExamStarted(true);
+        } else {
+          // Primera vez: mostrar pantalla de inicio para pedir fullscreen
+          setStartedAt(examId);
+          setReadyToStart(true);
+        }
       } catch (err) {
         if (mounted) setError(err.message || 'Error al cargar el examen');
       } finally {
@@ -590,7 +782,6 @@ const RealizarExamenContent = ({ examId }) => {
   }, []);
 
   const handleSelectTopic = (idx) => { setSelectedTopicIdx(idx); setView('questions'); };
-  const handleBackToTopics = () => setView('topics');
 
   const selectedGroup = groups[selectedTopicIdx];
 
@@ -629,10 +820,15 @@ const RealizarExamenContent = ({ examId }) => {
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    timer.stop();
     try {
       const answersList = allQuestions.map((q) => buildSubmitPayload(q, answers[q.id]));
-      await SubmissionService.submitExam(examId, answersList);
+      const startedAt = getStartedAt(examId);
+      const elapsed = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : timer.elapsed;
+      await SubmissionService.submitExam(examId, answersList, violationsPayload, elapsed);
+      clearProgress(examId);
       setConfirmOpen(false);
+      setExamStarted(false);
       setSnackbar({ open: true, message: '¡Examen entregado exitosamente!', severity: 'success' });
       setTimeout(() => navigate('/alumno'), 1800);
     } catch (err) {
@@ -670,6 +866,44 @@ const RealizarExamenContent = ({ examId }) => {
     );
   }
 
+  // Pantalla de inicio — pedir fullscreen antes de comenzar
+  if (readyToStart && !examStarted && exam) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', bgcolor: '#001f56', gap: 3, p: 4 }}>
+        <LockIcon sx={{ fontSize: 64, color: 'rgba(255,255,255,0.9)' }} />
+        <Typography variant="h4" sx={{ fontWeight: 700, color: '#fff', textAlign: 'center' }}>
+          {exam.title}
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', textAlign: 'center', maxWidth: 480 }}>
+          Este examen se realiza en <strong>pantalla completa</strong>. No podrás cambiar de pestaña, minimizar la ventana ni salir de pantalla completa sin que quede registrado.
+        </Typography>
+        {exam.durationMinutes && (
+          <Chip
+            icon={<TimerIcon sx={{ color: '#fff !important' }} />}
+            label={`Tiempo máximo: ${exam.durationMinutes} minutos`}
+            sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 600, fontSize: '0.9rem', px: 1 }}
+          />
+        )}
+        <Button
+          variant="contained"
+          size="large"
+          startIcon={<FullscreenIcon />}
+          onClick={() => {
+            enterFullscreen()
+              .then(() => { setReadyToStart(false); setExamStarted(true); })
+              .catch(() => { setReadyToStart(false); setExamStarted(true); });
+          }}
+          sx={{ mt: 2, bgcolor: '#fff', color: '#001f56', fontWeight: 700, fontSize: '1rem', px: 5, py: 1.5, borderRadius: 2, textTransform: 'none', '&:hover': { bgcolor: '#e3f2fd' } }}
+        >
+          Comenzar examen en pantalla completa
+        </Button>
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mt: 1 }}>
+          Presioná Esc para salir de pantalla completa en cualquier momento — quedará registrado como infracción.
+        </Typography>
+      </Box>
+    );
+  }
+
   if (error) {
     return (
       <Box sx={{ p: 4 }}>
@@ -687,6 +921,7 @@ const RealizarExamenContent = ({ examId }) => {
           groups={groups}
           answers={answers}
           onSelectTopic={handleSelectTopic}
+          timer={timer}
         />
       )}
 
@@ -696,10 +931,68 @@ const RealizarExamenContent = ({ examId }) => {
           topicIdx={selectedTopicIdx}
           answers={answers}
           onAnswerChange={handleAnswerChange}
-          onBack={handleBackToTopics}
           onFinish={() => setConfirmOpen(true)}
+          violationCount={violationCount}
+          timer={timer}
         />
       )}
+
+      {/* Dialog bloqueante de salida de pantalla completa */}
+      <Dialog open={fullscreenExitOpen} onClose={() => {}} disableEscapeKeyDown maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: '#b71c1c', fontWeight: 700 }}>
+          <FullscreenExitIcon sx={{ fontSize: 28 }} />
+          ¡Saliste de pantalla completa!
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 1.5 }}>
+            Salir de pantalla completa durante el examen <strong>queda registrado como infracción</strong>.
+          </DialogContentText>
+          <DialogContentText sx={{ color: '#b71c1c', fontWeight: 600 }}>
+            Debés volver a pantalla completa para continuar.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={reEnterFullscreen}
+            variant="contained"
+            startIcon={<FullscreenIcon />}
+            sx={{ bgcolor: '#001f56', color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#003080' } }}
+          >
+            Volver a pantalla completa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de infracción de vigilancia */}
+      <Dialog open={warningOpen} onClose={dismissWarning} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: '#b71c1c', fontWeight: 700 }}>
+          <VisibilityOffIcon sx={{ fontSize: 28 }} />
+          ¡Infracción detectada!
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 1.5 }}>
+            Se detectó que abandonaste el examen:{' '}
+            <strong>{lastViolation?.label ?? 'salida de ventana'}</strong>.
+          </DialogContentText>
+          <DialogContentText sx={{ color: '#b71c1c', fontWeight: 600 }}>
+            Esta acción quedó registrada. Total de infracciones: {violationCount}.
+          </DialogContentText>
+          {violationCount >= 3 && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              Tenés {violationCount} infracciones registradas. El docente será notificado al recibir tu examen.
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={dismissWarning}
+            variant="contained"
+            sx={{ bgcolor: '#b71c1c', color: '#fff', textTransform: 'none', '&:hover': { bgcolor: '#7f0000' } }}
+          >
+            Entendido, volver al examen
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Diálogo de confirmación */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
@@ -709,6 +1002,11 @@ const RealizarExamenContent = ({ examId }) => {
             Respondiste {totalAnswered} de {totalQuestions} pregunta{totalQuestions === 1 ? '' : 's'} del examen.
             {totalAnswered < totalQuestions && ` Hay ${totalQuestions - totalAnswered} sin responder.`} ¿Querés entregar el examen?
           </DialogContentText>
+          {violationCount > 0 && (
+            <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mt: 2 }}>
+              Se registraron <strong>{violationCount} infracción{violationCount === 1 ? '' : 'es'}</strong> durante el examen (cambios de pestaña o ventana). Esto quedará en tu entrega.
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setConfirmOpen(false)} sx={{ textTransform: 'none' }}>Volver</Button>
@@ -731,6 +1029,18 @@ const RealizarExamenContent = ({ examId }) => {
       >
         <Alert onClose={() => setSnackbar((s) => ({ ...s, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Banner de progreso recuperado tras reload */}
+      <Snackbar
+        open={recovered}
+        autoHideDuration={5000}
+        onClose={() => setRecovered(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setRecovered(false)} severity="info" sx={{ width: '100%' }}>
+          Tus respuestas anteriores fueron recuperadas automáticamente.
         </Alert>
       </Snackbar>
     </>

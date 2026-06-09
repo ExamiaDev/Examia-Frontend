@@ -10,6 +10,7 @@ import {
   TableHead,
   TableRow,
   TablePagination,
+  TableSortLabel,
   Paper,
   Button,
   Chip,
@@ -19,6 +20,7 @@ import {
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 import { usePagination } from '../../../../hooks/usePagination';
+import { useSortableTable } from '../../../../hooks/useSortableTable';
 
 const formatDate = (iso) => {
   if (!iso) return '—';
@@ -76,7 +78,8 @@ const MisResultadosContent = () => {
 
   const gradedCount = submissions.filter((s) => s.status === 'GRADED').length;
   const pendingCount = submissions.length - gradedCount;
-  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedSubs } = usePagination(submissions);
+  const { sorted: sortedSubs, sortKey, sortDir, handleSort } = useSortableTable(submissions, 'submittedAt', 'desc');
+  const { page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, paginated: pagedSubs } = usePagination(sortedSubs);
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa', minHeight: '100vh' }}>
@@ -129,9 +132,22 @@ const MisResultadosContent = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  {['Examen', 'Entregado', 'Estado', ''].map((h) => (
-                    <TableCell key={h} sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid #e0e0e0', py: 2 }}>
-                      {h}
+                  {[
+                    { label: 'Examen', key: 'examTitle' },
+                    { label: 'Entregado', key: 'submittedAt' },
+                    { label: 'Estado', key: 'status' },
+                    { label: '', key: null },
+                  ].map(({ label, key }) => (
+                    <TableCell key={label} sx={{ fontWeight: 600, color: '#666', borderBottom: '1px solid #e0e0e0', py: 2 }}>
+                      {key ? (
+                        <TableSortLabel
+                          active={sortKey === key}
+                          direction={sortKey === key ? sortDir : 'asc'}
+                          onClick={() => handleSort(key)}
+                        >
+                          {label}
+                        </TableSortLabel>
+                      ) : label}
                     </TableCell>
                   ))}
                 </TableRow>

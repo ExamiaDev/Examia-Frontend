@@ -492,6 +492,7 @@ export default function CrearExamenContent({ initialExamId = null }) {
     curso: '',
     turno: '',
     periodo: '2026 - 1°c',
+    durationMinutes: '',
   });
   const [temas, setTemas] = useState([{ id: 1, nombre: 'Tema 1', color: TOPIC_COLORS[0], preguntas: [] }]);
   const [examId, setExamId] = useState(null);
@@ -689,7 +690,7 @@ export default function CrearExamenContent({ initialExamId = null }) {
       onCloseSnackbar={() => setSnackbar((s) => ({ ...s, open: false }))}
     >
       <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 3 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 3 }}>
           <Box>
             <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
               Nombre del examen
@@ -757,6 +758,27 @@ export default function CrearExamenContent({ initialExamId = null }) {
               disabled
               size="small"
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f5f5f5' } }}
+            />
+          </Box>
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500, color: '#333' }}>
+              Tiempo máximo (min)
+            </Typography>
+            <TextField
+              fullWidth
+              type="number"
+              placeholder="Sin límite"
+              value={formData.durationMinutes}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || (Number(val) > 0 && Number(val) <= 480)) {
+                  setFormData((prev) => ({ ...prev, durationMinutes: val }));
+                }
+              }}
+              size="small"
+              inputProps={{ min: 1, max: 480 }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              helperText="Opcional. Máx 480 min."
             />
           </Box>
         </Box>
