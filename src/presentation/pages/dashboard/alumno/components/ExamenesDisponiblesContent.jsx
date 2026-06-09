@@ -68,6 +68,19 @@ const ExamenesDisponiblesContent = () => {
     return () => { mounted = false; };
   }, []);
 
+  const examPluralSuffix = filteredExams.length === 1 ? '' : 'es';
+  const availabilityPluralSuffix = filteredExams.length === 1 ? '' : 's';
+  const pendingPluralSuffix = pendingCount === 1 ? '' : 's';
+
+  let summaryText;
+  if (loading) {
+    summaryText = 'Cargando...';
+  } else if (filteredExams.length > 0) {
+    summaryText = `${pendingCount} pendiente${pendingPluralSuffix} de ${filteredExams.length} examen${examPluralSuffix} disponible${availabilityPluralSuffix}.`;
+  } else {
+    summaryText = 'No hay exámenes disponibles en este momento.';
+  }
+
   return (
     <>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', p: 4, pb: 2 }}>
@@ -76,11 +89,7 @@ const ExamenesDisponiblesContent = () => {
             Exámenes Disponibles
           </Typography>
           <Typography variant="body2" sx={{ color: '#666' }}>
-            {loading
-              ? 'Cargando...'
-              : filteredExams.length > 0
-              ? `${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''} de ${filteredExams.length} examen${filteredExams.length !== 1 ? 'es' : ''} disponible${filteredExams.length !== 1 ? 's' : ''}.`
-              : 'No hay exámenes disponibles en este momento.'}
+            {summaryText}
           </Typography>
         </Box>
         {!loading && subjects.length > 0 && (

@@ -189,8 +189,8 @@ export const buildExamPayload = (formData, temas, { includeAnswers = true } = {}
       tema.preguntas.map((q) => buildQuestionPayload(tema, q, { includeAnswers })),
     ),
   };
-  const dur = parseInt(formData.durationMinutes, 10);
-  if (!isNaN(dur) && dur > 0) payload.durationMinutes = dur;
+  const dur = Number.parseInt(formData.durationMinutes, 10);
+  if (!Number.isNaN(dur) && dur > 0) payload.durationMinutes = dur;
   return payload;
 };
 

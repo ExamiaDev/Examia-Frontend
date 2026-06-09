@@ -519,9 +519,8 @@ const formatTs = (iso) => {
 
 const ViolationsPanel = ({ violations, timeTakenSeconds }) => {
   // Normalizar: tratar null/undefined como [] si el examen es nuevo (tiene timeTakenSeconds)
-  const normalizedViolations = Array.isArray(violations)
-    ? violations
-    : (timeTakenSeconds != null ? [] : null);
+  const fallbackViolations = timeTakenSeconds == null ? null : [];
+  const normalizedViolations = Array.isArray(violations) ? violations : fallbackViolations;
 
   const hasData = normalizedViolations !== null;
   const count = hasData ? normalizedViolations.length : 0;
@@ -568,7 +567,7 @@ const ViolationsPanel = ({ violations, timeTakenSeconds }) => {
         >
           <WarningAmberIcon sx={{ color: borderColor, fontSize: 22 }} />
           <Typography variant="body1" sx={{ fontWeight: 700, color: borderColor, flex: 1 }}>
-            {count} infracción{count !== 1 ? 'es' : ''} de vigilancia registrada{count !== 1 ? 's' : ''}
+            {count} infracción{count === 1 ? '' : 'es'} de vigilancia registrada{count === 1 ? '' : 's'}
           </Typography>
           <Chip
             label={count >= 3 ? 'Alta severidad' : 'Baja severidad'}
@@ -588,7 +587,7 @@ const ViolationsPanel = ({ violations, timeTakenSeconds }) => {
             <Stack spacing={1}>
               {normalizedViolations.map((v, i) => (
                 <Box
-                  key={i}
+                  key={`${v.timestamp ?? 'no-ts'}-${v.type ?? 'no-type'}-${i}`}
                   sx={{ display: 'flex', alignItems: 'center', gap: 2, bgcolor: '#fff', borderRadius: 1, px: 2, py: 1.25, border: `1px solid ${borderColor}44` }}
                 >
                   <Typography variant="caption" sx={{ color: '#aaa', fontWeight: 700, minWidth: 24 }}>

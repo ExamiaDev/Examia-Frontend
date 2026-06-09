@@ -22,7 +22,7 @@ export function useSortableTable(data, defaultKey = null, defaultDir = 'desc') {
       if (av == null) return 1;
       if (bv == null) return -1;
       // ISO date strings
-      if (typeof av === 'string' && av.includes('T') && !isNaN(Date.parse(av))) {
+      if (typeof av === 'string' && av.includes('T') && !Number.isNaN(Date.parse(av))) {
         av = Date.parse(av);
         bv = Date.parse(bv);
       }

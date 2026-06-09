@@ -16,11 +16,11 @@ const loadSavedViolations = (examId) => {
 };
 
 const persistViolations = (examId, violations) => {
-  try { localStorage.setItem(lsViolationsKey(examId), JSON.stringify(violations)); } catch (error) { void error; }
+  try { localStorage.setItem(lsViolationsKey(examId), JSON.stringify(violations)); } catch { /* ignore storage errors */ }
 };
 
 export const clearSavedViolations = (examId) => {
-  try { localStorage.removeItem(lsViolationsKey(examId)); } catch (error) { void error; }
+  try { localStorage.removeItem(lsViolationsKey(examId)); } catch { /* ignore storage errors */ }
 };
 
 const getIsFullscreen = () => !!(
@@ -64,10 +64,10 @@ export function useExamProctoring({ enabled = true, examId = null } = {}) {
   // Bloquear botón back del browser
   useEffect(() => {
     if (!enabled) return;
-    window.history.pushState(null, '', window.location.href);
-    const handlePopState = () => window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    globalThis.history.pushState(null, '', globalThis.location.href);
+    const handlePopState = () => globalThis.history.pushState(null, '', globalThis.location.href);
+    globalThis.addEventListener('popstate', handlePopState);
+    return () => globalThis.removeEventListener('popstate', handlePopState);
   }, [enabled]);
 
   // Detectar salida de pantalla completa

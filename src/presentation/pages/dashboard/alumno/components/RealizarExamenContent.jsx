@@ -320,23 +320,30 @@ const QuestionCard = ({ question, index, answer, onChange, topicColor }) => {
 
 // ─── Vista: selección de temas ────────────────────────────────────────────────
 
+const getTimerPalette = ({ isDanger, isWarning }) => {
+  if (isDanger) return { bg: '#ffebee', border: '#ef9a9a', text: '#c62828' };
+  if (isWarning) return { bg: '#fff3e0', border: '#ffcc80', text: '#e65100' };
+  return { bg: '#e3f2fd', border: '#90caf9', text: '#1565c0' };
+};
+
 const TopicSelectionView = ({ exam, groups, answers, onSelectTopic, timer }) => {
   const totalQuestions = groups.reduce((s, g) => s + g.questions.length, 0);
   const totalAnswered = groups.reduce((s, g) => s + g.questions.filter((q) => isAnswered(q, answers[q.id])).length, 0);
+  const timerPalette = timer ? getTimerPalette(timer) : null;
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa', minHeight: '100vh' }}>
       <Box sx={{ p: 4, pb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 0.5 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, color: '#001f56' }}>{exam.title}</Typography>
-          {timer && (
+          {timer && timerPalette && (
             <Box sx={{
-              display: 'flex', alignItems: 'center', gap: 1, bgcolor: timer.isDanger ? '#ffebee' : timer.isWarning ? '#fff3e0' : '#e3f2fd',
-              border: `1px solid ${timer.isDanger ? '#ef9a9a' : timer.isWarning ? '#ffcc80' : '#90caf9'}`,
+              display: 'flex', alignItems: 'center', gap: 1, bgcolor: timerPalette.bg,
+              border: `1px solid ${timerPalette.border}`,
               borderRadius: 2, px: 2, py: 1,
             }}>
-              <TimerIcon sx={{ fontSize: 18, color: timer.isDanger ? '#c62828' : timer.isWarning ? '#e65100' : '#1565c0' }} />
-              <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.1rem', color: timer.isDanger ? '#c62828' : timer.isWarning ? '#e65100' : '#1565c0', letterSpacing: 1 }}>
+              <TimerIcon sx={{ fontSize: 18, color: timerPalette.text }} />
+              <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.1rem', color: timerPalette.text, letterSpacing: 1 }}>
                 {timer.displayTime}
               </Typography>
               <Typography variant="caption" sx={{ color: '#888', ml: 0.5 }}>
@@ -417,11 +424,11 @@ const TopicSelectionView = ({ exam, groups, answers, onSelectTopic, timer }) => 
 // ─── Vista: preguntas de un tema ──────────────────────────────────────────────
 
 const TimerChip = ({ displayTime, hasLimit, isWarning, isDanger, expired }) => {
+  const color = '#fff';
   let bg = 'rgba(255,255,255,0.15)';
-  let color = '#fff';
-  if (expired) { bg = '#b71c1c'; color = '#fff'; }
-  else if (isDanger) { bg = '#e53935'; color = '#fff'; }
-  else if (isWarning) { bg = '#fb8c00'; color = '#fff'; }
+  if (expired) bg = '#b71c1c';
+  else if (isDanger) bg = '#e53935';
+  else if (isWarning) bg = '#fb8c00';
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: bg, borderRadius: 1.5, px: 1.5, py: 0.5, flexShrink: 0 }}>
@@ -600,13 +607,13 @@ const clearProgress = (examId) => {
     localStorage.removeItem(lsKey(examId, 'answers'));
     localStorage.removeItem(lsKey(examId, 'started_at'));
     clearSavedViolations(examId);
-  } catch (error) { void error; }
+  } catch { /* ignore storage errors */ }
 };
 
 const getStartedAt = (examId) => {
   try {
     const ts = localStorage.getItem(lsKey(examId, 'started_at'));
-    return ts ? parseInt(ts, 10) : null;
+    return ts ? Number.parseInt(ts, 10) : null;
   } catch { return null; }
 };
 
@@ -730,7 +737,7 @@ const RealizarExamenContent = ({ examId }) => {
           });
           try {
             await SubmissionService.submitExam(examId, answersList, [], elapsedSoFar);
-          } catch (error) { void error; }
+          } catch { /* ignore submission errors during force-submit */ }
           clearProgress(examId);
           setAlreadySubmitted(true);
           setLoading(false);
@@ -997,7 +1004,7 @@ const RealizarExamenContent = ({ examId }) => {
           </DialogContentText>
           {violationCount > 0 && (
             <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mt: 2 }}>
-              Se registraron <strong>{violationCount} infracción{violationCount !== 1 ? 'es' : ''}</strong> durante el examen (cambios de pestaña o ventana). Esto quedará en tu entrega.
+              Se registraron <strong>{violationCount} infracción{violationCount === 1 ? '' : 'es'}</strong> durante el examen (cambios de pestaña o ventana). Esto quedará en tu entrega.
             </Alert>
           )}
         </DialogContent>
