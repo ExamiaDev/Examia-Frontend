@@ -122,30 +122,23 @@ const hs = (color, extra = {}) => ({
   borderRadius: '50%', ...extra,
 });
 
-// ─── Custom node: Decisión (rombo) ────────────────────────────────────────────
+// ─── Custom node: Nodo (óvalo / elipse) ───────────────────────────────────────
 
 const DecisionNode = ({ data, id, selected }) => {
   const { updateNodeData } = useReactFlow();
-  // Container 120×120 so the rotated 80×80 square (tip-to-tip ≈113px) fits fully.
-  // Diamond center (60,60), corner distance ≈56.6px → corners at (60,3.4) etc.
-  // Handle radius=7px → offset = 3.4 - 7 ≈ -4 to center handle on each tip.
   return (
-    <div style={{ width: 120, height: 120, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{
-        position: 'absolute', width: 80, height: 80, top: 20, left: 20,
-        background: '#e3f2fd',
-        border: `2px solid ${selected ? '#001f56' : '#1976d2'}`,
-        transform: 'rotate(45deg)',
-        borderRadius: 3, boxSizing: 'border-box',
-        boxShadow: selected ? '0 0 0 2px #001f56' : 'none',
-      }} />
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', textAlign: 'center' }}>
-        <EditableLabel id={id} label={data.label} updateNodeData={updateNodeData} color="#1976d2" />
-      </div>
-      <Handle type="source" position={Position.Top}    style={hs('#1976d2', { top: -4,    left: '50%', transform: 'translateX(-50%)' })} />
-      <Handle type="source" position={Position.Bottom} id="b" style={hs('#1976d2', { bottom: -4, left: '50%', transform: 'translateX(-50%)' })} />
-      <Handle type="source" position={Position.Left}   id="l" style={hs('#1976d2', { left: -4,   top: '50%', transform: 'translateY(-50%)' })} />
-      <Handle type="source" position={Position.Right}  id="r" style={hs('#1976d2', { right: -4,  top: '50%', transform: 'translateY(-50%)' })} />
+    <div style={{
+      width: 140, height: 70,
+      background: '#e3f2fd', border: `2px solid ${selected ? '#001f56' : '#1976d2'}`,
+      borderRadius: '50%', boxSizing: 'border-box',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: selected ? '0 0 0 2px #001f56' : 'none',
+    }}>
+      <EditableLabel id={id} label={data.label} updateNodeData={updateNodeData} color="#1976d2" />
+      <Handle type="source" position={Position.Top}    style={hs('#1976d2')} />
+      <Handle type="source" position={Position.Bottom} id="b" style={hs('#1976d2')} />
+      <Handle type="source" position={Position.Left}   id="l" style={hs('#1976d2')} />
+      <Handle type="source" position={Position.Right}  id="r" style={hs('#1976d2')} />
     </div>
   );
 };
@@ -183,7 +176,7 @@ ProcessNode.propTypes = {
   selected: PropTypes.bool,
 };
 
-// ─── Custom node: Terminal (elipse) ───────────────────────────────────────────
+// ─── Custom node: Hoja (rectángulo redondeado) ────────────────────────────────
 
 const TerminalNode = ({ data, id, selected }) => {
   const { updateNodeData } = useReactFlow();
@@ -333,15 +326,11 @@ const EditorInner = ({ initialData, onChange, readOnly }) => {
 
           <Button size="small" variant="outlined" onClick={() => addNode('decision')}
             sx={{ textTransform: 'none', fontSize: 11, py: 0.2, px: 1, minWidth: 0, borderColor: '#1976d2', color: '#1976d2', '&:hover': { borderColor: '#1565c0', bgcolor: '#e3f2fd' } }}>
-            + Decisión ◇
-          </Button>
-          <Button size="small" variant="outlined" onClick={() => addNode('process')}
-            sx={{ textTransform: 'none', fontSize: 11, py: 0.2, px: 1, minWidth: 0, borderColor: '#2e7d32', color: '#2e7d32', '&:hover': { borderColor: '#1b5e20', bgcolor: '#e8f5e9' } }}>
-            + Proceso □
+            + Nodo ⬭
           </Button>
           <Button size="small" variant="outlined" onClick={() => addNode('terminal')}
             sx={{ textTransform: 'none', fontSize: 11, py: 0.2, px: 1, minWidth: 0, borderColor: '#616161', color: '#616161', '&:hover': { borderColor: '#424242', bgcolor: '#f5f5f5' } }}>
-            + Terminal ○
+            + Hoja ○
           </Button>
 
           <Box sx={{ width: '1px', height: 18, bgcolor: '#e0e0e0', mx: 0.25 }} />

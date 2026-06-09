@@ -355,6 +355,41 @@ ErrorView.propTypes = {
   onBack: PropTypes.func.isRequired,
 };
 
+const isAnswerProvided = (answer) => {
+  if (!answer) return false;
+  if (Array.isArray(answer.selectedOptions) && answer.selectedOptions.length > 0) return true;
+  if (typeof answer.textAnswer === 'string' && answer.textAnswer.trim().length > 0) return true;
+  if (Array.isArray(answer.orderAnswer) && answer.orderAnswer.length > 0) return true;
+  if (answer.matchingAnswer && Object.keys(answer.matchingAnswer).length > 0) return true;
+  const studentTree = answer.studentDecisionTree;
+  if (studentTree) {
+    if (Array.isArray(studentTree.nodes) && studentTree.nodes.length > 0) return true;
+    if (studentTree.nodes && typeof studentTree.nodes === 'object' && Object.keys(studentTree.nodes).length > 0) return true;
+  }
+  if (Array.isArray(answer.studentMatrixRows) && answer.studentMatrixRows.some((row) => Array.isArray(row) && row.some((cell) => (cell ?? '').toString().trim().length > 0))) return true;
+  if (Array.isArray(answer.studentMatrixColumnHeaders) && answer.studentMatrixColumnHeaders.some((h) => (h ?? '').toString().trim().length > 0)) return true;
+  return false;
+};
+
+/**
+ * El alumno responde UN solo tema por examen. Cuando el backend devuelve respuestas
+ * de todos los temas del examen, filtramos para mostrar únicamente el(los) tema(s)
+ * donde el alumno efectivamente respondió alguna pregunta. Si no se puede inferir
+ * (todas vacías), caemos al primer tema para no esconder todo.
+ */
+const filterAnswersToStudentTopic = (answers = []) => {
+  if (answers.length === 0) return answers;
+  const answeredTopics = new Set();
+  answers.forEach((a) => {
+    if (isAnswerProvided(a)) answeredTopics.add(a.topic || 'Sin tema');
+  });
+  if (answeredTopics.size === 0) {
+    const firstTopic = answers[0].topic || 'Sin tema';
+    return answers.filter((a) => (a.topic || 'Sin tema') === firstTopic);
+  }
+  return answers.filter((a) => answeredTopics.has(a.topic || 'Sin tema'));
+};
+
 const groupAnswersByTopic = (answers) => {
   const topics = [];
   const seenTopics = new Set();
@@ -643,13 +678,16 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
         const data = await SubmissionService.getSubmission(examId, submissionId);
         if (!mounted) return;
 
+        const normalizedAnswers = (data.answers || []).map(normalizeCorrectionAnswer);
+        const studentAnswers = filterAnswersToStudentTopic(normalizedAnswers);
+
         setSubmission({
           ...data,
-          answers: (data.answers || []).map(normalizeCorrectionAnswer),
+          answers: studentAnswers,
         });
         const initialScores = {};
 
-        (data.answers || []).map(normalizeCorrectionAnswer).forEach((ans) => {
+        studentAnswers.forEach((ans) => {
           const auto = autoScore(ans);
           initialScores[ans.questionId] = {
             score: auto === null ? '' : String(auto),
@@ -733,6 +771,10 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
   if (!submission) return null;
 
   const readOnly = submission.status === 'GRADED';
+  // El alumno responde un solo tema → los puntos máximos reales son los de las
+  // preguntas filtradas, no los del examen completo (que sumaría ambos temas).
+  const displayTotalPoints = (submission.answers || []).reduce((sum, a) => sum + (a.points || 0), 0)
+    || submission.totalPoints;
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa', minHeight: '100vh' }}>
@@ -753,7 +795,7 @@ const CorreccionDetalleContent = ({ examId, submissionId }) => {
           <Typography variant="h5" sx={{ fontWeight: 700, color: '#001f56' }}>
             {readOnly ? (submission.totalScore ?? '—') : (allScored ? totalScore.toFixed(1) : '—')}
           </Typography>
-          <Typography variant="caption" sx={{ color: '#888' }}>/ {submission.totalPoints}</Typography>
+          <Typography variant="caption" sx={{ color: '#888' }}>/ {displayTotalPoints}</Typography>
         </Paper>
       </Box>
 

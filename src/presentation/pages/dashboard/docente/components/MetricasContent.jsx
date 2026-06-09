@@ -25,10 +25,19 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import GradeIcon from '@mui/icons-material/Grade';
 import TimerIcon from '@mui/icons-material/Timer';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ExamAPI from '../../../../../infrastructure/api/ExamAPI';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 
 const SHIFT_LABEL = { '1': 'Mañana', '2': 'Tarde', '3': 'Noche' };
+
+// Cantidad de infracciones de vigilancia (cambio de pestaña, alt-tab, etc.).
+// Soporta tanto un array completo (`violations`) como un contador del backend.
+const getViolationsCount = (s) => {
+  if (Array.isArray(s?.violations)) return s.violations.length;
+  if (typeof s?.violationsCount === 'number') return s.violationsCount;
+  return 0;
+};
 
 const StatCard = ({ icon: Icon, label, value, bgColor, iconColor }) => (
   <Paper
@@ -149,7 +158,7 @@ const MetricasContent = () => {
   }, [submissions, filterAlumnos, passingGrade]);
 
   const filteredWithGrade = useMemo(
-    () => filteredSubmissions.map((s) => ({ ...s, _grade: toGrade(s) })),
+    () => filteredSubmissions.map((s) => ({ ...s, _grade: toGrade(s), _violations: getViolationsCount(s) })),
     [filteredSubmissions]
   );
   const { sorted: sortedSubs, sortKey: subSortKey, sortDir: subSortDir, handleSort: handleSubSort } = useSortableTable(filteredWithGrade, 'submittedAt', 'desc');
@@ -195,6 +204,11 @@ const MetricasContent = () => {
 
   const desaprobados = gradedSubmissions.filter((s) => toGrade(s) < passingGrade);
   const notaMuyBaja = gradedSubmissions.filter((s) => toGrade(s) < 4);
+
+  // Vigilancia: contamos infracciones (cambio de pestaña, alt-tab, etc.)
+  const submissionsConAlertas = submissions.filter((s) => getViolationsCount(s) > 0);
+  const totalInfracciones = submissions.reduce((acc, s) => acc + getViolationsCount(s), 0);
+  const alumnosAltaSeveridad = submissionsConAlertas.filter((s) => getViolationsCount(s) >= 3);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -289,12 +303,19 @@ const MetricasContent = () => {
           return (
           <>
             {/* Stats Cards */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 2, mb: 3 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 2, mb: 3 }}>
               <StatCard icon={GroupsIcon} label="Entregas" value={totalEntregas} bgColor="#e3f2fd" iconColor="#1976d2" />
               <StatCard icon={CheckCircleIcon} label="Calificados" value={totalCalificados} bgColor="#e8f5e9" iconColor="#2e7d32" />
               <StatCard icon={WarningIcon} label="Sin calificar" value={totalPendientes} bgColor="#fff3e0" iconColor="#f57c00" />
               <StatCard icon={GradeIcon} label="Promedio" value={promedio} bgColor="#e3f2fd" iconColor="#1976d2" />
               <StatCard icon={TimerIcon} label="Tiempo promedio" value={formatDuration(avgTime)} bgColor="#f3e5f5" iconColor="#7b1fa2" />
+              <StatCard
+                icon={VisibilityOffIcon}
+                label="Alertas de vigilancia"
+                value={totalInfracciones}
+                bgColor={totalInfracciones > 0 ? '#ffebee' : '#f5f5f5'}
+                iconColor={totalInfracciones > 0 ? '#c62828' : '#9e9e9e'}
+              />
             </Box>
 
             {/* Charts Row */}
@@ -371,7 +392,16 @@ const MetricasContent = () => {
                       </Typography>
                     </Box>
                   )}
-                  {totalEntregas > 0 && totalPendientes === 0 && desaprobados.length === 0 && notaMuyBaja.length === 0 && (
+                  {submissionsConAlertas.length > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: alumnosAltaSeveridad.length > 0 ? '#c62828' : '#e65100', flexShrink: 0 }} />
+                      <Typography variant="body2" sx={{ color: '#333' }}>
+                        {submissionsConAlertas.length} alumno{submissionsConAlertas.length > 1 ? 's' : ''} con alertas de vigilancia
+                        {alumnosAltaSeveridad.length > 0 && ` (${alumnosAltaSeveridad.length} alta severidad)`}
+                      </Typography>
+                    </Box>
+                  )}
+                  {totalEntregas > 0 && totalPendientes === 0 && desaprobados.length === 0 && notaMuyBaja.length === 0 && submissionsConAlertas.length === 0 && (
                     <Typography variant="body2" sx={{ color: '#4caf50' }}>
                       ✓ Sin indicadores de alerta
                     </Typography>
@@ -391,6 +421,7 @@ const MetricasContent = () => {
                       { label: 'Fecha de envío', key: 'submittedAt' },
                       { label: 'Estado', key: 'status' },
                       { label: 'Tiempo', key: 'timeTakenSeconds' },
+                      { label: 'Alertas', key: '_violations' },
                       { label: 'Puntos', key: 'totalScore' },
                       { label: 'Nota (0–10)', key: '_grade' },
                     ].map(({ label, key }) => (
@@ -412,7 +443,7 @@ const MetricasContent = () => {
                 <TableBody>
                   {filteredSubmissions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} sx={{ textAlign: 'center', py: 5, color: '#999' }}>
+                      <TableCell colSpan={8} sx={{ textAlign: 'center', py: 5, color: '#999' }}>
                         {submissions.length === 0
                           ? 'No hay entregas para este examen'
                           : 'No hay alumnos que coincidan con el filtro'}
@@ -452,6 +483,35 @@ const MetricasContent = () => {
                           </TableCell>
                           <TableCell sx={{ color: '#666', borderBottom: '1px solid #f0f0f0', py: 2, fontFamily: 'monospace', fontSize: '0.85rem' }}>
                             {formatDuration(s.timeTakenSeconds)}
+                          </TableCell>
+                          <TableCell sx={{ borderBottom: '1px solid #f0f0f0', py: 2 }}>
+                            {(() => {
+                              const v = getViolationsCount(s);
+                              if (v === 0) {
+                                return (
+                                  <Chip
+                                    label="Sin alertas"
+                                    size="small"
+                                    sx={{ bgcolor: '#f1f8e9', color: '#2e7d32', fontWeight: 500, fontSize: '0.75rem', height: 24 }}
+                                  />
+                                );
+                              }
+                              const high = v >= 3;
+                              return (
+                                <Chip
+                                  icon={<VisibilityOffIcon sx={{ fontSize: '16px !important', color: '#fff !important' }} />}
+                                  label={`${v} alerta${v > 1 ? 's' : ''}`}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: high ? '#c62828' : '#e65100',
+                                    color: '#fff',
+                                    fontWeight: 600,
+                                    fontSize: '0.75rem',
+                                    height: 24,
+                                  }}
+                                />
+                              );
+                            })()}
                           </TableCell>
                           <TableCell sx={{ color: '#666', borderBottom: '1px solid #f0f0f0', py: 2 }}>
                             {isGraded && s.totalScore != null
