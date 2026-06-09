@@ -176,23 +176,23 @@ ProcessNode.propTypes = {
   selected: PropTypes.bool,
 };
 
-// ─── Custom node: Hoja (rectángulo redondeado) ────────────────────────────────
+// ─── Custom node: Hoja (rectángulo verde) ─────────────────────────────────────
 
 const TerminalNode = ({ data, id, selected }) => {
   const { updateNodeData } = useReactFlow();
   return (
     <div style={{
-      width: 130, height: 50,
-      background: '#f5f5f5', border: `2px solid ${selected ? '#001f56' : '#616161'}`,
-      borderRadius: 25, boxSizing: 'border-box',
+      width: 140, height: 60,
+      background: '#e8f5e9', border: `2px solid ${selected ? '#001f56' : '#2e7d32'}`,
+      borderRadius: 4, boxSizing: 'border-box',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       boxShadow: selected ? '0 0 0 2px #001f56' : 'none',
     }}>
-      <EditableLabel id={id} label={data.label} updateNodeData={updateNodeData} color="#616161" />
-      <Handle type="source" position={Position.Top}    style={hs('#616161')} />
-      <Handle type="source" position={Position.Bottom} id="b" style={hs('#616161')} />
-      <Handle type="source" position={Position.Left}   id="l" style={hs('#616161')} />
-      <Handle type="source" position={Position.Right}  id="r" style={hs('#616161')} />
+      <EditableLabel id={id} label={data.label} updateNodeData={updateNodeData} color="#2e7d32" />
+      <Handle type="source" position={Position.Top}    style={hs('#2e7d32')} />
+      <Handle type="source" position={Position.Bottom} id="b" style={hs('#2e7d32')} />
+      <Handle type="source" position={Position.Left}   id="l" style={hs('#2e7d32')} />
+      <Handle type="source" position={Position.Right}  id="r" style={hs('#2e7d32')} />
     </div>
   );
 };
@@ -329,8 +329,8 @@ const EditorInner = ({ initialData, onChange, readOnly }) => {
             + Nodo ⬭
           </Button>
           <Button size="small" variant="outlined" onClick={() => addNode('terminal')}
-            sx={{ textTransform: 'none', fontSize: 11, py: 0.2, px: 1, minWidth: 0, borderColor: '#616161', color: '#616161', '&:hover': { borderColor: '#424242', bgcolor: '#f5f5f5' } }}>
-            + Hoja ○
+            sx={{ textTransform: 'none', fontSize: 11, py: 0.2, px: 1, minWidth: 0, borderColor: '#2e7d32', color: '#2e7d32', '&:hover': { borderColor: '#1b5e20', bgcolor: '#e8f5e9' } }}>
+            + Hoja ▭
           </Button>
 
           <Box sx={{ width: '1px', height: 18, bgcolor: '#e0e0e0', mx: 0.25 }} />
