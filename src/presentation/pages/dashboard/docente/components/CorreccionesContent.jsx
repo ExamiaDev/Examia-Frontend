@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { useGoBack } from '../../../../hooks/useGoBack';
 import {
   Box,
   Typography,
@@ -433,6 +434,10 @@ const SubmissionsView = ({ exam, onBack }) => {
 const CorreccionesContent = ({ initialExamId }) => {
   const [view, setView] = useState('exams');
   const [selectedExam, setSelectedExam] = useState(null);
+  // Si llegaron acá desde otra pantalla (ej: /docente/examenes), retrocedemos en
+  // el historial real. Si entraron por deep link, vamos a la lista de exámenes
+  // de correcciones (limpiando la selección interna).
+  const goBackToOrigin = useGoBack('/docente/correcciones');
 
   const handleSelectExam = (exam) => {
     setSelectedExam(exam);
@@ -440,6 +445,13 @@ const CorreccionesContent = ({ initialExamId }) => {
   };
 
   const handleBack = () => {
+    // Si la pantalla está embebida con un initialExamId (entrada desde "Corregí"),
+    // el "atrás" debe sacar al usuario de esta vista por completo, devolviéndolo
+    // al lugar real de origen (típicamente /docente/examenes).
+    if (initialExamId) {
+      goBackToOrigin();
+      return;
+    }
     setSelectedExam(null);
     setView('exams');
   };
