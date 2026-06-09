@@ -20,6 +20,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SubmissionService from '../../../../../application/services/SubmissionService';
 import { StudentDecisionTreeView, StudentMatrixView } from '../../../../components/correctionAnswerViews';
+import { filterAnswersToStudentTopic } from '../../../../../utils/topicFilter';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -274,13 +275,19 @@ const ResultadoDetalleContent = ({ submissionId }) => {
 
   if (!submission) return null;
 
+  // El alumno responde UN solo tema por examen → filtramos para mostrar y sumar
+  // únicamente las preguntas del tema que efectivamente rindió.
+  const studentAnswers = filterAnswersToStudentTopic(submission.answers || []);
+  const displayTotalPoints = studentAnswers.reduce((s, a) => s + (a.points || 0), 0)
+    || submission.totalPoints;
+
   const topics = [];
   const seenTopics = new Set();
-  (submission.answers || []).forEach((a) => {
+  studentAnswers.forEach((a) => {
     const t = a.topic || 'Sin tema';
     if (!seenTopics.has(t)) { seenTopics.add(t); topics.push(t); }
   });
-  const hasTemas = topics.length > 1 || (topics.length === 1 && topics[0] !== 'Sin tema');
+  const hasTemas = topics.length === 1 && topics[0] !== 'Sin tema';
 
   let globalIdx = 0;
 
@@ -304,7 +311,7 @@ const ResultadoDetalleContent = ({ submissionId }) => {
           <Typography variant="h5" sx={{ fontWeight: 700, color: '#001f56' }}>
             {submission.totalScore ?? '—'}
           </Typography>
-          <Typography variant="caption" sx={{ color: '#888' }}>/ {submission.totalPoints}</Typography>
+          <Typography variant="caption" sx={{ color: '#888' }}>/ {displayTotalPoints}</Typography>
         </Paper>
       </Box>
 
@@ -327,11 +334,11 @@ const ResultadoDetalleContent = ({ submissionId }) => {
       {/* Respuestas */}
       <Box sx={{ px: 4, pb: 2, flex: 1 }}>
         <Typography variant="h6" sx={{ fontWeight: 600, color: '#333', mb: 2 }}>
-          Tus respuestas ({(submission.answers || []).length} pregunta{(submission.answers || []).length !== 1 ? 's' : ''})
+          Tus respuestas ({studentAnswers.length} pregunta{studentAnswers.length !== 1 ? 's' : ''})
         </Typography>
 
         {topics.map((topic) => {
-          const topicAnswers = (submission.answers || []).filter((a) => (a.topic || 'Sin tema') === topic);
+          const topicAnswers = studentAnswers.filter((a) => (a.topic || 'Sin tema') === topic);
           const earnedInTopic = topicAnswers.reduce((s, a) => s + (a.earnedScore ?? 0), 0);
           const totalInTopic = topicAnswers.reduce((s, a) => s + (a.points || 0), 0);
           return (
