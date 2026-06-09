@@ -6,7 +6,7 @@ export function usePagination(data, initialRowsPerPage = 10) {
 
   const handleChangePage = (_, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (e) => {
-    setRowsPerPage(parseInt(e.target.value, 10));
+    setRowsPerPage(Number.parseInt(e.target.value, 10));
     setPage(0);
   };
 
