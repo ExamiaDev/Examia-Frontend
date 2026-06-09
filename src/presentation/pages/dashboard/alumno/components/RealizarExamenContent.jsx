@@ -671,8 +671,11 @@ const RealizarExamenContent = ({ examId }) => {
     const autoSubmit = async () => {
       setSubmitting(true);
       try {
-        const allQuestions = groups.flatMap((g) => g.questions);
-        const answersList = allQuestions.map((q) => buildSubmitPayload(q, answers[q.id]));
+        // El alumno responde UN solo tema → si ya eligió uno, enviamos solo ese.
+        // Si por algún motivo no llegó a elegir, caemos al primero por seguridad.
+        const submitGroup = groups[selectedTopicIdx] ?? groups[0];
+        const submitQuestions = submitGroup ? submitGroup.questions : [];
+        const answersList = submitQuestions.map((q) => buildSubmitPayload(q, answers[q.id]));
         const elapsed = Math.floor((Date.now() - (getStartedAt(examId) ?? Date.now())) / 1000);
         await SubmissionService.submitExam(examId, answersList, violationsPayload, elapsed);
         clearProgress(examId);
@@ -686,7 +689,7 @@ const RealizarExamenContent = ({ examId }) => {
       }
     };
     autoSubmit();
-  }, [groups, answers, examId, violationsPayload, navigate]);
+  }, [groups, answers, examId, violationsPayload, navigate, selectedTopicIdx]);
 
   const timer = useExamTimer({
     durationMinutes: exam?.durationMinutes ?? null,
@@ -815,14 +818,18 @@ const RealizarExamenContent = ({ examId }) => {
   };
 
   const allQuestions = groups.flatMap((g) => g.questions);
-  const totalQuestions = allQuestions.length;
-  const totalAnswered = allQuestions.filter((q) => isAnswered(q, answers[q.id])).length;
+  // El alumno responde UN solo tema → para totales y entrega usamos solo las
+  // preguntas del tema seleccionado (fallback al primero si aún no eligió).
+  const submitGroup = groups[selectedTopicIdx] ?? groups[0];
+  const submitQuestions = submitGroup ? submitGroup.questions : allQuestions;
+  const totalQuestions = submitQuestions.length;
+  const totalAnswered = submitQuestions.filter((q) => isAnswered(q, answers[q.id])).length;
 
   const handleSubmit = async () => {
     setSubmitting(true);
     timer.stop();
     try {
-      const answersList = allQuestions.map((q) => buildSubmitPayload(q, answers[q.id]));
+      const answersList = submitQuestions.map((q) => buildSubmitPayload(q, answers[q.id]));
       const startedAt = getStartedAt(examId);
       const elapsed = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : timer.elapsed;
       await SubmissionService.submitExam(examId, answersList, violationsPayload, elapsed);
